@@ -388,6 +388,8 @@ class LibraryViewModel: ObservableObject {
     private func updateLocalFavorite(uri: String, favorite: Bool) {
         if let index = albums.firstIndex(where: { $0.uri == uri }) {
             albums[index].favorite = favorite
+        } else if let index = tracks.firstIndex(where: { $0.uri == uri }) {
+            tracks[index].favorite = favorite
         } else if let index = artists.firstIndex(where: { $0.uri == uri }) {
             artists[index].favorite = favorite
         } else if let index = playlists.firstIndex(where: { $0.uri == uri }) {

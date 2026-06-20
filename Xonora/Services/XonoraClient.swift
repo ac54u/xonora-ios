@@ -660,20 +660,71 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     func fetchLyrics(track: Track) async throws -> LyricsResponse {
-        let trackDict: [String: Any] = [
+        var trackDict: [String: Any] = [
             "item_id": track.itemId,
             "provider": track.provider,
             "name": track.name,
             "uri": track.uri,
             "media_type": "track"
         ]
+        // Include provider mappings so the server can resolve where to fetch lyrics from.
+        if let mappings = track.providerMappings, !mappings.isEmpty {
+            trackDict["provider_mappings"] = mappings.map { [
+                "item_id": $0.itemId,
+                "provider_domain": $0.providerDomain,
+                "provider_instance": $0.providerInstance
+            ] }
+        }
         let data = try await sendCommand("metadata/get_track_lyrics", args: ["track": trackDict])
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let result = json["result"] as? [String: Any] else {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return LyricsResponse(lyrics: nil, hasSynced: false)
         }
-        let resultData = try JSONSerialization.data(withJSONObject: result)
-        return (try? JSONDecoder().decode(LyricsResponse.self, from: resultData)) ?? LyricsResponse(lyrics: nil, hasSynced: false)
+        // get_track_lyrics returns a tuple (lyrics, lrc_lyrics) -> JSON array of up to
+        // two nullable strings. Prefer the synced LRC form when present.
+        let result = json["result"] as? [Any]
+        let plain = (result?.count ?? 0) > 0 ? result?[0] as? String : nil
+        let lrc = (result?.count ?? 0) > 1 ? result?[1] as? String : nil
+
+        if let lrc = lrc, !lrc.isEmpty {
+            let parsed = parseLRC(lrc)
+            if !parsed.isEmpty { return LyricsResponse(lyrics: parsed, hasSynced: true) }
+        }
+        if let plain = plain, !plain.isEmpty {
+            let lines = plain.components(separatedBy: .newlines).enumerated().map { idx, line in
+                Lyric(lineId: "\(idx)", start: nil, end: nil, text: line)
+            }
+            return LyricsResponse(lyrics: lines, hasSynced: false)
+        }
+        return LyricsResponse(lyrics: nil, hasSynced: false)
+    }
+
+    /// Parse LRC-format synced lyrics ("[mm:ss.xx] text") into timed Lyric lines.
+    private func parseLRC(_ lrc: String) -> [Lyric] {
+        let pattern = "\\[(\\d{1,2}):(\\d{2})(?:[.:](\\d{1,3}))?\\]"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        var parsed: [(start: TimeInterval, text: String)] = []
+        for line in lrc.components(separatedBy: .newlines) {
+            let nsline = line as NSString
+            let matches = regex.matches(in: line, range: NSRange(location: 0, length: nsline.length))
+            guard let last = matches.last else { continue }
+            let textStart = last.range.location + last.range.length
+            let text = nsline.substring(from: textStart).trimmingCharacters(in: .whitespaces)
+            for m in matches {
+                let mins = Double(nsline.substring(with: m.range(at: 1))) ?? 0
+                let secs = Double(nsline.substring(with: m.range(at: 2))) ?? 0
+                var frac = 0.0
+                if m.range(at: 3).location != NSNotFound {
+                    let f = nsline.substring(with: m.range(at: 3))
+                    frac = (Double(f) ?? 0) / pow(10.0, Double(f.count))
+                }
+                parsed.append((mins * 60 + secs + frac, text))
+            }
+        }
+        parsed.sort { $0.start < $1.start }
+        return parsed.enumerated().map { i, line in
+            let end = i + 1 < parsed.count ? parsed[i + 1].start : nil
+            return Lyric(lineId: "\(i)", start: line.start, end: end, text: line.text)
+        }
     }
 
     // MA schema >= 31 enforces an imageproxy size whitelist ([80,160,256,512,1024]);
