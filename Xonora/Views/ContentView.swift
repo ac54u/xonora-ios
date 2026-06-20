@@ -832,13 +832,13 @@ struct SettingsView: View {
                                 Task { try? await client.switchPlayer(playerId: player.playerId) }
                             } label: {
                                 HStack {
-                                    Image(systemName: ProviderBrand(provider: player.provider).icon)
-                                        .foregroundColor(ProviderBrand(provider: player.provider).color)
+                                    Image(systemName: ProviderBrand(provider: player.provider, type: player.type, name: player.name).icon)
+                                        .foregroundColor(ProviderBrand(provider: player.provider, type: player.type, name: player.name).color)
                                         .frame(width: 24)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(player.name)
                                             .foregroundColor(.primary)
-                                        Text(ProviderBrand(provider: player.provider).displayName)
+                                        Text(ProviderBrand(provider: player.provider, type: player.type, name: player.name).displayName)
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }

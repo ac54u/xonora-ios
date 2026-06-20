@@ -6,13 +6,21 @@ enum ProviderBrand: String, CaseIterable {
     case jellyfin, subsonic, navidrome, filesystemLocal = "filesystem_local"
     case airplay, chromecast, dlna, sonos, squeezebox, snapcast, slimproto = "slimproto"
     case sendspin, builtin, test, unknown
+    case web, universalPlayer
 
-    init(provider: String) {
+    init(provider: String, type: String = "", name: String = "") {
         let lower = provider.lowercased()
-        if lower == "snapcast" { self = .snapcast }
+        let typeLower = type.lowercased()
+        let nameLower = name.lowercased()
+
+        // Web/browser player: MA sends type="web", or name contains browser keywords
+        if typeLower == "web" || (lower == "sendspin" && (nameLower.contains("web") || nameLower.contains("chrome") || nameLower.contains("firefox") || nameLower.contains("safari") || nameLower.contains("edge"))) {
+            self = .web
+        } else if lower == "snapcast" { self = .snapcast }
         else if lower == "slimproto" { self = .slimproto }
         else if lower == "sonos_s1" || lower == "sonos_s2" { self = .sonos }
         else if lower == "squeezebox" { self = .squeezebox }
+        else if lower == "universal_player" { self = .universalPlayer }
         else { self = ProviderBrand(rawValue: lower) ?? .unknown }
     }
 
@@ -43,6 +51,8 @@ enum ProviderBrand: String, CaseIterable {
         case .builtin: return "Built-in"
         case .test: return "Test"
         case .unknown: return "Unknown"
+        case .web: return "Web"
+        case .universalPlayer: return "Music Assistant"
         }
     }
 
@@ -68,9 +78,11 @@ enum ProviderBrand: String, CaseIterable {
         case .snapcast: return "speaker.wave.2"
         case .slimproto: return "rectangle.3.group"
         case .sendspin: return "iphone"
-        case .builtin: return "speaker"
+        case .builtin: return "speaker.wave.2"
         case .test: return "wrench"
-        case .unknown: return "questionmark"
+        case .unknown: return "questionmark.circle"
+        case .web: return "globe"
+        case .universalPlayer: return "hifispeaker"
         }
     }
 
