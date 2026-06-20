@@ -192,6 +192,16 @@ class PlayerManager: ObservableObject {
                     self.currentTime = elapsed
                 }
 
+                // Detect server auto-advance: an idle/stopped state arriving in the SAME
+                // event that also carries a *different* current_item track means the server
+                // is moving to the next track, not really stopping. We must NOT tear down the
+                // Sendspin stream then — stopPlayback() disconnects the client and kills audio,
+                // leaving the UI "playing" (progress bar moving) but silent.
+                let incomingTrackURI = (userInfo["current_item"] as? [String: Any])
+                    .flatMap { $0["media_item"] as? [String: Any] }
+                    .flatMap { $0["uri"] as? String }
+                let isAutoAdvance = incomingTrackURI != nil && incomingTrackURI != self.currentTrack?.uri
+
                 if let stateStr = userInfo["state"] as? String {
                     if stateStr == "playing" {
                         self.playbackState = .playing
@@ -204,12 +214,12 @@ class PlayerManager: ObservableObject {
                         SendspinClient.shared.pausePlayback()
                         self.postPlaybackStateChange()
                     } else if stateStr == "idle" {
-                        if self.playbackState == .playing {
+                        if self.playbackState == .playing && !isAutoAdvance {
                             self.handleTrackEnded()
                             SendspinClient.shared.stopPlayback()
                         }
                         self.postPlaybackStateChange()
-                    } else {
+                    } else if !isAutoAdvance {
                         self.playbackState = .stopped
                         self.stopProgressTimer()
                         SendspinClient.shared.stopPlayback()
@@ -242,10 +252,13 @@ class PlayerManager: ObservableObject {
                                 if let idx = self.queue.firstIndex(where: { $0.uri == track.uri }) {
                                     self.currentIndex = idx
                                 }
-                                // If track ended naturally and server auto-advanced, resume playback
-                                if oldTrack != nil && self.playbackState == .stopped {
+                                // If track ended naturally and server auto-advanced but the
+                                // stream isn't marked playing, resume it (covers the case where
+                                // idle and the next track arrive in separate events).
+                                if oldTrack != nil && self.playbackState != .playing {
                                     self.playbackState = .playing
                                     self.startProgressTimer()
+                                    SendspinClient.shared.resumePlayback()
                                     self.postPlaybackStateChange()
                                 }
                             }
