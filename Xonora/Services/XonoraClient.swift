@@ -56,7 +56,7 @@ class XonoraClient: NSObject, ObservableObject {
         }
 
         guard let url = URL(string: serverURLString) else {
-            connectionState = .error("Invalid server URL")
+            connectionState = .error(NSLocalizedString("Invalid server URL", comment: "Connection error"))
             return
         }
 
@@ -70,7 +70,7 @@ class XonoraClient: NSObject, ObservableObject {
         wsComponents?.path = "/ws"
 
         guard let wsURL = wsComponents?.url else {
-            connectionState = .error("Failed to create WebSocket URL")
+            connectionState = .error(NSLocalizedString("Failed to create WebSocket URL", comment: "Connection error"))
             return
         }
 
@@ -100,7 +100,7 @@ class XonoraClient: NSObject, ObservableObject {
             guard let self = self, !Task.isCancelled else { return }
             if self.connectionState == .connecting {
                 self.webSocketTask?.cancel(with: .goingAway, reason: nil)
-                self.connectionState = .error("Connection timed out.")
+                self.connectionState = .error(NSLocalizedString("Connection timed out.", comment: "Connection error"))
             }
         }
     }
@@ -130,7 +130,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     private func reconnect() {
         guard reconnectAttempts < maxReconnectAttempts, let serverURL = serverURL else {
-            connectionState = .error("Failed to reconnect.")
+            connectionState = .error(NSLocalizedString("Failed to reconnect.", comment: "Connection error"))
             return
         }
 
@@ -193,7 +193,7 @@ class XonoraClient: NSObject, ObservableObject {
                     reconnectAttempts = 0
                     await fetchPlayers()
                 } else {
-                    connectionState = .error("Authentication failed.")
+                    connectionState = .error(NSLocalizedString("Authentication failed.", comment: "Auth error"))
                 }
                 return
             }
@@ -212,7 +212,7 @@ class XonoraClient: NSObject, ObservableObject {
                         connectionState = .authenticating
                         await authenticate()
                     } else {
-                        connectionState = .error("Authentication required.")
+                        connectionState = .error(NSLocalizedString("Authentication required.", comment: "Auth error"))
                     }
                 } else {
                     connectionState = .connected
@@ -234,7 +234,7 @@ class XonoraClient: NSObject, ObservableObject {
             if let errorCode = json["error_code"] as? Int, errorCode == 20 {
                 requiresAuth = true
                 if accessToken == nil {
-                    connectionState = .error("Authentication required.")
+                    connectionState = .error(NSLocalizedString("Authentication required.", comment: "Auth error"))
                 }
             }
         }
@@ -268,7 +268,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     private func sendCommand(_ command: String, args: [String: Any] = [:]) async throws -> Data {
         guard connectionState == .connected else {
-            throw NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: "Not connected"])
+            throw NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Not connected", comment: "Connection error")])
         }
         let messageId = UUID().uuidString
         let payload: [String: Any] = ["message_id": messageId, "command": command, "args": args]
@@ -290,7 +290,7 @@ class XonoraClient: NSObject, ObservableObject {
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
                 if let callback = self?.pendingCallbacks.removeValue(forKey: messageId) {
-                    callback(.failure(NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: "Timeout"])))
+                    callback(.failure(NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Timeout", comment: "Connection error")])))
                 }
             }
         }
@@ -424,7 +424,7 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     func playMedia(uris: [String], queueOption: String = "replace") async throws {
-        guard let player = currentPlayer else { throw NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: "No player"]) }
+        guard let player = currentPlayer else { throw NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("No player", comment: "Playback error")]) }
         _ = try await sendCommand("player_queues/play_media", args: ["queue_id": player.playerId, "media": uris, "option": queueOption])
     }
 

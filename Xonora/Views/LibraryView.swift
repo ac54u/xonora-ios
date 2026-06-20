@@ -15,6 +15,10 @@ struct LibraryView: View {
 
         var id: String { self.rawValue }
 
+        var localizedName: String {
+            NSLocalizedString(self.rawValue, comment: "Library category")
+        }
+
         var icon: String {
             switch self {
             case .albums: return "square.stack.fill"
@@ -97,7 +101,7 @@ struct LibraryView: View {
                                 .font(.system(size: 20))
                                 .symbolVariant(selectedCategory == category ? .fill : .none)
                             
-                            Text(category.rawValue)
+                            Text(category.localizedName)
                                 .font(.system(size: 10))
                                 .fontWeight(.medium)
                         }

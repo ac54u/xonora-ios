@@ -254,7 +254,7 @@ class PlayerManager: ObservableObject {
         self.currentSource = sourceName
 
         guard SendspinClient.shared.isConnected else {
-            playbackState = .error("Sendspin not connected. Please enable it in Settings.")
+            playbackState = .error(NSLocalizedString("Sendspin not connected. Please enable it in Settings.", comment: "Playback error"))
             return
         }
 
@@ -318,7 +318,7 @@ class PlayerManager: ObservableObject {
                 }
                 
                 await MainActor.run {
-                    self.playbackState = .error("Failed to play: \(error.localizedDescription)")
+                    self.playbackState = .error(String.localizedStringWithFormat(NSLocalizedString("Failed to play: %@", comment: "Playback error"), error.localizedDescription))
                 }
             }
         }

@@ -7,11 +7,11 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didConnect interfaceController: CPInterfaceController) {
         self.interfaceController = interfaceController
         
-        let libraryTemplate = CPListTemplate(title: "Library", sections: [
+        let libraryTemplate = CPListTemplate(title: NSLocalizedString("Library", comment: "CarPlay library title"), sections: [
             CPListSection(items: [
-                CPListItem(text: "Albums", detailText: "Browse your music library", image: UIImage(systemName: "rectangle.stack.fill")),
-                CPListItem(text: "Playlists", detailText: "Your custom collections", image: UIImage(systemName: "music.note.list")),
-                CPListItem(text: "Artists", detailText: "Browse by artist", image: UIImage(systemName: "person.2.fill"))
+                CPListItem(text: NSLocalizedString("Albums", comment: "CarPlay albums list"), detailText: NSLocalizedString("Browse your music library", comment: "CarPlay albums description"), image: UIImage(systemName: "rectangle.stack.fill")),
+                CPListItem(text: NSLocalizedString("Playlists", comment: "CarPlay playlists list"), detailText: NSLocalizedString("Your custom collections", comment: "CarPlay playlists description"), image: UIImage(systemName: "music.note.list")),
+                CPListItem(text: NSLocalizedString("Artists", comment: "CarPlay artists list"), detailText: NSLocalizedString("Browse by artist", comment: "CarPlay artists description"), image: UIImage(systemName: "person.2.fill"))
             ])
         ])
         
@@ -33,11 +33,11 @@ extension CarPlaySceneDelegate: CPListTemplateDelegate {
             showTracks(for: playlist, interfaceController: interfaceController, completionHandler: completionHandler)
         } else if let track = item.userInfo as? Track {
             playTrack(track, completionHandler: completionHandler)
-        } else if item.text == "Albums" {
+        } else if item.text == NSLocalizedString("Albums", comment: "CarPlay albums list") {
             showAlbums(interfaceController: interfaceController, completionHandler: completionHandler)
-        } else if item.text == "Playlists" {
+        } else if item.text == NSLocalizedString("Playlists", comment: "CarPlay playlists list") {
             showPlaylists(interfaceController: interfaceController, completionHandler: completionHandler)
-        } else if item.text == "Artists" {
+        } else if item.text == NSLocalizedString("Artists", comment: "CarPlay artists list") {
             showArtists(interfaceController: interfaceController, completionHandler: completionHandler)
         } else {
             completionHandler()
@@ -53,7 +53,7 @@ extension CarPlaySceneDelegate: CPListTemplateDelegate {
                 return listItem
             }
             
-            let template = CPListTemplate(title: "Albums", sections: [CPListSection(items: listItems)])
+            let template = CPListTemplate(title: NSLocalizedString("Albums", comment: "CarPlay albums list"), sections: [CPListSection(items: listItems)])
             template.delegate = self
             interfaceController.pushTemplate(template, animated: true, completion: nil)
             completionHandler()
@@ -64,12 +64,12 @@ extension CarPlaySceneDelegate: CPListTemplateDelegate {
         Task { @MainActor in
             let playlists = LibraryViewModel.shared.playlists
             let listItems = playlists.map { playlist in
-                let listItem = CPListItem(text: playlist.name, detailText: "Playlist")
+                let listItem = CPListItem(text: playlist.name, detailText: NSLocalizedString("Playlist", comment: "CarPlay playlist item"))
                 listItem.userInfo = playlist
                 return listItem
             }
             
-            let template = CPListTemplate(title: "Playlists", sections: [CPListSection(items: listItems)])
+            let template = CPListTemplate(title: NSLocalizedString("Playlists", comment: "CarPlay playlists list"), sections: [CPListSection(items: listItems)])
             template.delegate = self
             interfaceController.pushTemplate(template, animated: true, completion: nil)
             completionHandler()
@@ -85,7 +85,7 @@ extension CarPlaySceneDelegate: CPListTemplateDelegate {
                 return listItem
             }
             
-            let template = CPListTemplate(title: "Artists", sections: [CPListSection(items: listItems)])
+            let template = CPListTemplate(title: NSLocalizedString("Artists", comment: "CarPlay artists list"), sections: [CPListSection(items: listItems)])
             template.delegate = self
             interfaceController.pushTemplate(template, animated: true, completion: nil)
             completionHandler()

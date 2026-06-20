@@ -77,7 +77,7 @@ class SendspinClient: ObservableObject {
         self.safeLog("[SendspinClient] Access token length: \(accessToken?.count ?? 0)")
 
         guard let url = URL(string: urlString) else {
-            self.connectionError = "Invalid URL: \(urlString)"
+            self.connectionError = String.localizedStringWithFormat(NSLocalizedString("Invalid URL: %@", comment: "Connection error"), urlString)
             self.safeLog("[SendspinClient] ERROR: Invalid URL")
             return
         }
@@ -126,7 +126,7 @@ class SendspinClient: ObservableObject {
                 self.safeLog("[SendspinClient] Connection initiated successfully")
             } catch {
                 self.safeLog("[SendspinClient] Connection error: \(error)")
-                self.connectionError = "Connection failed: \(error.localizedDescription)"
+                self.connectionError = String.localizedStringWithFormat(NSLocalizedString("Connection failed: %@", comment: "Connection error"), error.localizedDescription)
                 self.isConnected = false
                 self.attemptReconnect()
             }
@@ -158,7 +158,7 @@ class SendspinClient: ObservableObject {
         
         guard reconnectAttempts < maxReconnectAttempts else {
             self.safeLog("[SendspinClient] Max reconnection attempts reached")
-            self.connectionError = "Failed to reconnect after multiple attempts"
+            self.connectionError = NSLocalizedString("Failed to reconnect after multiple attempts", comment: "Connection error")
             return
         }
         

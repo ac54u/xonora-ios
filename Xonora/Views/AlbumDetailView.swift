@@ -136,7 +136,7 @@ struct AlbumDetailView: View {
 
                     if !tracks.isEmpty {
                         Text("•")
-                        Text("\(tracks.count) songs")
+                        Text(String.localizedStringWithFormat(NSLocalizedString("%lld songs", comment: "Track count"), tracks.count))
                     }
 
                     if let totalDuration = totalDuration {
@@ -197,9 +197,9 @@ struct AlbumDetailView: View {
         let minutes = (Int(total) % 3600) / 60
 
         if hours > 0 {
-            return "\(hours) hr \(minutes) min"
+            return String.localizedStringWithFormat(NSLocalizedString("%lld hr %lld min", comment: "Duration with hours"), hours, minutes)
         } else {
-            return "\(minutes) min"
+            return String.localizedStringWithFormat(NSLocalizedString("%lld min", comment: "Duration minutes only"), minutes)
         }
     }
 

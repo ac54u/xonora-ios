@@ -1,0 +1,124 @@
+// Root tab bar
+"Library" = "音乐库";
+"Search" = "搜索";
+"Settings" = "设置";
+
+// Server Setup
+"Xonora" = "Xonora";
+"Connect to Music Assistant" = "连接到 Music Assistant";
+"Server Address" = "服务器地址";
+"http://192.168.1.100:8095" = "http://192.168.1.100:8095";
+"Your Music Assistant server URL with port" = "你的 Music Assistant 服务器地址（含端口）";
+"Access Token" = "访问令牌";
+"Paste your token here" = "在此粘贴你的令牌";
+"Create a token in Music Assistant → Settings → Users" = "在 Music Assistant → 设置 → 用户中创建令牌";
+"Authenticating..." = "正在验证...";
+"Connecting..." = "正在连接...";
+"Authenticating" = "验证中";
+"Connecting" = "连接中";
+"Connect" = "连接";
+"Discovered Servers" = "发现的服务器";
+
+// Search
+"Search Music" = "搜索音乐";
+"Search for albums, artists, and tracks" = "搜索专辑、艺人及歌曲";
+"Albums, Artists, Songs" = "专辑、艺人、歌曲";
+"Songs" = "歌曲";
+"Albums" = "专辑";
+"Search" = "搜索";
+
+// Settings
+"Server" = "服务器";
+"Token" = "令牌";
+"Status" = "状态";
+"Connected" = "已连接";
+"Disconnected" = "未连接";
+"Change Server" = "更改服务器";
+"Disconnect" = "断开连接";
+"Reconnect" = "重新连接";
+"Connection" = "连接";
+"Enable Sendspin" = "启用 Sendspin";
+"Sendspin Status" = "Sendspin 状态";
+"iOS device connected via Sendspin protocol. Audio will stream directly to this device." = "iOS 设备已通过 Sendspin 协议连接。音频将直接传输到此设备。";
+"Player Name" = "播放器名称";
+"Name" = "名称";
+"Local Audio (Sendspin)" = "本地音频 (Sendspin)";
+"Enable to receive audio streams via Sendspin." = "启用后可通过 Sendspin 接收音频流。";
+"Loading players..." = "正在加载播放器...";
+"No players found (not connected)" = "未找到播放器（未连接）";
+"Active Player" = "当前播放器";
+"Playback will be sent to: %@" = "播放将发送至：%@";
+"Remote Player" = "远程播放器";
+"Select a player to send playback commands to." = "选择要发送播放命令的播放器。";
+"App Version" = "应用版本";
+"About" = "关于";
+
+// Mini Player
+"Not Playing" = "未播放";
+
+// Library
+"Playlists" = "播放列表";
+"Artists" = "艺人";
+"Loading Library..." = "正在加载音乐库...";
+"Unable to Load" = "无法加载";
+"Try Again" = "重试";
+"No Playlists" = "无播放列表";
+"Your library has no playlists." = "你的音乐库中没有播放列表。";
+"No Albums" = "无专辑";
+"Your library is empty. Add some music to get started." = "你的音乐库为空。添加一些音乐开始使用。";
+"No Songs" = "无歌曲";
+"Your library has no songs. Add individual tracks to see them here." = "你的音乐库中没有歌曲。添加单曲后可在此查看。";
+"No Artists" = "无艺人";
+"Your library is empty." = "你的音乐库为空。";
+
+// Now Playing
+"PLAYING FROM" = "正在播放来自";
+"Queue" = "播放队列";
+"Queue is Empty" = "队列为空";
+"Add some songs to your queue" = "添加一些歌曲到你的播放队列";
+"Up Next" = "即将播放";
+"Done" = "完成";
+"Clear" = "清空";
+
+// Album/Playlist Detail
+"Play" = "播放";
+"Shuffle" = "随机播放";
+"Retry" = "重试";
+"%lld songs" = "%lld 首歌";
+"%lld hr %lld min" = "%lld 小时 %lld 分钟";
+"%lld min" = "%lld 分钟";
+
+// Artist Detail
+"Artist" = "艺人";
+"Top Songs" = "热门歌曲";
+"See all songs" = "查看全部歌曲";
+"Failed to load artist details" = "加载艺人详情失败";
+
+// TrackRow context menu
+"Play Album" = "播放专辑";
+"Play Next" = "接下来播放";
+"Add to Queue" = "添加到队列";
+"Add to Library" = "添加到音乐库";
+
+// PlaylistGridItem
+"Playlist" = "播放列表";
+
+// Alerts
+"Playback Error" = "播放错误";
+"OK" = "确定";
+
+// Error strings (from services)
+"Sendspin not connected. Please enable it in Settings." = "Sendspin 未连接。请在设置中启用。";
+"Failed to play: %@" = "播放失败：%@";
+"Invalid server URL" = "无效的服务器地址";
+"Failed to create WebSocket URL" = "创建 WebSocket 地址失败";
+"Connection timed out." = "连接超时。";
+"Failed to reconnect." = "重新连接失败。";
+"Authentication failed." = "验证失败。";
+"Authentication required." = "需要验证。";
+"Not connected" = "未连接";
+"No player" = "无播放器";
+"Timeout" = "超时";
+"Invalid URL: %@" = "无效的地址：%@";
+"Connection failed: %@" = "连接失败：%@";
+"Failed to reconnect after multiple attempts" = "多次尝试后仍无法重新连接";
