@@ -24,6 +24,9 @@ class XonoraClient: NSObject, ObservableObject {
     private var reconnectAttempts = 0
     private let maxReconnectAttempts = 5
     private var accessToken: String?
+    private var username: String?
+    private var password: String?
+    private var usePasswordAuth: Bool = false
     private let authMessageId = "auth-handshake"
     private var pingTimer: Timer?
     private var connectionTimeoutTask: Task<Void, Never>?
@@ -47,7 +50,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     // MARK: - Connection Management
 
-    func connect(to serverURLString: String, accessToken: String? = nil) {
+    func connect(to serverURLString: String, accessToken: String? = nil, username: String? = nil, password: String? = nil) {
         switch connectionState {
         case .connected, .connecting, .authenticating:
             return
@@ -62,6 +65,9 @@ class XonoraClient: NSObject, ObservableObject {
 
         self.serverURL = url
         self.accessToken = accessToken
+        self.username = username
+        self.password = password
+        self.usePasswordAuth = accessToken?.isEmpty ?? true && username?.isEmpty == false && password?.isEmpty == false
         reconnectAttempts = 0
         connectionState = .connecting
         
@@ -139,7 +145,11 @@ class XonoraClient: NSObject, ObservableObject {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + Double(reconnectAttempts) * 2) { [weak self] in
             guard let self = self, self.reconnectAttempts < self.maxReconnectAttempts else { return }
-            self.connect(to: serverURL.absoluteString, accessToken: self.accessToken)
+            if self.usePasswordAuth {
+                self.connect(to: serverURL.absoluteString, accessToken: self.accessToken, username: self.username, password: self.password)
+            } else {
+                self.connect(to: serverURL.absoluteString, accessToken: self.accessToken)
+            }
         }
     }
 
@@ -191,6 +201,11 @@ class XonoraClient: NSObject, ObservableObject {
                 if let result = json["result"] as? [String: Any], let authenticated = result["authenticated"] as? Bool, authenticated {
                     connectionState = .connected
                     reconnectAttempts = 0
+                    if let token = result["token"] as? String {
+                        self.accessToken = token
+                        KeychainHelper.shared.saveToken(token)
+                        NotificationCenter.default.post(name: .tokenRefreshed, object: nil, userInfo: ["token": token])
+                    }
                     await fetchPlayers()
                 } else {
                     connectionState = .error(NSLocalizedString("Authentication failed.", comment: "Auth error"))
@@ -241,11 +256,19 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     private func authenticate() async {
-        guard let token = accessToken?.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+        let authArgs: [String: Any]
+        if usePasswordAuth, let user = username?.trimmingCharacters(in: .whitespacesAndNewlines), !user.isEmpty,
+           let pass = password?.trimmingCharacters(in: .whitespacesAndNewlines), !pass.isEmpty {
+            authArgs = ["username": user, "password": pass]
+        } else if let token = accessToken?.trimmingCharacters(in: .whitespacesAndNewlines), !token.isEmpty {
+            authArgs = ["token": token]
+        } else {
+            return
+        }
         let authPayload: [String: Any] = [
             "message_id": authMessageId,
             "command": "auth",
-            "args": ["token": token]
+            "args": authArgs
         ]
         do {
             let data = try JSONSerialization.data(withJSONObject: authPayload)
@@ -323,48 +346,64 @@ class XonoraClient: NSObject, ObservableObject {
         } catch {}
     }
 
-    func fetchAlbums() async throws -> [Album] {
-        let data = try await sendCommand("music/albums/library_items")
+    func fetchAlbums(offset: Int = 0, limit: Int = 500) async throws -> (items: [Album], total: Int) {
+        var args: [String: Any] = ["offset": offset, "limit": limit]
+        let data = try await sendCommand("music/albums/library_items", args: args)
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = (json["result"] as? [String: Any])?["items"] as? [[String: Any]] ?? json["result"] as? [[String: Any]] else { return [] }
+              let result = json["result"] as? [String: Any],
+              let items = result["items"] as? [[String: Any]] else { return ([], 0) }
 
-        return await Task.detached(priority: .userInitiated) {
+        let total = result["total"] as? Int ?? items.count
+        let decoded: [Album] = await Task.detached(priority: .userInitiated) {
             let itemsData = (try? JSONSerialization.data(withJSONObject: items)) ?? Data()
             return (try? JSONDecoder().decode([Album].self, from: itemsData)) ?? []
         }.value
+        return (decoded, total)
     }
 
-    func fetchPlaylists() async throws -> [Playlist] {
-        let data = try await sendCommand("music/playlists/library_items")
+    func fetchPlaylists(offset: Int = 0, limit: Int = 500) async throws -> (items: [Playlist], total: Int) {
+        var args: [String: Any] = ["offset": offset, "limit": limit]
+        let data = try await sendCommand("music/playlists/library_items", args: args)
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = (json["result"] as? [String: Any])?["items"] as? [[String: Any]] ?? json["result"] as? [[String: Any]] else { return [] }
+              let result = json["result"] as? [String: Any],
+              let items = result["items"] as? [[String: Any]] else { return ([], 0) }
 
-        return await Task.detached(priority: .userInitiated) {
+        let total = result["total"] as? Int ?? items.count
+        let decoded: [Playlist] = await Task.detached(priority: .userInitiated) {
             let itemsData = (try? JSONSerialization.data(withJSONObject: items)) ?? Data()
             return (try? JSONDecoder().decode([Playlist].self, from: itemsData)) ?? []
         }.value
+        return (decoded, total)
     }
 
-    func fetchArtists() async throws -> [Artist] {
-        let data = try await sendCommand("music/artists/library_items")
+    func fetchArtists(offset: Int = 0, limit: Int = 500) async throws -> (items: [Artist], total: Int) {
+        var args: [String: Any] = ["offset": offset, "limit": limit]
+        let data = try await sendCommand("music/artists/library_items", args: args)
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = (json["result"] as? [String: Any])?["items"] as? [[String: Any]] ?? json["result"] as? [[String: Any]] else { return [] }
+              let result = json["result"] as? [String: Any],
+              let items = result["items"] as? [[String: Any]] else { return ([], 0) }
 
-        return await Task.detached(priority: .userInitiated) {
+        let total = result["total"] as? Int ?? items.count
+        let decoded: [Artist] = await Task.detached(priority: .userInitiated) {
             let itemsData = (try? JSONSerialization.data(withJSONObject: items)) ?? Data()
             return (try? JSONDecoder().decode([Artist].self, from: itemsData)) ?? []
         }.value
+        return (decoded, total)
     }
 
-    func fetchTracks() async throws -> [Track] {
-        let data = try await sendCommand("music/tracks/library_items")
+    func fetchTracks(offset: Int = 0, limit: Int = 500) async throws -> (items: [Track], total: Int) {
+        var args: [String: Any] = ["offset": offset, "limit": limit]
+        let data = try await sendCommand("music/tracks/library_items", args: args)
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = (json["result"] as? [String: Any])?["items"] as? [[String: Any]] ?? json["result"] as? [[String: Any]] else { return [] }
+              let result = json["result"] as? [String: Any],
+              let items = result["items"] as? [[String: Any]] else { return ([], 0) }
 
-        return await Task.detached(priority: .userInitiated) {
+        let total = result["total"] as? Int ?? items.count
+        let decoded: [Track] = await Task.detached(priority: .userInitiated) {
             let itemsData = (try? JSONSerialization.data(withJSONObject: items)) ?? Data()
             return (try? JSONDecoder().decode([Track].self, from: itemsData)) ?? []
         }.value
+        return (decoded, total)
     }
 
     func fetchAlbumTracks(albumId: String, provider: String) async throws -> [Track] {
@@ -541,4 +580,5 @@ struct ServerInfo {
 
 extension Notification.Name {
     static let queueUpdated = Notification.Name("queueUpdated")
+    static let tokenRefreshed = Notification.Name("tokenRefreshed")
 }

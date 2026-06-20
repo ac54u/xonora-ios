@@ -7,6 +7,8 @@ class PlayerViewModel: ObservableObject {
     @Published var isNowPlayingPresented = false
     @Published var serverURL: String = ""
     @Published var accessToken: String = ""
+    @Published var username: String = ""
+    @Published var password: String = ""
     @Published var isConnected = false
     @Published var isConnecting = false
     @Published var isAuthenticating = false
@@ -118,14 +120,16 @@ class PlayerViewModel: ObservableObject {
     }
 
     private func loadSavedCredentials() {
-        if let savedURL = UserDefaults.standard.string(forKey: serverURLKey) {
+        if let savedURL = KeychainHelper.shared.getServerURL() ?? UserDefaults.standard.string(forKey: serverURLKey) {
             serverURL = savedURL
         }
-        if let savedToken = UserDefaults.standard.string(forKey: accessTokenKey) {
+        if let savedToken = KeychainHelper.shared.getToken() ?? UserDefaults.standard.string(forKey: accessTokenKey) {
             accessToken = savedToken
         }
+        if let savedUsername = KeychainHelper.shared.getUsername() {
+            username = savedUsername
+        }
         
-        // If Sendspin enabled state hasn't been set yet, default to true
         if UserDefaults.standard.object(forKey: sendspinEnabledKey) == nil {
             sendspinEnabled = true
             UserDefaults.standard.set(true, forKey: sendspinEnabledKey)
@@ -140,22 +144,25 @@ class PlayerViewModel: ObservableObject {
             return
         }
 
-        // Don't reconnect if already connected or connecting
         if isConnected || isConnecting || isAuthenticating {
             return
         }
 
         let url = normalizeServerURL(serverURL)
-        UserDefaults.standard.set(url, forKey: serverURLKey)
-        UserDefaults.standard.set(accessToken, forKey: accessTokenKey)
-
+        KeychainHelper.shared.saveServerURL(url)
         serverURL = url
 
-        // Reset reconnection counter before connecting
         client.resetReconnectionAttempts()
-        client.connect(to: url, accessToken: accessToken.isEmpty ? nil : accessToken)
+        if !accessToken.isEmpty {
+            KeychainHelper.shared.saveToken(accessToken)
+            client.connect(to: url, accessToken: accessToken)
+        } else if !username.isEmpty, !password.isEmpty {
+            KeychainHelper.shared.saveUsername(username)
+            client.connect(to: url, username: username, password: password)
+        } else {
+            client.connect(to: url, accessToken: nil)
+        }
 
-        // Connect Sendspin if enabled
         if sendspinEnabled {
             connectSendspin()
         }
@@ -204,7 +211,17 @@ class PlayerViewModel: ObservableObject {
     func updateCredentials(accessToken: String) {
         let trimmedToken = accessToken.trimmingCharacters(in: .whitespacesAndNewlines)
         self.accessToken = trimmedToken
-        UserDefaults.standard.set(trimmedToken, forKey: accessTokenKey)
+        if !trimmedToken.isEmpty {
+            KeychainHelper.shared.saveToken(trimmedToken)
+        }
+    }
+
+    func updateUsernamePassword(username: String, password: String) {
+        self.username = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.password = password
+        self.accessToken = ""
+        KeychainHelper.shared.saveUsername(self.username)
+        KeychainHelper.shared.deleteToken()
     }
 
     private func normalizeServerURL(_ url: String) -> String {

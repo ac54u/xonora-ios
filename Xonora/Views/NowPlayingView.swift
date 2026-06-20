@@ -261,9 +261,58 @@ struct QueueView: View {
                     .onTapGesture {
                         playerManager.playTrack(track)
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            withAnimation {
+                                playerManager.removeFromQueue(at: index)
+                            }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button {
+                            playerManager.playNext(track)
+                            playerManager.removeFromQueue(at: index)
+                        } label: {
+                            Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+                        }
+                        .tint(.accentColor)
+                    }
+                    .contextMenu {
+                        Button {
+                            playerManager.playTrack(track)
+                        } label: {
+                            Label("Play Now", systemImage: "play")
+                        }
+                        Button {
+                            playerManager.playNext(track)
+                            playerManager.removeFromQueue(at: index)
+                        } label: {
+                            Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            withAnimation {
+                                playerManager.removeFromQueue(at: index)
+                            }
+                        } label: {
+                            Label("Remove from Queue", systemImage: "trash")
+                        }
+                    }
+            }
+            .onMove { source, destination in
+                playerManager.moveInQueue(from: source, to: destination)
             }
         } header: {
-            Text("Up Next")
+            HStack {
+                Text("Up Next")
+                Spacer()
+                if !playerManager.queue.isEmpty {
+                    EditButton()
+                        .font(.caption)
+                }
+            }
         }
     }
     

@@ -87,7 +87,7 @@ class SendspinClient: ObservableObject {
         // Create configuration for the client
         // Only advertise 48kHz support to force server-side resampling if needed
         let playerConfig = PlayerConfiguration(
-            bufferCapacity: 2 * 1024 * 1024, // 2MB buffer
+            bufferCapacity: 8 * 1024 * 1024, // 8MB buffer (~30s at 48kHz/16-bit/stereo)
             supportedFormats: [
                 AudioFormatSpec(codec: .pcm, channels: 2, sampleRate: 48000, bitDepth: 16),
                 AudioFormatSpec(codec: .flac, channels: 2, sampleRate: 48000, bitDepth: 16)

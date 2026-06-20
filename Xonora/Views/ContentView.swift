@@ -70,20 +70,29 @@ struct ServerSetupView: View {
     @EnvironmentObject var playerViewModel: PlayerViewModel
     @State private var serverURL: String = ""
     @State private var accessToken: String = ""
+    @State private var username: String = ""
+    @State private var password: String = ""
     @State private var showPassword: Bool = false
     @State private var animateGradient: Bool = false
+    @State private var authMethod: AuthMethod = .token
     @Environment(\.dismiss) private var dismiss
+
+    enum AuthMethod: String, CaseIterable {
+        case token = "Token"
+        case password = "Username/Password"
+
+        var localizedName: String {
+            NSLocalizedString(self.rawValue, comment: "Auth method")
+        }
+    }
 
     var body: some View {
         ZStack {
-            // Animated gradient background
             backgroundView
                 .ignoresSafeArea()
 
-            // Content
             ScrollView {
                 VStack(spacing: 32) {
-                    // Dismiss handle for modal
                     if !playerViewModel.serverURL.isEmpty {
                         Capsule()
                             .fill(Color.white.opacity(0.3))
@@ -91,37 +100,37 @@ struct ServerSetupView: View {
                             .padding(.top, 8)
                     }
 
-                    // Header with animated icon
                     headerView
                         .padding(.top, playerViewModel.serverURL.isEmpty ? 60 : 20)
 
-                    // Input fields
                     VStack(spacing: 20) {
                         serverURLField
-                        accessTokenField
+                        authMethodPicker
+                        if authMethod == .token {
+                            accessTokenField
+                        } else {
+                            usernameField
+                            passwordField
+                        }
                     }
                     .padding(.horizontal, 24)
 
-                    // Discovered Servers
                     if !playerViewModel.discoveredServers.isEmpty {
                         discoveredServersSection
                             .padding(.horizontal, 24)
                     }
 
-                    // Status indicator
                     statusView
                         .padding(.horizontal, 24)
 
                     Spacer(minLength: 40)
 
-                    // Connect button
                     connectButton
                         .padding(.horizontal, 24)
                         .padding(.bottom, 40)
                 }
             }
 
-            // Cancel button overlay
             if !playerViewModel.serverURL.isEmpty {
                 VStack {
                     HStack {
@@ -142,6 +151,12 @@ struct ServerSetupView: View {
         .onAppear {
             serverURL = playerViewModel.serverURL
             accessToken = playerViewModel.accessToken
+            username = playerViewModel.username
+            if !playerViewModel.accessToken.isEmpty {
+                authMethod = .token
+            } else if !playerViewModel.username.isEmpty {
+                authMethod = .password
+            }
             withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
                 animateGradient = true
             }
@@ -298,6 +313,17 @@ struct ServerSetupView: View {
         }
     }
 
+    // MARK: - Auth Method Picker
+
+    private var authMethodPicker: some View {
+        Picker("Auth Method", selection: $authMethod) {
+            ForEach(AuthMethod.allCases, id: \.self) { method in
+                Text(method.localizedName).tag(method)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
     // MARK: - Access Token Field
 
     private var accessTokenField: some View {
@@ -344,6 +370,80 @@ struct ServerSetupView: View {
         }
     }
 
+    // MARK: - Username Field
+
+    private var usernameField: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Username", systemImage: "person.fill")
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.white.opacity(0.9))
+
+            HStack(spacing: 12) {
+                Image(systemName: "person")
+                    .foregroundColor(.white.opacity(0.5))
+                    .frame(width: 20)
+
+                TextField("", text: $username, prompt: Text("Music Assistant username").foregroundColor(.white.opacity(0.3)))
+                    .foregroundColor(.white)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+            }
+            .padding()
+            .background(glassBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+        }
+    }
+
+    // MARK: - Password Field
+
+    private var passwordField: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Password", systemImage: "lock.shield.fill")
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.white.opacity(0.9))
+
+            HStack(spacing: 12) {
+                Image(systemName: "lock.fill")
+                    .foregroundColor(.white.opacity(0.5))
+                    .frame(width: 20)
+
+                Group {
+                    if showPassword {
+                        TextField("", text: $password, prompt: Text("Music Assistant password").foregroundColor(.white.opacity(0.3)))
+                    } else {
+                        SecureField("", text: $password, prompt: Text("Music Assistant password").foregroundColor(.white.opacity(0.3)))
+                    }
+                }
+                .foregroundColor(.white)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+
+                Button {
+                    showPassword.toggle()
+                } label: {
+                    Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+            .padding()
+            .background(glassBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+
+            Text("Use your Music Assistant login credentials")
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.5))
+                .padding(.leading, 4)
+        }
+    }
+
     // MARK: - Status View
 
     @ViewBuilder
@@ -384,7 +484,11 @@ struct ServerSetupView: View {
     private var connectButton: some View {
         Button {
             playerViewModel.updateServerURL(serverURL)
-            playerViewModel.updateCredentials(accessToken: accessToken)
+            if authMethod == .token {
+                playerViewModel.updateCredentials(accessToken: accessToken)
+            } else {
+                playerViewModel.updateUsernamePassword(username: username, password: password)
+            }
             playerViewModel.connectToServer()
         } label: {
             HStack(spacing: 10) {
@@ -575,6 +679,13 @@ struct SettingsView: View {
                             Text(playerViewModel.accessToken.prefix(8) + "...")
                                 .foregroundColor(.secondary)
                         }
+                    } else if !playerViewModel.username.isEmpty {
+                        HStack {
+                            Label("User", systemImage: "person.fill")
+                            Spacer()
+                            Text(playerViewModel.username)
+                                .foregroundColor(.secondary)
+                        }
                     }
 
                     HStack {
@@ -600,6 +711,16 @@ struct SettingsView: View {
                     } label: {
                         Label(playerViewModel.isConnected ? "Disconnect" : "Reconnect",
                               systemImage: playerViewModel.isConnected ? "wifi.slash" : "wifi")
+                    }
+
+                    Button(role: .destructive) {
+                        playerViewModel.disconnect()
+                        KeychainHelper.shared.clearAll()
+                        playerViewModel.accessToken = ""
+                        playerViewModel.username = ""
+                        playerViewModel.password = ""
+                    } label: {
+                        Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
                     }
                 } header: {
                     Text("Connection")

@@ -1,6 +1,22 @@
 import Foundation
 import Combine
 
+enum LibrarySortOption: String, CaseIterable {
+    case name = "Name"
+    case artist = "Artist"
+    case year = "Year"
+    case recentlyAdded = "Recently Added"
+
+    var localizedName: String {
+        NSLocalizedString(self.rawValue, comment: "Sort option")
+    }
+}
+
+enum LibraryViewMode: String {
+    case grid = "Grid"
+    case list = "List"
+}
+
 @MainActor
 class LibraryViewModel: ObservableObject {
     static let shared = LibraryViewModel()
@@ -14,6 +30,27 @@ class LibraryViewModel: ObservableObject {
     @Published var searchQuery = ""
     @Published var searchResults: (albums: [Album], artists: [Artist], tracks: [Track]) = ([], [], [])
     @Published var isSearching = false
+
+    // Pagination state
+    @Published var albumTotal: Int = 0
+    @Published var songTotal: Int = 0
+    @Published var playlistTotal: Int = 0
+    @Published var artistTotal: Int = 0
+    @Published var isLoadingMoreAlbums = false
+    @Published var isLoadingMoreSongs = false
+    @Published var isLoadingMorePlaylists = false
+    @Published var isLoadingMoreArtists = false
+
+    private let pageSize = 200
+
+    // Sort & view mode preferences per category
+    @Published var albumSort: LibrarySortOption = .name
+    @Published var albumViewMode: LibraryViewMode = .grid
+    @Published var songSort: LibrarySortOption = .name
+    @Published var playlistSort: LibrarySortOption = .name
+    @Published var playlistViewMode: LibraryViewMode = .grid
+    @Published var artistSort: LibrarySortOption = .name
+
     private var isNetworkFetching = false
 
     private let client = XonoraClient.shared
@@ -23,8 +60,41 @@ class LibraryViewModel: ObservableObject {
     private let searchQueue = DispatchQueue(label: "com.musicassistant.search", qos: .userInitiated)
     private let loadQueue = DispatchQueue(label: "com.musicassistant.library", qos: .utility)
 
+    private let defaults = UserDefaults.standard
+
     init() {
+        loadSortPreferences()
         setupSearchDebounce()
+    }
+
+    private func loadSortPreferences() {
+        if let raw = defaults.string(forKey: "albumSort"), let option = LibrarySortOption(rawValue: raw) {
+            albumSort = option
+        }
+        if let raw = defaults.string(forKey: "albumViewMode"), let mode = LibraryViewMode(rawValue: raw) {
+            albumViewMode = mode
+        }
+        if let raw = defaults.string(forKey: "songSort"), let option = LibrarySortOption(rawValue: raw) {
+            songSort = option
+        }
+        if let raw = defaults.string(forKey: "playlistSort"), let option = LibrarySortOption(rawValue: raw) {
+            playlistSort = option
+        }
+        if let raw = defaults.string(forKey: "playlistViewMode"), let mode = LibraryViewMode(rawValue: raw) {
+            playlistViewMode = mode
+        }
+        if let raw = defaults.string(forKey: "artistSort"), let option = LibrarySortOption(rawValue: raw) {
+            artistSort = option
+        }
+    }
+
+    private func saveSortPreferences() {
+        defaults.set(albumSort.rawValue, forKey: "albumSort")
+        defaults.set(albumViewMode.rawValue, forKey: "albumViewMode")
+        defaults.set(songSort.rawValue, forKey: "songSort")
+        defaults.set(playlistSort.rawValue, forKey: "playlistSort")
+        defaults.set(playlistViewMode.rawValue, forKey: "playlistViewMode")
+        defaults.set(artistSort.rawValue, forKey: "artistSort")
     }
 
     private func setupSearchDebounce() {
@@ -69,7 +139,6 @@ class LibraryViewModel: ObservableObject {
         guard !isNetworkFetching else { return }
         isNetworkFetching = true
         
-        // Only show fullscreen loader if we have no data
         if albums.isEmpty {
             isLoading = true
         }
@@ -77,32 +146,33 @@ class LibraryViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            async let albumsTask = client.fetchAlbums()
-            async let artistsTask = client.fetchArtists()
-            async let playlistsTask = client.fetchPlaylists()
-            async let tracksTask = client.fetchTracks()
+            async let albumsTask = client.fetchAlbums(limit: pageSize)
+            async let artistsTask = client.fetchArtists(limit: pageSize)
+            async let playlistsTask = client.fetchPlaylists(limit: pageSize)
+            async let tracksTask = client.fetchTracks(limit: pageSize)
 
             let (fetchedAlbums, fetchedArtists, fetchedPlaylists, fetchedTracks) = try await (albumsTask, artistsTask, playlistsTask, tracksTask)
 
-            // Perform heavy sorting and caching off the main thread
             let (sortedAlbums, sortedArtists, sortedPlaylists, sortedTracks) = await Task.detached(priority: .userInitiated) {
-                let sortedAlbums = fetchedAlbums.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-                let sortedArtists = fetchedArtists.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-                let sortedPlaylists = fetchedPlaylists.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-                let sortedTracks = fetchedTracks.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                let sortedAlbums = fetchedAlbums.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                let sortedArtists = fetchedArtists.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                let sortedPlaylists = fetchedPlaylists.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                let sortedTracks = fetchedTracks.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
                 
                 return (sortedAlbums, sortedArtists, sortedPlaylists, sortedTracks)
             }.value
 
-            // Update UI with fresh data on MainActor
             self.albums = sortedAlbums
             self.artists = sortedArtists
             self.playlists = sortedPlaylists
             self.tracks = sortedTracks
+            self.albumTotal = fetchedAlbums.total
+            self.artistTotal = fetchedArtists.total
+            self.playlistTotal = fetchedPlaylists.total
+            self.songTotal = fetchedTracks.total
             isLoading = false
             isNetworkFetching = false
 
-            // Update Cache in background
             Task.detached(priority: .utility) {
                 await self.cache.setAlbums(sortedAlbums)
                 await self.cache.setArtists(sortedArtists)
@@ -110,7 +180,7 @@ class LibraryViewModel: ObservableObject {
                 await self.cache.setTracks(sortedTracks)
             }
 
-            print("[LibraryViewModel] Fetched and cached library")
+            print("[LibraryViewModel] Fetched and cached library (total: \(fetchedAlbums.total) albums, \(fetchedArtists.total) artists, \(fetchedPlaylists.total) playlists, \(fetchedTracks.total) tracks)")
         } catch {
             print("[LibraryViewModel] Network fetch failed: \(error)")
             if albums.isEmpty {
@@ -119,6 +189,58 @@ class LibraryViewModel: ObservableObject {
             isLoading = false
             isNetworkFetching = false
         }
+    }
+
+    func loadMoreAlbums() async {
+        guard !isLoadingMoreAlbums, albums.count < albumTotal else { return }
+        isLoadingMoreAlbums = true
+        do {
+            let result = try await client.fetchAlbums(offset: albums.count, limit: pageSize)
+            let sorted = result.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            albums.append(contentsOf: sorted)
+        } catch {
+            print("[LibraryViewModel] Failed to load more albums: \(error)")
+        }
+        isLoadingMoreAlbums = false
+    }
+
+    func loadMoreSongs() async {
+        guard !isLoadingMoreSongs, tracks.count < songTotal else { return }
+        isLoadingMoreSongs = true
+        do {
+            let result = try await client.fetchTracks(offset: tracks.count, limit: pageSize)
+            let sorted = result.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            tracks.append(contentsOf: sorted)
+        } catch {
+            print("[LibraryViewModel] Failed to load more songs: \(error)")
+        }
+        isLoadingMoreSongs = false
+    }
+
+    func loadMorePlaylists() async {
+        guard !isLoadingMorePlaylists, playlists.count < playlistTotal else { return }
+        isLoadingMorePlaylists = true
+        do {
+            let result = try await client.fetchPlaylists(offset: playlists.count, limit: pageSize)
+            let sorted = result.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            playlists.append(contentsOf: sorted)
+        } catch {
+            print("[LibraryViewModel] Failed to load more playlists: \(error)")
+        }
+        isLoadingMorePlaylists = false
+    }
+
+    func loadMoreArtists() async {
+        guard !isLoadingMoreArtists, artists.count < artistTotal else { return }
+        isLoadingMoreArtists = true
+        do {
+            let result = try await client.fetchArtists(offset: artists.count, limit: pageSize)
+            let sorted = result.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            artists.append(contentsOf: sorted)
+        } catch {
+            print("[LibraryViewModel] Failed to load more artists: \(error)")
+        }
+        isLoadingMoreArtists = false
     }
 
     func toggleFavorite<T: Identifiable>(item: T) async {
@@ -262,5 +384,88 @@ class LibraryViewModel: ObservableObject {
 
     func clearCache() async {
         await cache.clearAll()
+    }
+
+    // MARK: - Sorted Data
+
+    var sortedAlbums: [Album] {
+        sortItems(albums, by: albumSort) as! [Album]
+    }
+
+    var sortedTracks: [Track] {
+        sortItems(tracks, by: songSort) as! [Track]
+    }
+
+    var sortedPlaylists: [Playlist] {
+        sortItems(playlists, by: playlistSort) as! [Playlist]
+    }
+
+    var sortedArtists: [Artist] {
+        sortItems(artists, by: artistSort) as! [Artist]
+    }
+
+    private func sortItems<T: Identifiable>(_ items: [T], by option: LibrarySortOption) -> [T] {
+        switch option {
+        case .name:
+            return sortByName(items)
+        case .artist:
+            return sortByArtist(items)
+        case .year:
+            if let albums = items as? [Album] {
+                return albums.sorted { ($0.year ?? 0) > ($1.year ?? 0) } as! [T]
+            }
+            return items
+        case .recentlyAdded:
+            return items
+        }
+    }
+
+    private func sortByName<T: Identifiable>(_ items: [T]) -> [T] {
+        items.sorted { left, right in
+            let nameL = (left as? Album)?.name ?? (left as? Artist)?.name ?? (left as? Playlist)?.name ?? (left as? Track)?.name ?? ""
+            let nameR = (right as? Album)?.name ?? (right as? Artist)?.name ?? (right as? Playlist)?.name ?? (right as? Track)?.name ?? ""
+            return nameL.localizedCaseInsensitiveCompare(nameR) == .orderedAscending
+        }
+    }
+
+    private func sortByArtist<T: Identifiable>(_ items: [T]) -> [T] {
+        items.sorted { left, right in
+            let artistL = (left as? Track)?.artistNames ?? (left as? Album)?.artistNames ?? ""
+            let artistR = (right as? Track)?.artistNames ?? (right as? Album)?.artistNames ?? ""
+            if artistL != artistR { return artistL.localizedCaseInsensitiveCompare(artistR) == .orderedAscending }
+            let nameL = (left as? Track)?.name ?? (left as? Album)?.name ?? ""
+            let nameR = (right as? Track)?.name ?? (right as? Album)?.name ?? ""
+            return nameL.localizedCaseInsensitiveCompare(nameR) == .orderedAscending
+        }
+    }
+
+    func setAlbumSort(_ option: LibrarySortOption) {
+        albumSort = option
+        saveSortPreferences()
+    }
+
+    func setAlbumViewMode(_ mode: LibraryViewMode) {
+        albumViewMode = mode
+        saveSortPreferences()
+    }
+
+    func setSongSort(_ option: LibrarySortOption) {
+        songSort = option
+        saveSortPreferences()
+    }
+
+    func setPlaylistSort(_ option: LibrarySortOption) {
+        playlistSort = option
+        saveSortPreferences()
+    }
+
+    func setPlaylistViewMode(_ mode: LibraryViewMode) {
+        playlistViewMode = mode
+        saveSortPreferences()
+    }
+
+    func setArtistSort(_ option: LibrarySortOption) {
+        artistSort = option
+        saveSortPreferences()
     }
 }

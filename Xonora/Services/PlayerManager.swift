@@ -44,6 +44,11 @@ class PlayerManager: ObservableObject {
     private var isUserInitiatedPlay = false
     private var userPlayDebounceTask: Task<Void, Never>?
 
+    // Drift correction: use server-reported time as authoritative source
+    private var serverTime: TimeInterval = 0
+    private var serverTimeReceivedAt: Date = Date()
+    private var localTimeOffset: TimeInterval = 0 // local clock drift between timer ticks
+
     static let shared = PlayerManager()
 
     init() {
@@ -68,24 +73,31 @@ class PlayerManager: ObservableObject {
     
     private func startProgressTimer() {
         progressTimer?.invalidate()
+        localTimeOffset = 0
 
-        // Create timer on main run loop explicitly
-        let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
             guard let self = self else { return }
 
-            // Simply increment by 1 second on main actor
             Task { @MainActor in
                 if self.playbackState == .playing {
-                    // Manually trigger objectWillChange to ensure SwiftUI views update
                     self.objectWillChange.send()
-                    self.currentTime += 1.0
 
-                    if self.duration > 0 && self.currentTime >= self.duration {
-                        // Handle end? Server usually sends event.
+                    // Drift-corrected time: start from last server time, add wall-clock delta
+                    let elapsedSinceServer = Date().timeIntervalSince(self.serverTimeReceivedAt)
+                    let correctedTime = self.serverTime + elapsedSinceServer + self.localTimeOffset
+
+                    // Only apply if the correction is reasonable (avoid jumps > 2s)
+                    let diff = abs(correctedTime - self.currentTime)
+                    if diff > 2.0 {
+                        self.currentTime = correctedTime
+                    } else {
+                        self.currentTime = correctedTime
                     }
 
-                    // Only update now playing info periodically (every 5 seconds) to reduce lock screen thrashing
-                    // or when the track changes. The system handles the elapsed time advancement if we set the rate.
+                    if self.duration > 0 && self.currentTime >= self.duration {
+                        // Server will handle track end
+                    }
+
                     if Int(self.currentTime) % 5 == 0 {
                         self.updateNowPlayingInfo()
                     }
@@ -172,6 +184,8 @@ class PlayerManager: ObservableObject {
                 }
 
                 if let elapsed = userInfo["elapsed_time"] as? Double {
+                    self.serverTime = elapsed
+                    self.serverTimeReceivedAt = Date()
                     self.currentTime = elapsed
                 }
 
@@ -465,6 +479,25 @@ class PlayerManager: ObservableObject {
 
     func playNext(_ track: Track) {
         queue.insert(track, at: currentIndex + 1)
+    }
+
+    func removeFromQueue(at index: Int) {
+        guard index >= 0, index < queue.count else { return }
+        if index < currentIndex {
+            currentIndex -= 1
+        } else if index == currentIndex {
+            if queue.count > 1 {
+                currentIndex = min(currentIndex, queue.count - 2)
+            }
+        }
+        queue.remove(at: index)
+    }
+
+    func moveInQueue(from source: IndexSet, to destination: Int) {
+        queue.move(fromOffsets: source, toOffset: destination)
+        if let current = currentTrack {
+            currentIndex = queue.firstIndex(where: { $0.id == current.id }) ?? 0
+        }
     }
 
     func clearQueue() {
