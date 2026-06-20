@@ -123,6 +123,7 @@
 // Radio
 "Loading Radio Stations..." = "正在加载电台...";
 "No Radio Stations" = "无电台";
+"Radio Stations" = "电台";
 "Your library has no radio stations." = "你的音乐库中没有电台。";
 
 // Sleep Timer
