@@ -446,5 +446,4 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
 extension Notification.Name {
     static let playbackStateChanged = Notification.Name("playbackStateChanged")
-    static let libraryUpdated = Notification.Name("libraryUpdated")
 }
