@@ -194,20 +194,23 @@ class PlayerManager: ObservableObject {
                         self.playbackState = .playing
                         self.startProgressTimer()
                         SendspinClient.shared.resumePlayback()
+                        self.postPlaybackStateChange()
                     } else if stateStr == "paused" {
                         self.playbackState = .paused
                         self.stopProgressTimer()
                         SendspinClient.shared.pausePlayback()
+                        self.postPlaybackStateChange()
                     } else if stateStr == "idle" {
-                        // Only handle track ended if we were actually playing
                         if self.playbackState == .playing {
                             self.handleTrackEnded()
                             SendspinClient.shared.stopPlayback()
                         }
+                        self.postPlaybackStateChange()
                     } else {
                         self.playbackState = .stopped
                         self.stopProgressTimer()
                         SendspinClient.shared.stopPlayback()
+                        self.postPlaybackStateChange()
                     }
                 }
 
@@ -255,6 +258,10 @@ class PlayerManager: ObservableObject {
 
     // MARK: - Playback Control
 
+    private func postPlaybackStateChange() {
+        NotificationCenter.default.post(name: .playbackStateChanged, object: nil)
+    }
+
     func playTrack(_ track: Track, fromQueue tracks: [Track]? = nil, sourceName: String? = nil) {
         if let tracks = tracks {
             queue = tracks
@@ -301,6 +308,7 @@ class PlayerManager: ObservableObject {
         currentTime = 0
         duration = track.duration ?? 0
         playbackState = .loading
+        postPlaybackStateChange()
 
         SendspinClient.shared.stopPlayback()
         stopProgressTimer()
@@ -366,6 +374,7 @@ class PlayerManager: ObservableObject {
         playbackState = .stopped
         stopProgressTimer()
         clearNowPlayingInfo()
+        postPlaybackStateChange()
     }
 
     func next() {

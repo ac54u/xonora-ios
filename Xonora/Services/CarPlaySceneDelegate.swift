@@ -3,139 +3,414 @@ import UIKit
 
 class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     var interfaceController: CPInterfaceController?
-    
+    private let playerManager = PlayerManager.shared
+    private let libraryViewModel = LibraryViewModel.shared
+    private let client = XonoraClient.shared
+
+    // Template cache to avoid recreating templates on every drill-down
+    private var templateCache = NSCache<NSString, CPTemplate>()
+    private let albumsCacheKey = "albums-list" as NSString
+    private let playlistsCacheKey = "playlists-list" as NSString
+    private let artistsCacheKey = "artists-list" as NSString
+    private let nowPlayingKey = "now-playing" as NSString
+    private let queueKey = "queue" as NSString
+
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didConnect interfaceController: CPInterfaceController) {
         self.interfaceController = interfaceController
-        
-        let libraryTemplate = CPListTemplate(title: NSLocalizedString("Library", comment: "CarPlay library title"), sections: [
-            CPListSection(items: [
-                CPListItem(text: NSLocalizedString("Albums", comment: "CarPlay albums list"), detailText: NSLocalizedString("Browse your music library", comment: "CarPlay albums description"), image: UIImage(systemName: "rectangle.stack.fill")),
-                CPListItem(text: NSLocalizedString("Playlists", comment: "CarPlay playlists list"), detailText: NSLocalizedString("Your custom collections", comment: "CarPlay playlists description"), image: UIImage(systemName: "music.note.list")),
-                CPListItem(text: NSLocalizedString("Artists", comment: "CarPlay artists list"), detailText: NSLocalizedString("Browse by artist", comment: "CarPlay artists description"), image: UIImage(systemName: "person.2.fill"))
-            ])
-        ])
-        
-        libraryTemplate.delegate = self
-        interfaceController.setRootTemplate(libraryTemplate, animated: true, completion: nil)
+        setupNowPlayingObservers()
+
+        let rootTemplates = buildTabBarTemplates()
+        let tabBarTemplate = CPTabBarTemplate(templates: rootTemplates)
+        interfaceController.setRootTemplate(tabBarTemplate, animated: true, completion: nil)
+    }
+
+    func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnect interfaceController: CPInterfaceController) {
+        self.interfaceController = nil
+    }
+
+    // MARK: - Tab Bar
+
+    private func buildTabBarTemplates() -> [CPTemplate] {
+        let libraryTab = buildLibraryTab()
+        let nowPlayingTab = buildNowPlayingTab()
+        let queueTab = buildQueueTab()
+
+        return [libraryTab, nowPlayingTab, queueTab]
+    }
+
+    private func makeLibraryItem(title: String, subtitle: String, icon: String, handler: @escaping () -> Void) -> CPListItem {
+        let item = CPListItem(
+            text: NSLocalizedString(title, comment: "CarPlay \(title)"),
+            detailText: NSLocalizedString(subtitle, comment: "CarPlay \(title) description"),
+            image: UIImage(systemName: icon)
+        )
+        item.handler = { _, completion in
+            handler()
+            completion()
+        }
+        return item
+    }
+
+    // MARK: - Library Tab
+
+    private func buildLibraryTab() -> CPTemplate {
+        let items = [
+            makeLibraryItem(title: "Albums", subtitle: "Browse your album collection", icon: "rectangle.stack.fill") { [weak self] in
+                self?.showAlbums()
+            },
+            makeLibraryItem(title: "Artists", subtitle: "Browse by artist", icon: "person.2.fill") { [weak self] in
+                self?.showArtists()
+            },
+            makeLibraryItem(title: "Playlists", subtitle: "Your custom collections", icon: "music.note.list") { [weak self] in
+                self?.showPlaylists()
+            },
+            makeLibraryItem(title: "Songs", subtitle: "All tracks", icon: "music.note") { [weak self] in
+                self?.showSongs()
+            }
+        ]
+
+        let section = CPListSection(items: items)
+        let template = CPListTemplate(title: NSLocalizedString("Library", comment: "CarPlay library title"), sections: [section])
+        return template
+    }
+
+    // MARK: - Now Playing Tab
+
+    private func buildNowPlayingTab() -> CPTemplate {
+        if let cached = templateCache.object(forKey: nowPlayingKey) {
+            return cached
+        }
+
+        let template = CPNowPlayingTemplate.shared
+        template.upNextTitle = NSLocalizedString("Queue", comment: "CarPlay queue title")
+        template.add(CPNowPlayingButton(image: UIImage(systemName: "list.bullet")!) { [weak self] _ in
+            self?.showQueue()
+        })
+        template.add(CPNowPlayingButton(image: UIImage(systemName: "shuffle")!) { [weak self] _ in
+            self?.playerManager.toggleShuffle()
+            self?.updateNowPlayingTitles()
+        })
+        template.add(CPNowPlayingButton(image: UIImage(systemName: "repeat")!) { [weak self] _ in
+            self?.playerManager.cycleRepeatMode()
+            self?.updateNowPlayingTitles()
+        })
+
+        templateCache.setObject(template, forKey: nowPlayingKey)
+        return template
+    }
+
+    private func updateNowPlayingTitles() {
+        // CPNowPlayingTemplate updates labels automatically based on MPNowPlayingInfoCenter
+    }
+
+    // MARK: - Queue Tab
+
+    private func buildQueueTab() -> CPTemplate {
+        if let cached = templateCache.object(forKey: queueKey) as? CPListTemplate {
+            return cached
+        }
+
+        let template = CPListTemplate(title: NSLocalizedString("Queue", comment: "CarPlay queue"), sections: [])
+        template.emptyViewSubtitleVariants = [NSLocalizedString("Queue is empty", comment: "CarPlay empty queue")]
+        templateCache.setObject(template, forKey: queueKey)
+        return template
+    }
+
+    private func refreshQueueTab() {
+        guard let interfaceController = interfaceController,
+              let tabBar = interfaceController.rootTemplate as? CPTabBarTemplate else { return }
+
+        let queueItems = playerManager.queue.enumerated().map { index, track -> CPListItem in
+            let item = CPListItem(
+                text: track.name,
+                detailText: track.artistNames
+            )
+            item.handler = { [weak self] _, completion in
+                self?.playerManager.playTrack(track)
+                completion()
+            }
+            item.isPlaying = index == playerManager.currentIndex
+            return item
+        }
+
+        let template = CPListTemplate(
+            title: NSLocalizedString("Queue", comment: "CarPlay queue"),
+            sections: queueItems.isEmpty ? [] : [CPListSection(items: queueItems)]
+        )
+        template.emptyViewSubtitleVariants = [NSLocalizedString("Queue is empty", comment: "CarPlay empty queue")]
+
+        templateCache.setObject(template, forKey: queueKey)
+
+        // Update the tab if visible
+        if let current = interfaceController.topTemplate as? CPListTemplate,
+           current.title == NSLocalizedString("Queue", comment: "CarPlay queue") {
+            interfaceController.popTemplate(animated: false) { _, _ in
+                interfaceController.pushTemplate(template, animated: false, completion: nil)
+            }
+        }
+    }
+
+    // MARK: - Library Browsing
+
+    private func showAlbums() {
+        let cachedKey = "albums" as NSString
+        if let cached = templateCache.object(forKey: cachedKey) {
+            interfaceController?.pushTemplate(cached, animated: true, completion: nil)
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let albums = self.libraryViewModel.albums
+            let items = albums.map { album -> CPListItem in
+                let item = CPListItem(text: album.name, detailText: album.artistNames)
+                item.handler = { [weak self] _, completion in
+                    self?.showAlbumTracks(album)
+                    completion()
+                }
+                return item
+            }
+
+            let section = CPListSection(items: items)
+            let template = CPListTemplate(title: NSLocalizedString("Albums", comment: "CarPlay albums"), sections: [section])
+            self.templateCache.setObject(template, forKey: cachedKey)
+            self.interfaceController?.pushTemplate(template, animated: true, completion: nil)
+        }
+    }
+
+    private func showAlbumTracks(_ album: Album) {
+        let cachedKey = "album-\(album.itemId)" as NSString
+        if let cached = templateCache.object(forKey: cachedKey) {
+            interfaceController?.pushTemplate(cached, animated: true, completion: nil)
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            do {
+                let tracks = try await self.libraryViewModel.loadAlbumTracks(album: album)
+                let items = tracks.map { track -> CPListItem in
+                    let item = CPListItem(text: track.name, detailText: track.artistNames)
+                    item.handler = { [weak self] _, completion in
+                        self?.playerManager.playAlbum(tracks)
+                        self?.interfaceController?.pushTemplate(CPNowPlayingTemplate.shared, animated: true, completion: nil)
+                        completion()
+                    }
+                    return item
+                }
+
+                let section = CPListSection(items: items)
+                let template = CPListTemplate(title: album.name, sections: [section])
+                self.templateCache.setObject(template, forKey: cachedKey)
+                self.interfaceController?.pushTemplate(template, animated: true, completion: nil)
+            } catch {
+                print("[CarPlay] Failed to load album tracks: \(error)")
+            }
+        }
+    }
+
+    private func showArtists() {
+        let cachedKey = "artists" as NSString
+        if let cached = templateCache.object(forKey: cachedKey) {
+            interfaceController?.pushTemplate(cached, animated: true, completion: nil)
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let artists = self.libraryViewModel.artists
+            let items = artists.map { artist -> CPListItem in
+                let item = CPListItem(text: artist.name, detailText: nil)
+                item.handler = { [weak self] _, completion in
+                    self?.showArtistDetails(artist)
+                    completion()
+                }
+                return item
+            }
+
+            let section = CPListSection(items: items)
+            let template = CPListTemplate(title: NSLocalizedString("Artists", comment: "CarPlay artists"), sections: [section])
+            self.templateCache.setObject(template, forKey: cachedKey)
+            self.interfaceController?.pushTemplate(template, animated: true, completion: nil)
+        }
+    }
+
+    private func showArtistDetails(_ artist: Artist) {
+        let cachedKey = "artist-\(artist.itemId)" as NSString
+        if let cached = templateCache.object(forKey: cachedKey) {
+            interfaceController?.pushTemplate(cached, animated: true, completion: nil)
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            do {
+                let (albums, tracks) = try await self.libraryViewModel.loadArtistDetails(artist: artist)
+
+                var sections: [CPListSection] = []
+
+                if !tracks.isEmpty {
+                    let trackItems = tracks.prefix(5).map { track -> CPListItem in
+                        let item = CPListItem(text: track.name, detailText: track.artistNames)
+                        item.handler = { [weak self] _, completion in
+                            self?.playerManager.playTrack(track, fromQueue: Array(tracks), sourceName: artist.name)
+                            self?.interfaceController?.pushTemplate(CPNowPlayingTemplate.shared, animated: true, completion: nil)
+                            completion()
+                        }
+                        return item
+                    }
+                    sections.append(CPListSection(items: Array(trackItems), header: NSLocalizedString("Top Songs", comment: "CarPlay top songs")))
+                }
+
+                if !albums.isEmpty {
+                    let albumItems = albums.map { album -> CPListItem in
+                        let item = CPListItem(text: album.name, detailText: String(album.year ?? 0))
+                        item.handler = { [weak self] _, completion in
+                            self?.showAlbumTracks(album)
+                            completion()
+                        }
+                        return item
+                    }
+                    sections.append(CPListSection(items: Array(albumItems), header: NSLocalizedString("Albums", comment: "CarPlay albums")))
+                }
+
+                let template = CPListTemplate(title: artist.name, sections: sections)
+                self.templateCache.setObject(template, forKey: cachedKey)
+                self.interfaceController?.pushTemplate(template, animated: true, completion: nil)
+            } catch {
+                print("[CarPlay] Failed to load artist details: \(error)")
+            }
+        }
+    }
+
+    private func showPlaylists() {
+        let cachedKey = "playlists" as NSString
+        if let cached = templateCache.object(forKey: cachedKey) {
+            interfaceController?.pushTemplate(cached, animated: true, completion: nil)
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let playlists = self.libraryViewModel.playlists
+            let items = playlists.map { playlist -> CPListItem in
+                let item = CPListItem(text: playlist.name, detailText: NSLocalizedString("Playlist", comment: "CarPlay playlist"))
+                item.handler = { [weak self] _, completion in
+                    self?.showPlaylistTracks(playlist)
+                    completion()
+                }
+                return item
+            }
+
+            let section = CPListSection(items: items)
+            let template = CPListTemplate(title: NSLocalizedString("Playlists", comment: "CarPlay playlists"), sections: [section])
+            self.templateCache.setObject(template, forKey: cachedKey)
+            self.interfaceController?.pushTemplate(template, animated: true, completion: nil)
+        }
+    }
+
+    private func showPlaylistTracks(_ playlist: Playlist) {
+        let cachedKey = "playlist-\(playlist.itemId)" as NSString
+        if let cached = templateCache.object(forKey: cachedKey) {
+            interfaceController?.pushTemplate(cached, animated: true, completion: nil)
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            do {
+                let tracks = try await self.libraryViewModel.loadPlaylistTracks(playlist: playlist)
+                let items = tracks.map { track -> CPListItem in
+                    let item = CPListItem(text: track.name, detailText: track.artistNames)
+                    item.handler = { [weak self] _, completion in
+                        self?.playerManager.playAlbum(tracks)
+                        self?.interfaceController?.pushTemplate(CPNowPlayingTemplate.shared, animated: true, completion: nil)
+                        completion()
+                    }
+                    return item
+                }
+
+                let section = CPListSection(items: items)
+                let template = CPListTemplate(title: playlist.name, sections: [section])
+                self.templateCache.setObject(template, forKey: cachedKey)
+                self.interfaceController?.pushTemplate(template, animated: true, completion: nil)
+            } catch {
+                print("[CarPlay] Failed to load playlist tracks: \(error)")
+            }
+        }
+    }
+
+    private func showSongs() {
+        let cachedKey = "songs" as NSString
+        if let cached = templateCache.object(forKey: cachedKey) {
+            interfaceController?.pushTemplate(cached, animated: true, completion: nil)
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let tracks = self.libraryViewModel.tracks
+            let items = tracks.map { track -> CPListItem in
+                let item = CPListItem(text: track.name, detailText: track.artistNames)
+                item.handler = { [weak self] _, completion in
+                    self?.playerManager.playTrack(track, fromQueue: tracks, sourceName: "Songs")
+                    self?.interfaceController?.pushTemplate(CPNowPlayingTemplate.shared, animated: true, completion: nil)
+                    completion()
+                }
+                return item
+            }
+
+            let section = CPListSection(items: items)
+            let template = CPListTemplate(title: NSLocalizedString("Songs", comment: "CarPlay songs"), sections: [section])
+            self.templateCache.setObject(template, forKey: cachedKey)
+            self.interfaceController?.pushTemplate(template, animated: true, completion: nil)
+        }
+    }
+
+    // MARK: - Queue
+
+    private func showQueue() {
+        let template: CPListTemplate
+        if let cached = templateCache.object(forKey: queueKey) as? CPListTemplate {
+            // Update cache
+            refreshQueueTab()
+            template = cached
+        } else {
+            template = buildQueueTab() as! CPListTemplate
+        }
+        interfaceController?.pushTemplate(template, animated: true, completion: nil)
+    }
+
+    // MARK: - Now Playing Observers
+
+    private func setupNowPlayingObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(queueDidUpdate),
+            name: .queueUpdated,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playbackStateDidChange),
+            name: .playbackStateChanged,
+            object: nil
+        )
+    }
+
+    @objc private func queueDidUpdate(_ notification: Notification) {
+        refreshQueueTab()
+    }
+
+    @objc private func playbackStateDidChange(_ notification: Notification) {
+        // Update now playing info via MPNowPlayingInfoCenter
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
-extension CarPlaySceneDelegate: CPListTemplateDelegate {
-    func listTemplate(_ listTemplate: CPListTemplate, didSelect item: CPListItem, completionHandler: @escaping () -> Void) {
-        guard let interfaceController = interfaceController else {
-            completionHandler()
-            return
-        }
-        
-        if let album = item.userInfo as? Album {
-            showTracks(for: album, interfaceController: interfaceController, completionHandler: completionHandler)
-        } else if let playlist = item.userInfo as? Playlist {
-            showTracks(for: playlist, interfaceController: interfaceController, completionHandler: completionHandler)
-        } else if let track = item.userInfo as? Track {
-            playTrack(track, completionHandler: completionHandler)
-        } else if item.text == NSLocalizedString("Albums", comment: "CarPlay albums list") {
-            showAlbums(interfaceController: interfaceController, completionHandler: completionHandler)
-        } else if item.text == NSLocalizedString("Playlists", comment: "CarPlay playlists list") {
-            showPlaylists(interfaceController: interfaceController, completionHandler: completionHandler)
-        } else if item.text == NSLocalizedString("Artists", comment: "CarPlay artists list") {
-            showArtists(interfaceController: interfaceController, completionHandler: completionHandler)
-        } else {
-            completionHandler()
-        }
-    }
-    
-    private func showAlbums(interfaceController: CPInterfaceController, completionHandler: @escaping () -> Void) {
-        Task { @MainActor in
-            let albums = LibraryViewModel.shared.albums
-            let listItems = albums.map { album in
-                let listItem = CPListItem(text: album.name, detailText: album.artistNames)
-                listItem.userInfo = album
-                return listItem
-            }
-            
-            let template = CPListTemplate(title: NSLocalizedString("Albums", comment: "CarPlay albums list"), sections: [CPListSection(items: listItems)])
-            template.delegate = self
-            interfaceController.pushTemplate(template, animated: true, completion: nil)
-            completionHandler()
-        }
-    }
-    
-    private func showPlaylists(interfaceController: CPInterfaceController, completionHandler: @escaping () -> Void) {
-        Task { @MainActor in
-            let playlists = LibraryViewModel.shared.playlists
-            let listItems = playlists.map { playlist in
-                let listItem = CPListItem(text: playlist.name, detailText: NSLocalizedString("Playlist", comment: "CarPlay playlist item"))
-                listItem.userInfo = playlist
-                return listItem
-            }
-            
-            let template = CPListTemplate(title: NSLocalizedString("Playlists", comment: "CarPlay playlists list"), sections: [CPListSection(items: listItems)])
-            template.delegate = self
-            interfaceController.pushTemplate(template, animated: true, completion: nil)
-            completionHandler()
-        }
-    }
-    
-    private func showArtists(interfaceController: CPInterfaceController, completionHandler: @escaping () -> Void) {
-        Task { @MainActor in
-            let artists = LibraryViewModel.shared.artists
-            let listItems = artists.map { artist in
-                let listItem = CPListItem(text: artist.name, detailText: nil)
-                listItem.userInfo = artist
-                return listItem
-            }
-            
-            let template = CPListTemplate(title: NSLocalizedString("Artists", comment: "CarPlay artists list"), sections: [CPListSection(items: listItems)])
-            template.delegate = self
-            interfaceController.pushTemplate(template, animated: true, completion: nil)
-            completionHandler()
-        }
-    }
-
-    private func showTracks(for album: Album, interfaceController: CPInterfaceController, completionHandler: @escaping () -> Void) {
-        Task { @MainActor in
-            do {
-                let tracks = try await LibraryViewModel.shared.loadAlbumTracks(album: album)
-                let listItems = tracks.map { track in
-                    let listItem = CPListItem(text: track.name, detailText: track.artistNames)
-                    listItem.userInfo = track
-                    return listItem
-                }
-                
-                let template = CPListTemplate(title: album.name, sections: [CPListSection(items: listItems)])
-                template.delegate = self
-                interfaceController.pushTemplate(template, animated: true, completion: nil)
-            } catch {
-                print("Failed to load CarPlay tracks for album: \(error)")
-            }
-            completionHandler()
-        }
-    }
-
-    private func showTracks(for playlist: Playlist, interfaceController: CPInterfaceController, completionHandler: @escaping () -> Void) {
-        Task { @MainActor in
-            do {
-                let tracks = try await LibraryViewModel.shared.loadPlaylistTracks(playlist: playlist)
-                let listItems = tracks.map { track in
-                    let listItem = CPListItem(text: track.name, detailText: track.artistNames)
-                    listItem.userInfo = track
-                    return listItem
-                }
-                
-                let template = CPListTemplate(title: playlist.name, sections: [CPListSection(items: listItems)])
-                template.delegate = self
-                interfaceController.pushTemplate(template, animated: true, completion: nil)
-            } catch {
-                print("Failed to load CarPlay tracks for playlist: \(error)")
-            }
-            completionHandler()
-        }
-    }
-
-    private func playTrack(_ track: Track, completionHandler: @escaping () -> Void) {
-        Task { @MainActor in
-            PlayerManager.shared.playTrack(track)
-            completionHandler()
-        }
-    }
+extension Notification.Name {
+    static let playbackStateChanged = Notification.Name("playbackStateChanged")
 }
