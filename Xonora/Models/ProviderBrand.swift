@@ -4,11 +4,16 @@ enum ProviderBrand: String, CaseIterable {
     case spotify, qobuz, tidal, deezer, appleMusic = "apple_music"
     case youtube, soundcloud, bandcamp, plex, emby
     case jellyfin, subsonic, navidrome, filesystemLocal = "filesystem_local"
-    case airplay, chromecast, dlna, sonos, squeezebox
+    case airplay, chromecast, dlna, sonos, squeezebox, snapcast, slimproto = "slimproto"
     case sendspin, builtin, test, unknown
 
     init(provider: String) {
-        self = ProviderBrand(rawValue: provider) ?? .unknown
+        let lower = provider.lowercased()
+        if lower == "snapcast" { self = .snapcast }
+        else if lower == "slimproto" { self = .slimproto }
+        else if lower == "sonos_s1" || lower == "sonos_s2" { self = .sonos }
+        else if lower == "squeezebox" { self = .squeezebox }
+        else { self = ProviderBrand(rawValue: lower) ?? .unknown }
     }
 
     var displayName: String {
@@ -32,6 +37,8 @@ enum ProviderBrand: String, CaseIterable {
         case .dlna: return "DLNA"
         case .sonos: return "Sonos"
         case .squeezebox: return "Squeezebox"
+        case .snapcast: return "Snapcast"
+        case .slimproto: return "Squeezebox"
         case .sendspin: return "Sendspin"
         case .builtin: return "Built-in"
         case .test: return "Test"
@@ -58,6 +65,8 @@ enum ProviderBrand: String, CaseIterable {
         case .dlna: return "tv"
         case .sonos: return "hifispeaker.fill"
         case .squeezebox: return "rectangle.3.group"
+        case .snapcast: return "speaker.wave.2"
+        case .slimproto: return "rectangle.3.group"
         case .sendspin: return "iphone"
         case .builtin: return "speaker"
         case .test: return "wrench"
