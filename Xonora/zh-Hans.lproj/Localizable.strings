@@ -154,6 +154,8 @@
 
 // Sorting
 "Sort" = "排序";
+"Year" = "年份";
+"Recently Added" = "最近添加";
 
 // Other
 "Playback Destination" = "播放目标";
