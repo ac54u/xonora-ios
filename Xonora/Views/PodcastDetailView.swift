@@ -183,7 +183,7 @@ struct PodcastDetailView: View {
         errorMessage = nil
 
         do {
-            episodes = try await XonoraClient.shared.fetchPodcastEpisodes(podcastId: podcast.itemId, provider: podcast.provider)
+            episodes = try await libraryViewModel.loadPodcastEpisodes(podcast: podcast)
         } catch {
             errorMessage = error.localizedDescription
         }

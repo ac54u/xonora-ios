@@ -126,7 +126,7 @@ struct RadioStationListView: View {
             album: nil,
             metadata: station.metadata,
             providerMappings: nil,
-            favorite: nil
+            favorite: station.favorite
         )
         playerViewModel.playTrack(track, sourceName: "Radio")
     }

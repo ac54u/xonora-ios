@@ -2,8 +2,9 @@ import SwiftUI
 
 struct LyricsView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
-    @ObservedObject private var playerManager = PlayerManager.shared
+    private let playerManager = PlayerManager.shared
     @Environment(\.dismiss) private var dismiss
+    @State private var currentLineId: String?
 
     var body: some View {
         NavigationStack {
@@ -50,8 +51,8 @@ struct LyricsView: View {
                     ForEach(lyrics) { line in
                         Text(line.text)
                             .font(.title3)
-                            .foregroundColor(isCurrentLine(line) ? .primary : .secondary)
-                            .fontWeight(isCurrentLine(line) ? .bold : .regular)
+                            .foregroundColor(line.id == currentLineId ? .primary : .secondary)
+                            .fontWeight(line.id == currentLineId ? .bold : .regular)
                             .id(line.id)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal)
@@ -60,9 +61,13 @@ struct LyricsView: View {
                 .padding(.vertical)
             }
             .onReceive(playerManager.$currentTime) { time in
-                if let currentLine = lyrics.first(where: { $0.start ?? 0 <= time && ($0.end ?? Double.greatestFiniteMagnitude) >= time }) {
-                    withAnimation {
-                        proxy.scrollTo(currentLine.id, anchor: .center)
+                let matched = lyrics.first(where: { $0.start ?? 0 <= time && ($0.end ?? Double.greatestFiniteMagnitude) >= time })
+                if matched?.id != currentLineId {
+                    currentLineId = matched?.id
+                    if let id = matched?.id {
+                        withAnimation {
+                            proxy.scrollTo(id, anchor: .center)
+                        }
                     }
                 }
             }
@@ -81,10 +86,5 @@ struct LyricsView: View {
             }
             .padding()
         }
-    }
-
-    private func isCurrentLine(_ line: Lyric) -> Bool {
-        guard let start = line.start, let end = line.end else { return false }
-        return playerManager.currentTime >= start && playerManager.currentTime <= end
     }
 }
