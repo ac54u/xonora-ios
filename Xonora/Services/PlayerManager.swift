@@ -231,12 +231,23 @@ class PlayerManager: ObservableObject {
                         do {
                             let data = try JSONSerialization.data(withJSONObject: mediaItemDict)
                             let track = try JSONDecoder().decode(Track.self, from: data)
-                            if self.currentTrack?.uri != track.uri {
+                            let oldTrack = self.currentTrack
+                            if oldTrack?.uri != track.uri {
                                 print("[PlayerManager] Server advanced to next track: \(track.name)")
                                 self.currentTrack = track
                                 self.currentTime = 0
                                 // Reset lastTrackId to trigger artwork reload
                                 self.lastTrackId = nil
+                                // Sync queue index
+                                if let idx = self.queue.firstIndex(where: { $0.uri == track.uri }) {
+                                    self.currentIndex = idx
+                                }
+                                // If track ended naturally and server auto-advanced, resume playback
+                                if oldTrack != nil && self.playbackState == .stopped {
+                                    self.playbackState = .playing
+                                    self.startProgressTimer()
+                                    self.postPlaybackStateChange()
+                                }
                             }
                         } catch {
                             print("[PlayerManager] Failed to decode track from server: \(error)")

@@ -143,10 +143,10 @@ class XonoraClient: NSObject, ObservableObject {
         }
 
         reconnectAttempts += 1
-        connectionState = .connecting
 
         DispatchQueue.main.asyncAfter(deadline: .now() + Double(reconnectAttempts) * 2) { [weak self] in
             guard let self = self, self.reconnectAttempts < self.maxReconnectAttempts else { return }
+            // connect() will set connectionState = .connecting itself
             if self.usePasswordAuth {
                 self.connect(to: serverURL.absoluteString, accessToken: self.accessToken, username: self.username, password: self.password)
             } else {
