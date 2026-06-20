@@ -83,17 +83,16 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
         let template = CPNowPlayingTemplate.shared
         template.upNextTitle = NSLocalizedString("Queue", comment: "CarPlay queue title")
-        template.add(CPNowPlayingButton(image: UIImage(systemName: "list.bullet")!) { [weak self] _ in
-            self?.showQueue()
-        })
-        template.add(CPNowPlayingButton(image: UIImage(systemName: "shuffle")!) { [weak self] _ in
-            self?.playerManager.toggleShuffle()
-            self?.updateNowPlayingTitles()
-        })
-        template.add(CPNowPlayingButton(image: UIImage(systemName: "repeat")!) { [weak self] _ in
-            self?.playerManager.cycleRepeatMode()
-            self?.updateNowPlayingTitles()
-        })
+        template.nowPlayingButtons = [
+            CPNowPlayingShuffleButton { [weak self] _ in
+                self?.playerManager.toggleShuffle()
+                self?.updateNowPlayingTitles()
+            },
+            CPNowPlayingRepeatButton { [weak self] _ in
+                self?.playerManager.cycleRepeatMode()
+                self?.updateNowPlayingTitles()
+            }
+        ]
 
         templateCache.setObject(template, forKey: nowPlayingKey)
         return template
@@ -259,7 +258,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                         }
                         return item
                     }
-                    sections.append(CPListSection(items: Array(trackItems), header: NSLocalizedString("Top Songs", comment: "CarPlay top songs")))
+                    sections.append(CPListSection(items: Array(trackItems), header: NSLocalizedString("Top Songs", comment: "CarPlay top songs"), sectionIndexTitle: nil))
                 }
 
                 if !albums.isEmpty {

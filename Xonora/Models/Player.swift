@@ -9,7 +9,7 @@ struct MAPlayer: Identifiable, Codable, Hashable {
     let state: PlayerState?
     let volume: Int?
     let currentMedia: CurrentMedia?
-    let queueId: String?
+    var queueId: String?
 
     var id: String { playerId }
 
