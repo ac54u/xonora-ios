@@ -34,8 +34,10 @@ struct ContentView: View {
                     .tag(3)
             }
 
-            // Mini Player Overlay - positioned above system tab bar
-            if playerViewModel.hasTrack && !isPlayerExpanded && selectedTab != 3 {
+            // Mini Player Overlay - positioned above system tab bar.
+            // Hidden on the Now Playing tab (2) and Settings tab (3) so it doesn't
+            // overlap the full player controls.
+            if playerViewModel.hasTrack && !isPlayerExpanded && selectedTab != 2 && selectedTab != 3 {
                 MiniPlayerView {
                     withAnimation {
                         isPlayerExpanded = true

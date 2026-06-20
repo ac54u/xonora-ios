@@ -86,20 +86,15 @@ struct NowPlayingView: View {
     
     private var albumArtView: some View {
         ZStack {
-            AsyncImage(url: trackImageURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .blur(radius: 30) // Reduced from 60 to improve rendering performance
-                        .scaleEffect(1.1)
-                case .failure, .empty:
-                    Color.xonoraGradient
-                @unknown default:
-                    Color.xonoraGradient
-                }
+            // Use CachedAsyncImage (proxy-disabled session) for the same reason as the
+            // rest of the app — plain AsyncImage uses URLSession.shared and hangs when
+            // a system proxy is configured, leaving the artwork spinning forever.
+            CachedAsyncImage(url: trackImageURL) {
+                Color.xonoraGradient
             }
+            .aspectRatio(contentMode: .fill)
+            .blur(radius: 30) // Reduced from 60 to improve rendering performance
+            .scaleEffect(1.1)
 
             Color.black.opacity(0.5)
         }
@@ -177,24 +172,10 @@ struct NowPlayingView: View {
     }
 
     private var albumArtwork: some View {
-        AsyncImage(url: trackImageURL) { phase in
-            switch phase {
-            case .success(let image):
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            case .failure:
-                artworkPlaceholder
-            case .empty:
-                artworkPlaceholder
-                    .overlay {
-                        ProgressView()
-                            .tint(.white)
-                    }
-            @unknown default:
-                artworkPlaceholder
-            }
+        CachedAsyncImage(url: trackImageURL) {
+            artworkPlaceholder
         }
+        .aspectRatio(contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 20)
         .scaleEffect(playerManager.isPlaying ? 1.0 : 0.95)
