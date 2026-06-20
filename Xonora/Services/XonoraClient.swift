@@ -70,7 +70,6 @@ class XonoraClient: NSObject, ObservableObject {
         self.username = username
         self.password = password
         self.usePasswordAuth = accessToken?.isEmpty ?? true && username?.isEmpty == false && password?.isEmpty == false
-        reconnectAttempts = 0
         connectionState = .connecting
         
         var wsComponents = URLComponents(url: url, resolvingAgainstBaseURL: false)
