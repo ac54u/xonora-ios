@@ -381,7 +381,7 @@ struct LibraryView: View {
                                 isPlaying: playerViewModel.currentTrack?.itemId == track.itemId,
                                 numberFirst: true
                             ) {
-                                playerViewModel.playTrack(track, sourceName: "Songs")
+                                playerViewModel.playTrack(track, fromQueue: libraryViewModel.sortedTracks, sourceName: "Songs")
                             }
                             .padding(.horizontal, 12)
                         }

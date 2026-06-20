@@ -249,11 +249,13 @@ class SendspinClient: ObservableObject {
     }
     
     func stopPlayback() {
-        // Stop is usually server side, but we can mute locally
+        // Pause the local engine but KEEP the Sendspin connection alive. Calling
+        // disconnect() here made the player go "unavailable" on the server after every
+        // stop/track-change (and playTrack calls this before each new track), forcing a
+        // manual reconnect with no audio. Staying connected keeps the player registered
+        // so the next stream plays immediately; the server ends the stream on its side.
         Task {
-            await client?.disconnect() // Or just mute? Old client stopped engine.
-            // Reconnect logic might be needed if we disconnect.
-            // Better to just let the stream end event handle it.
+            await client?.pausePlayback()
         }
     }
     

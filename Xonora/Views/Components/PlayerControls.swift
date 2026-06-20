@@ -205,8 +205,9 @@ struct PlayerControls: View {
 
     private func formatTime(_ time: TimeInterval) -> String {
         guard time.isFinite && !time.isNaN else { return "0:00" }
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
+        let t = max(0, time) // clamp negatives so remaining-time never shows "-0:-9"
+        let minutes = Int(t) / 60
+        let seconds = Int(t) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
 }
