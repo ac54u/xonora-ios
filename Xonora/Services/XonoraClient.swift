@@ -384,25 +384,25 @@ class XonoraClient: NSObject, ObservableObject {
     func fetchAlbums(offset: Int = 0, limit: Int = 500) async throws -> (items: [Album], total: Int) {
         var args: [String: Any] = ["offset": offset, "limit": limit]
         let data = try await sendCommand("music/albums/library_items", args: args)
-        return await Task.detached { self.parseLibraryResult(data) as (items: [Album], total: Int) }.value
+        return parseLibraryResult(data)
     }
 
     func fetchPlaylists(offset: Int = 0, limit: Int = 500) async throws -> (items: [Playlist], total: Int) {
         var args: [String: Any] = ["offset": offset, "limit": limit]
         let data = try await sendCommand("music/playlists/library_items", args: args)
-        return await Task.detached { self.parseLibraryResult(data) as (items: [Playlist], total: Int) }.value
+        return parseLibraryResult(data)
     }
 
     func fetchArtists(offset: Int = 0, limit: Int = 500) async throws -> (items: [Artist], total: Int) {
         var args: [String: Any] = ["offset": offset, "limit": limit]
         let data = try await sendCommand("music/artists/library_items", args: args)
-        return await Task.detached { self.parseLibraryResult(data) as (items: [Artist], total: Int) }.value
+        return parseLibraryResult(data)
     }
 
     func fetchTracks(offset: Int = 0, limit: Int = 500) async throws -> (items: [Track], total: Int) {
         var args: [String: Any] = ["offset": offset, "limit": limit]
         let data = try await sendCommand("music/tracks/library_items", args: args)
-        return await Task.detached { self.parseLibraryResult(data) as (items: [Track], total: Int) }.value
+        return parseLibraryResult(data)
     }
 
     func fetchAlbumTracks(albumId: String, provider: String) async throws -> [Track] {
@@ -536,7 +536,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     func fetchPodcasts(offset: Int = 0, limit: Int = 500) async throws -> (items: [Podcast], total: Int) {
         let data = try await sendCommand("music/podcasts/library_items", args: ["offset": offset, "limit": limit])
-        return await Task.detached { self.parseLibraryResult(data) as (items: [Podcast], total: Int) }.value
+        return parseLibraryResult(data)
     }
 
     func fetchPodcastEpisodes(podcastId: String, provider: String) async throws -> [Episode] {
@@ -548,7 +548,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     func fetchRadioStations(offset: Int = 0, limit: Int = 500) async throws -> (items: [RadioStation], total: Int) {
         let data = try await sendCommand("music/radio/library_items", args: ["offset": offset, "limit": limit])
-        return await Task.detached { self.parseLibraryResult(data) as (items: [RadioStation], total: Int) }.value
+        return parseLibraryResult(data)
     }
 
     func fetchLyrics(uri: String) async throws -> LyricsResponse {
