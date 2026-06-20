@@ -835,7 +835,7 @@ struct SettingsView: View {
                         ForEach(client.visiblePlayers) { player in
                             Button {
                                 client.currentPlayer = player
-                                Task { try? await client.switchPlayer(playerId: player.playerId) }
+                                Task { await client.switchPlayer(playerId: player.playerId) }
                             } label: {
                                 HStack {
                                     Image(systemName: ProviderBrand(provider: player.provider, type: player.type, name: player.name).icon)

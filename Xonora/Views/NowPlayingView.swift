@@ -440,7 +440,7 @@ struct PlayerPickerView: View {
                     Button {
                         if player.playerId != client.currentPlayer?.playerId {
                             client.currentPlayer = player
-                            Task { try? await client.switchPlayer(playerId: player.playerId) }
+                            Task { await client.switchPlayer(playerId: player.playerId) }
                         }
                         dismiss()
                     } label: {

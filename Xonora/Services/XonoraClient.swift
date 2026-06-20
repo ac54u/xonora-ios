@@ -503,23 +503,16 @@ class XonoraClient: NSObject, ObservableObject {
         _ = try await sendCommand("player_queues/seek", args: ["queue_id": playerId, "position": Int(position)])
     }
 
-    func switchPlayer(playerId: String) async throws {
-        guard players.contains(where: { $0.playerId == playerId }) else { return }
-        let data = try await sendCommand("players/cmd/play_queues", args: ["player_id": playerId])
-        if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let result = json["result"] as? [String: Any],
-           let queueId = result["queue_id"] as? String,
-           let index = players.firstIndex(where: { $0.playerId == playerId }) {
-            players[index].queueId = queueId
-            currentPlayer = players[index]
+    func switchPlayer(playerId: String) async {
+        if let player = players.first(where: { $0.playerId == playerId }) {
+            currentPlayer = player
         }
-        await fetchPlayers()
     }
 
     func renamePlayer(playerId: String, name: String) async {
-        _ = try? await sendCommand("players/player_config/save", args: [
+        _ = try? await sendCommand("config/players/save_player_config", args: [
             "player_id": playerId,
-            "values": ["name_override": name]
+            "values": ["name": name]
         ])
         await fetchPlayers()
     }
@@ -557,7 +550,7 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     func fetchRadioStations(offset: Int = 0, limit: Int = 500) async throws -> (items: [RadioStation], total: Int) {
-        let data = try await sendCommand("music/radio/library_items", args: ["offset": offset, "limit": limit])
+        let data = try await sendCommand("music/radios/library_items", args: ["offset": offset, "limit": limit])
         return parseLibraryResult(data)
     }
 
