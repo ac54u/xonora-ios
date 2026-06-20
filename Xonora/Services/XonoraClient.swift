@@ -507,10 +507,10 @@ class XonoraClient: NSObject, ObservableObject {
         let data = try await sendCommand("players/cmd/play_queues", args: ["player_id": playerId])
         if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
            let result = json["result"] as? [String: Any],
-           let queueId = result["queue_id"] as? String {
-            let updatedPlayer = players.first(where: { $0.playerId == playerId })
-            updatedPlayer?.queueId = queueId
-            currentPlayer = updatedPlayer
+           let queueId = result["queue_id"] as? String,
+           let index = players.firstIndex(where: { $0.playerId == playerId }) {
+            players[index].queueId = queueId
+            currentPlayer = players[index]
         }
         await fetchPlayers()
     }

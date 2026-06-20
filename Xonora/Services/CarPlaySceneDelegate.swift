@@ -1,4 +1,5 @@
 import CarPlay
+import MediaPlayer
 import UIKit
 
 class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
@@ -83,16 +84,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
         let template = CPNowPlayingTemplate.shared
         template.upNextTitle = NSLocalizedString("Queue", comment: "CarPlay queue title")
-        template.nowPlayingButtons = [
-            CPNowPlayingShuffleButton { [weak self] _ in
-                self?.playerManager.toggleShuffle()
-                self?.updateNowPlayingTitles()
-            },
-            CPNowPlayingRepeatButton { [weak self] _ in
-                self?.playerManager.cycleRepeatMode()
-                self?.updateNowPlayingTitles()
-            }
-        ]
+        setupRemoteCommands()
 
         templateCache.setObject(template, forKey: nowPlayingKey)
         return template
@@ -100,6 +92,20 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     private func updateNowPlayingTitles() {
         // CPNowPlayingTemplate updates labels automatically based on MPNowPlayingInfoCenter
+    }
+
+    private func setupRemoteCommands() {
+        let cmd = MPRemoteCommandCenter.shared()
+        cmd.changeShuffleModeCommand.isEnabled = true
+        cmd.changeShuffleModeCommand.addTarget { [weak self] _ in
+            self?.playerManager.toggleShuffle()
+            return .success
+        }
+        cmd.changeRepeatModeCommand.isEnabled = true
+        cmd.changeRepeatModeCommand.addTarget { [weak self] _ in
+            self?.playerManager.cycleRepeatMode()
+            return .success
+        }
     }
 
     // MARK: - Queue Tab
@@ -270,7 +276,7 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
                         }
                         return item
                     }
-                    sections.append(CPListSection(items: Array(albumItems), header: NSLocalizedString("Albums", comment: "CarPlay albums")))
+                    sections.append(CPListSection(items: Array(albumItems), header: NSLocalizedString("Albums", comment: "CarPlay albums"), sectionIndexTitle: nil))
                 }
 
                 let template = CPListTemplate(title: artist.name, sections: sections)
