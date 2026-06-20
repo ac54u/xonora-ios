@@ -43,18 +43,61 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private func buildHomeTab() -> CPTemplate {
         let items = [
             makeLibraryItem(title: "Continue Listening", subtitle: "Resume where you left off", icon: "play.circle.fill") { [weak self] in
-                self?.showQueue()
+                self?.showInProgress()
             },
             makeLibraryItem(title: "Recently Played", subtitle: "Your recent tracks", icon: "clock.fill") { [weak self] in
-                self?.showSongs()
+                self?.showRecentlyPlayed()
             },
             makeLibraryItem(title: "Recommendations", subtitle: "Suggested for you", icon: "star.fill") { [weak self] in
-                self?.showAlbums()
+                self?.showRecommendations()
             }
         ]
         let section = CPListSection(items: items)
         let template = CPListTemplate(title: NSLocalizedString("Home", comment: "CarPlay home title"), sections: [section])
         return template
+    }
+
+    private func showMediaItems(_ items: [XonoraClient.PlayableMediaItem], title: String) {
+        let listItems = items.map { item -> CPListItem in
+            let listItem = CPListItem(text: item.name, detailText: item.subtitle.isEmpty ? nil : item.subtitle)
+            listItem.handler = { [weak self] _, completion in
+                Task { try? await XonoraClient.shared.playMedia(uris: [item.uri]) }
+                self?.interfaceController?.pushTemplate(CPNowPlayingTemplate.shared, animated: true, completion: nil)
+                completion()
+            }
+            return listItem
+        }
+        let template = CPListTemplate(title: title, sections: listItems.isEmpty ? [] : [CPListSection(items: listItems)])
+        template.emptyViewSubtitleVariants = [NSLocalizedString("Queue is empty", comment: "CarPlay empty queue")]
+        interfaceController?.pushTemplate(template, animated: true, completion: nil)
+    }
+
+    private func showRecentlyPlayed() {
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let items = (try? await XonoraClient.shared.fetchRecentlyPlayed()) ?? []
+            self.showMediaItems(items, title: NSLocalizedString("Recently Played", comment: "CarPlay recently played"))
+        }
+    }
+
+    private func showInProgress() {
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let items = (try? await XonoraClient.shared.fetchInProgress()) ?? []
+            if items.isEmpty {
+                self.showQueue()
+            } else {
+                self.showMediaItems(items, title: NSLocalizedString("Continue Listening", comment: "CarPlay continue listening"))
+            }
+        }
+    }
+
+    private func showRecommendations() {
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let items = (try? await XonoraClient.shared.fetchRecommendations()) ?? []
+            self.showMediaItems(items, title: NSLocalizedString("Recommendations", comment: "CarPlay recommendations"))
+        }
     }
 
     private func makeLibraryItem(title: String, subtitle: String, icon: String, handler: @escaping () -> Void) -> CPListItem {

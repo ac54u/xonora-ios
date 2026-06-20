@@ -171,6 +171,7 @@
 // CarPlay
 "Home" = "主页";
 "Continue Listening" = "继续收听";
+"In Progress" = "进行中";
 "Resume where you left off" = "继续上次播放";
 "Recently Played" = "最近播放";
 "Your recent tracks" = "您最近播放的曲目";

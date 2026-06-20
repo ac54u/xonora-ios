@@ -550,6 +550,40 @@ class XonoraClient: NSObject, ObservableObject {
         _ = try await sendCommand(command, args: ["item": uri])
     }
 
+    struct PlayableMediaItem {
+        let name: String
+        let subtitle: String
+        let uri: String
+    }
+
+    private func parsePlayableItems(_ data: Data) -> [PlayableMediaItem] {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [[String: Any]] else { return [] }
+        return result.compactMap { item -> PlayableMediaItem? in
+            guard let name = item["name"] as? String, let uri = item["uri"] as? String else { return nil }
+            let artists = item["artists"] as? [[String: Any]]
+            let artistName = artists?.first?["name"] as? String
+            let albumName = (item["album"] as? [String: Any])?["name"] as? String
+            let subtitle = artistName ?? albumName ?? (item["media_type"] as? String ?? "")
+            return PlayableMediaItem(name: name, subtitle: subtitle, uri: uri)
+        }
+    }
+
+    func fetchRecentlyPlayed(limit: Int = 15) async throws -> [PlayableMediaItem] {
+        let data = try await sendCommand("music/recently_played_items", args: ["limit": limit])
+        return parsePlayableItems(data)
+    }
+
+    func fetchInProgress(limit: Int = 10) async throws -> [PlayableMediaItem] {
+        let data = try await sendCommand("music/in_progress_items", args: ["limit": limit])
+        return parsePlayableItems(data)
+    }
+
+    func fetchRecommendations(limit: Int = 15) async throws -> [PlayableMediaItem] {
+        let data = try await sendCommand("music/recommendations", args: ["limit": limit])
+        return parsePlayableItems(data)
+    }
+
     func fetchPodcasts(offset: Int = 0, limit: Int = 500) async throws -> (items: [Podcast], total: Int) {
         let data = try await sendCommand("music/podcasts/library_items", args: ["offset": offset, "limit": limit])
         return parseLibraryResult(data)
