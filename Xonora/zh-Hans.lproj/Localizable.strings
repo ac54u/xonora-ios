@@ -107,6 +107,47 @@
 "Playback Error" = "播放错误";
 "OK" = "确定";
 
+// Tab bar
+"Now Playing" = "正在播放";
+"Podcasts" = "播客";
+"Radio" = "电台";
+
+// Podcasts
+"Loading Podcasts..." = "正在加载播客...";
+"No Podcasts" = "无播客";
+"Your library has no podcasts." = "你的音乐库中没有播客。";
+"No Episodes" = "无节目";
+"This podcast has no episodes." = "此播客暂无节目。";
+"%@ episodes" = "%@ 个节目";
+
+// Radio
+"Loading Radio Stations..." = "正在加载电台...";
+"No Radio Stations" = "无电台";
+"Your library has no radio stations." = "你的音乐库中没有电台。";
+
+// Sleep Timer
+"Sleep Timer" = "睡眠定时器";
+"15 minutes" = "15 分钟";
+"30 minutes" = "30 分钟";
+"45 minutes" = "45 分钟";
+"60 minutes" = "60 分钟";
+"End of Track" = "当前曲目结束时";
+"Cancel" = "取消";
+
+// Lyrics
+"Lyrics" = "歌词";
+"No Lyrics" = "无歌词";
+"Lyrics not available for this track" = "当前曲目没有歌词";
+
+// Queue
+"Play Now" = "立即播放";
+"Remove from Queue" = "从队列移除";
+"Delete" = "删除";
+
+// Other
+"Playback Destination" = "播放目标";
+"Offline" = "离线";
+
 // Error strings (from services)
 "Sendspin not connected. Please enable it in Settings." = "Sendspin 未连接。请在设置中启用。";
 "Failed to play: %@" = "播放失败：%@";
