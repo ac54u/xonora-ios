@@ -826,7 +826,7 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                     } else {
-                        ForEach(client.players) { player in
+                        ForEach(client.visiblePlayers) { player in
                             Button {
                                 client.currentPlayer = player
                                 if player.playerId != client.currentPlayer?.playerId {
@@ -859,12 +859,17 @@ struct SettingsView: View {
                             .disabled(!player.available)
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", role: .destructive) {
-                                    if let idx = client.players.firstIndex(where: { $0.playerId == player.playerId }) {
-                                        client.players.remove(at: idx)
-                                    }
+                                    client.hidePlayer(player.playerId)
                                 }
                             }
                         }
+                    }
+                    if !client.hiddenPlayerIds.isEmpty {
+                        Button("Show Hidden Players") {
+                            client.hiddenPlayerIds = []
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     }
                 } header: {
                     Text("Remote Player")

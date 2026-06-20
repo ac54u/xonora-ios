@@ -436,7 +436,7 @@ struct PlayerPickerView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(client.players) { player in
+                ForEach(client.visiblePlayers) { player in
                     Button {
                         if player.playerId != client.currentPlayer?.playerId {
                             client.currentPlayer = player

@@ -50,6 +50,7 @@
 "Playback will be sent to: %@" = "播放将发送至：%@";
 "Remote Player" = "远程播放器";
 "Select a player to send playback commands to." = "选择要发送播放命令的播放器。";
+"Show Hidden Players" = "显示已隐藏的播放器";
 "App Version" = "应用版本";
 "About" = "关于";
 
