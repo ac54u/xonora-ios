@@ -148,6 +148,12 @@
 "Playback Destination" = "播放目标";
 "Offline" = "离线";
 "Sleep: %d:%02d" = "睡眠: %d分%02d秒";
+"Username" = "用户名";
+"Password" = "密码";
+"Music Assistant username" = "Music Assistant 用户名";
+"Music Assistant password" = "Music Assistant 密码";
+"Use your Music Assistant login credentials" = "使用你的 Music Assistant 登录凭证";
+"%lld Columns" = "%lld 列";
 
 // Error strings (from services)
 "Sendspin not connected. Please enable it in Settings." = "Sendspin 未连接。请在设置中启用。";
