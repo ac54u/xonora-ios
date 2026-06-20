@@ -780,23 +780,37 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                         }
                     } else {
-                        Picker("Active Player", selection: Binding(
-                            get: { client.currentPlayer },
-                            set: { client.currentPlayer = $0 }
-                        )) {
-                            ForEach(client.players) { player in
-                                HStack {
-                                    Image(systemName: player.provider == "sendspin" ? "iphone" : "speaker.wave.2")
-                                    Text(player.name)
+                        ForEach(client.players) { player in
+                            Button {
+                                client.currentPlayer = player
+                                if player.playerId != client.currentPlayer?.playerId {
+                                    Task { try? await client.switchPlayer(playerId: player.playerId) }
                                 }
-                                .tag(player as MAPlayer?)
+                            } label: {
+                                HStack {
+                                    Image(systemName: ProviderBrand(provider: player.provider).icon)
+                                        .foregroundColor(ProviderBrand(provider: player.provider).color)
+                                        .frame(width: 24)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(player.name)
+                                            .foregroundColor(.primary)
+                                        Text(ProviderBrand(provider: player.provider).displayName)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    if player.playerId == client.currentPlayer?.playerId {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(.accentColor)
+                                    }
+                                    if !player.available {
+                                        Text("Offline")
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
+                                }
                             }
-                        }
-
-                        if let selected = client.currentPlayer {
-                            Text("Playback will be sent to: \(selected.name)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            .disabled(!player.available)
                         }
                     }
                 } header: {

@@ -502,6 +502,19 @@ class XonoraClient: NSObject, ObservableObject {
         _ = try await sendCommand("player_queues/seek", args: ["queue_id": playerId, "position": Int(position)])
     }
 
+    func switchPlayer(playerId: String) async throws {
+        guard players.contains(where: { $0.playerId == playerId }) else { return }
+        let data = try await sendCommand("players/cmd/play_queues", args: ["player_id": playerId])
+        if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let result = json["result"] as? [String: Any],
+           let queueId = result["queue_id"] as? String {
+            let updatedPlayer = players.first(where: { $0.playerId == playerId })
+            updatedPlayer?.queueId = queueId
+            currentPlayer = updatedPlayer
+        }
+        await fetchPlayers()
+    }
+
     func setVolume(_ volume: Int) async throws {
         guard let playerId = currentPlayer?.playerId else { return }
         _ = try await sendCommand("players/cmd/volume_set", args: ["player_id": playerId, "volume_level": volume])

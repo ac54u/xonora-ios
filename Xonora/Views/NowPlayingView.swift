@@ -9,6 +9,7 @@ struct NowPlayingView: View {
 
     @State private var dragOffset: CGFloat = 0
     @State private var showQueue = false
+    @State private var showPlayerPicker = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -60,6 +61,9 @@ struct NowPlayingView: View {
         .sheet(isPresented: $showQueue) {
             QueueView()
         }
+        .sheet(isPresented: $showPlayerPicker) {
+            PlayerPickerView()
+        }
     }
     
     private var albumArtView: some View {
@@ -100,17 +104,21 @@ struct NowPlayingView: View {
 
             Spacer()
 
-            VStack(spacing: 2) {
-                Text("PLAYING FROM")
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white.opacity(0.7))
+            Button {
+                showPlayerPicker = true
+            } label: {
+                VStack(spacing: 2) {
+                    Text("PLAYING FROM")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white.opacity(0.7))
 
-                Text(playerManager.currentSource ?? playerManager.currentTrack?.album?.name ?? "Library")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
+                    Text(playerManager.currentSource ?? playerManager.currentTrack?.album?.name ?? "Library")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                }
             }
 
             Spacer()
@@ -376,6 +384,64 @@ struct QueueView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .lineLimit(1)
+        }
+    }
+}
+
+struct PlayerPickerView: View {
+    @ObservedObject private var client = XonoraClient.shared
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(client.players) { player in
+                    Button {
+                        if player.playerId != client.currentPlayer?.playerId {
+                            client.currentPlayer = player
+                            Task { try? await client.switchPlayer(playerId: player.playerId) }
+                        }
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: ProviderBrand(provider: player.provider).icon)
+                                .font(.title3)
+                                .foregroundColor(ProviderBrand(provider: player.provider).color)
+                                .frame(width: 28)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(player.name)
+                                    .foregroundColor(.primary)
+                                Text(ProviderBrand(provider: player.provider).displayName)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+
+                            if player.playerId == client.currentPlayer?.playerId {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.accentColor)
+                            }
+
+                            if !player.available {
+                                Text("Offline")
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .disabled(!player.available)
+                }
+            }
+            .navigationTitle("Playback Destination")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
         }
     }
 }

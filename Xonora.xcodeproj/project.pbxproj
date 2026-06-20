@@ -37,6 +37,7 @@
 		AAA00030 /* PlaylistGridItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00030 /* PlaylistGridItem.swift */; };
 		AAA00032 /* ArtistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00032 /* ArtistDetailView.swift */; };
 		AAA00033 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00033 /* KeychainHelper.swift */; };
+		AAA00034 /* ProviderBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00034 /* ProviderBrand.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -135,6 +136,7 @@
 		BBB00032 /* ArtistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistDetailView.swift; sourceTree = "<group>"; };
 		BBB00031 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
 		BBB00033 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		BBB00034 /* ProviderBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderBrand.swift; sourceTree = "<group>"; };
 		CCC00001 /* Xonora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Xonora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		MMM00002 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh-Hans; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -461,6 +463,7 @@
 				BBB00012 /* Artist.swift */,
 				BBB00013 /* Player.swift */,
 				BBB00028 /* Playlist.swift */,
+				BBB00034 /* ProviderBrand.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -609,6 +612,7 @@
 				AAA00026 /* MetadataCache.swift in Sources */,
 				AAA00027 /* ImageCache.swift in Sources */,
 				AAA00033 /* KeychainHelper.swift in Sources */,
+				AAA00034 /* ProviderBrand.swift in Sources */,
 				1D861CD32F0FB2DD007D0C6A /* Color+Xonora.swift in Sources */,
 				AAA00028 /* Playlist.swift in Sources */,
 				AAA00029 /* PlaylistDetailView.swift in Sources */,
