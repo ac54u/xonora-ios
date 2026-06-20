@@ -145,6 +145,14 @@
 "Remove from Queue" = "从队列移除";
 "Delete" = "删除";
 
+// Settings - Account
+"User" = "用户";
+"Logout" = "退出登录";
+"Auth Method" = "验证方式";
+
+// Sorting
+"Sort" = "排序";
+
 // Other
 "Playback Destination" = "播放目标";
 "Offline" = "离线";
