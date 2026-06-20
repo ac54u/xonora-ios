@@ -318,6 +318,12 @@ class LibraryViewModel: ObservableObject {
         } else if let playlist = item as? Playlist {
             uri = playlist.uri
             currentFavorite = playlist.favorite ?? false
+        } else if let podcast = item as? Podcast {
+            uri = podcast.uri
+            currentFavorite = podcast.favorite ?? false
+        } else if let station = item as? RadioStation {
+            uri = station.uri
+            currentFavorite = station.favorite ?? false
         }
         
         guard !uri.isEmpty else { return }
@@ -331,7 +337,9 @@ class LibraryViewModel: ObservableObject {
             // Update cache after successful server update
             if let album = item as? Album { await cache.setAlbums(albums) }
             else if let artist = item as? Artist { await cache.setArtists(artists) }
-            else if let playlist = item as? Playlist { await cache.setPlaylists(playlists) }
+            else             if let playlist = item as? Playlist { await cache.setPlaylists(playlists) }
+            else if let podcast = item as? Podcast { await cache.setPodcasts(podcasts) }
+            else if let station = item as? RadioStation { await cache.setRadioStations(radioStations) }
         } catch {
             print("[LibraryViewModel] Failed to toggle favorite: \(error)")
             // Revert on error
@@ -346,6 +354,10 @@ class LibraryViewModel: ObservableObject {
             artists[index].favorite = favorite
         } else if let index = playlists.firstIndex(where: { $0.uri == uri }) {
             playlists[index].favorite = favorite
+        } else if let index = podcasts.firstIndex(where: { $0.uri == uri }) {
+            podcasts[index].favorite = favorite
+        } else if let index = radioStations.firstIndex(where: { $0.uri == uri }) {
+            radioStations[index].favorite = favorite
         }
         
         // Also update search results if applicable

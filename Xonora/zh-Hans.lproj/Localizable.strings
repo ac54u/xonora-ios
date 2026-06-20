@@ -118,7 +118,7 @@
 "Your library has no podcasts." = "你的音乐库中没有播客。";
 "No Episodes" = "无节目";
 "This podcast has no episodes." = "此播客暂无节目。";
-"%@ episodes" = "%@ 个节目";
+"%lld episodes" = "%lld 个节目";
 
 // Radio
 "Loading Radio Stations..." = "正在加载电台...";
@@ -147,6 +147,7 @@
 // Other
 "Playback Destination" = "播放目标";
 "Offline" = "离线";
+"Sleep: %d:%02d" = "睡眠: %d分%02d秒";
 
 // Error strings (from services)
 "Sendspin not connected. Please enable it in Settings." = "Sendspin 未连接。请在设置中启用。";

@@ -259,6 +259,7 @@ class PlayerManager: ObservableObject {
         if sleepTimerActive && sleepTimerEndDate == nil {
             pause()
             sleepTimerActive = false
+            postPlaybackStateChange()
         }
     }
 
@@ -526,9 +527,9 @@ class PlayerManager: ObservableObject {
         sleepTimerTask?.cancel()
         sleepTimerActive = true
         sleepTimerEndDate = Date().addingTimeInterval(TimeInterval(minutes * 60))
-        let endDate = sleepTimerEndDate!
         sleepTimerTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(minutes * 60_000_000_000))
+            guard !Task.isCancelled else { return }
             await MainActor.run {
                 guard let self = self, self.sleepTimerActive else { return }
                 if self.isPlaying {
@@ -560,7 +561,7 @@ class PlayerManager: ObservableObject {
         let remaining = max(0, endDate.timeIntervalSinceNow)
         let minutes = Int(remaining) / 60
         let seconds = Int(remaining) % 60
-        return String(format: "Sleep: %d:%02d", minutes, seconds)
+        return String(format: NSLocalizedString("Sleep: %d:%02d", comment: "Sleep timer countdown"), minutes, seconds)
     }
 
     func playAlbum(_ tracks: [Track], startingAt index: Int = 0) {
