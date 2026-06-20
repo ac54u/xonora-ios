@@ -81,7 +81,6 @@ struct ServerSetupView: View {
     @State private var username: String = ""
     @State private var password: String = ""
     @State private var showPassword: Bool = false
-    @State private var animateGradient: Bool = false
     @State private var authMethod: AuthMethod = .token
     @Environment(\.dismiss) private var dismiss
 
@@ -165,9 +164,6 @@ struct ServerSetupView: View {
             } else if !playerViewModel.username.isEmpty {
                 authMethod = .password
             }
-            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
-                animateGradient = true
-            }
             playerViewModel.startDiscovery()
         }
         .onDisappear {
@@ -228,52 +224,24 @@ struct ServerSetupView: View {
     // MARK: - Background
 
     private var backgroundView: some View {
-        ZStack {
-            // Base gradient
-            LinearGradient(
-                colors: [
-                    Color.xonoraPurple.opacity(0.8),
-                    Color.black,
-                    Color.xonoraCyan.opacity(0.4)
-                ],
-                startPoint: animateGradient ? .topLeading : .bottomLeading,
-                endPoint: animateGradient ? .bottomTrailing : .topTrailing
-            )
-
-            // Animated orbs
-            Circle()
-                .fill(Color.xonoraPurple.opacity(0.5))
-                .frame(width: 300, height: 300)
-                .blur(radius: 80)
-                .offset(x: animateGradient ? -100 : -150, y: animateGradient ? -200 : -250)
-
-            Circle()
-                .fill(Color.xonoraCyan.opacity(0.4))
-                .frame(width: 250, height: 250)
-                .blur(radius: 70)
-                .offset(x: animateGradient ? 120 : 150, y: animateGradient ? 300 : 350)
-        }
+        LinearGradient(
+            colors: [
+                Color.xonoraPurple.opacity(0.45),
+                Color.black,
+                Color.black
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     // MARK: - Header
 
     private var headerView: some View {
         VStack(spacing: 20) {
-            // App icon with glow effect
-            ZStack {
-                // Glow
-                Image(systemName: "hifispeaker.2.fill")
-                    .font(.system(size: 70, weight: .medium))
-                    .foregroundStyle(Color.xonoraGradient)
-                    .blur(radius: 20)
-                    .opacity(0.6)
-
-                // Icon
-                Image(systemName: "hifispeaker.2.fill")
-                    .font(.system(size: 70, weight: .medium))
-                    .foregroundStyle(Color.xonoraGradient)
-            }
-            .scaleEffect(animateGradient ? 1.05 : 1.0)
+            Image(systemName: "hifispeaker.2.fill")
+                .font(.system(size: 70, weight: .medium))
+                .foregroundStyle(Color.xonoraGradient)
 
             VStack(spacing: 8) {
                 Text("Xonora")

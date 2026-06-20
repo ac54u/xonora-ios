@@ -571,8 +571,14 @@ class XonoraClient: NSObject, ObservableObject {
     /// players we also hide locally so it disappears immediately and stays gone.
     func removePlayer(_ playerId: String) async {
         _ = try? await sendCommand("config/players/remove", args: ["player_id": playerId])
-        hidePlayer(playerId)
+        if currentPlayer?.playerId == playerId { currentPlayer = nil }
         await fetchPlayers()
+        // Only fall back to a local hide if the server still reports the player
+        // (i.e. a provider re-announced it). Offline devices are truly removed, so
+        // no "Show Hidden Players" entry appears for the normal delete case.
+        if players.contains(where: { $0.playerId == playerId }) {
+            hidePlayer(playerId)
+        }
     }
 
     func setVolume(_ volume: Int) async throws {
