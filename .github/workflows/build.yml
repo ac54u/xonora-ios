@@ -1,0 +1,52 @@
+name: Build IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'Xonora/**'
+      - 'SendspinKit/**'
+      - 'Xonora.xcodeproj/**'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Resolve Package Dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project Xonora.xcodeproj \
+            -scheme Xonora
+
+      - name: Build
+        run: |
+          xcodebuild -project Xonora.xcodeproj \
+            -scheme Xonora \
+            -configuration Debug \
+            -sdk iphoneos \
+            -derivedDataPath DerivedData \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r DerivedData/Build/Products/Debug-iphoneos/Xonora.app Payload/
+          zip -r Xonora.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Xonora.ipa
+          path: Xonora.ipa

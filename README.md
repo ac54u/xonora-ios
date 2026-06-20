@@ -1,229 +1,256 @@
-# Xonora: Music Assistant Player for iOS, watchOS & CarPlay
+# Xonora：适用于 iOS、watchOS 和 CarPlay 的 Music Assistant 播放器
 
-Xonora is a high-performance, native client for [Music Assistant](https://music-assistant.io/) running on iPhone, Apple Watch, and CarPlay. Built with SwiftUI and the custom **SendspinKit** audio engine, it delivers gapless, synchronized, and high-fidelity playback from your self-hosted server directly to your devices.
+Xonora 是一款高性能的 [Music Assistant](https://music-assistant.io/) 原生客户端，支持 iPhone、Apple Watch 和 CarPlay。使用 SwiftUI 和自定义 **SendspinKit** 音频引擎构建，实现从自托管服务器到设备的无缝、同步高保真播放。
 
-## Join the Community
+## 加入社区
 
-**[Join our Discord Server](https://discord.gg/x6cWh4AjNG)** - Get support, share feedback, and connect with other users!
+**[加入我们的 Discord 服务器](https://discord.gg/x6cWh4AjNG)** — 获取支持、分享反馈并与其他用户交流！
 
-## Beta Testing
+## Beta 测试
 
-Xonora is currently in open beta. Join the public TestFlight to help test the app:
+Xonora 目前处于公开 Beta 阶段。加入公开 TestFlight 帮助测试应用：
 
-**[Join the Xonora TestFlight](https://testflight.apple.com/join/5rUk1uqN)**
+**[加入 Xonora TestFlight](https://testflight.apple.com/join/5rUk1uqN)**
 
-> **Note:** Due to Apple's review process, new updates and builds may be delayed for up to **48 hours** before becoming available in TestFlight.
+> **注意：** 由于 Apple 的审核流程，新版本和构建可能延迟最多 **48 小时** 才能在 TestFlight 中可用。
 
-## What's New in v1.0.7
+## 自行编译（适用于 TrollStore / 巨魔）
 
-### CarPlay — Major Overhaul
+如果你没有 Mac，或者想绕过 Apple 签名直接安装，可以使用 **GitHub Actions** 自动编译：
 
-The CarPlay experience has been rebuilt from the ground up. This is the centerpiece of v1.0.7
+### 步骤
 
-- **Tab Bar Navigation**: Dedicated Home, Library, Queue, and Now Playing tabs
-- **Home Tab**: Horizontal scrolling artwork rows for Continue Listening, Recently Played, and Recommendations — synced with your iOS home screen
-- **Library Drill-Down**: Browse Artists -> Albums -> Tracks directly from the dashboard
-- **Queue Tab**: Live queue with current-track indicator; tap any item to jump playback
-- **Now Playing Favorites**: Heart tracks directly from the CarPlay Now Playing screen
-- **Siri Integration**: "Hey Siri, play..." media intent support (Will not play anything yetTo Do)
-- **Template & Image Caching**: Album and playlist track templates cached in memory — no artwork reload on back/re-enter. Disk-cached 240x240 resized images for smooth scrolling (Super slow on initial load)
-- **Performance**: Debounced home rebuilds (300ms) to prevent UI freezes; stable reconnect behavior with persistent cancellables
+1. **Fork 此仓库** — 点击 GitHub 页面右上角的 Fork 按钮
+2. **进入你 Fork 后的仓库** → 点击 **Actions** 标签页
+3. **同意/启用 Actions**（如果提示）
+4. **在左侧选择 "Build IPA"** → 点击右侧 **Run workflow** → 再次点击 **Run workflow**
+5. **等待编译完成**（约 5-10 分钟）
+6. **编译完成后**，点击出现的 **Xonora.ipa** 工件（Artifact）下载
+7. **将 IPA 传输到 iPhone**（通过 AirDrop、iCloud 或任何方式）
+8. **用 TrollStore 打开 IPA** → 点击安装即可
 
-### Authentication — Username & Password
+### 前提条件
 
-Gone are the days of hunting for access tokens, copying them from browser dev tools, and praying you didn't accidentally grab an expired one. Xonora now supports proper **username and password login** as the default authentication method. Credentials are stored securely in the Keychain. Token auth is still available as a fallback for the nostalgic.
+- **iOS 17.0** 设备已安装 [TrollStore 2](https://github.com/opa334/TrollStore)
+- 一台 **Music Assistant 服务器**（版本 2.0，Schema 28+）
+- 服务器上已启用 **Sendspin** 播放器提供程序
 
-- **Server Setup**: New toggle between Username/Password and Token auth modes
-- **Keychain Storage**: Credentials stored securely via `KeychainHelper`
-- **User & Provider Info**: Settings page now shows your logged-in user and connected providers
+### 常见问题
 
-### Library Sort & View Modes
+- **编译失败？** 检查 GitHub Actions 日志，可能需要更新 Xcode 版本或修复代码问题
+- **安装后闪退？** 确保 iOS 版本为 17.0，TrollStore 为最新版本
+- **无法连接服务器？** 确保手机和服务器在同一网络，且 Sendspin 已启用
 
-- **Sort Options**: Sort any library section by name (A-Z, Z-A) or date added (newest/oldest)
-- **View Mode Toggle**: Switch between grid and list view per category
-- **Grid Column Customization**: Configurable column counts for portrait and landscape, with separate settings per category — moved to Settings > Personalization
-- **Device-Aware Layouts**: Accurate iPhone vs iPad detection for proper column defaults (Still no officail iPad support, only tested on my Mac as an iPad app)
+## 版本 1.0.7 新特性
 
-### Audio & Lyrics
+### CarPlay — 重大重构
 
-- **Hardware-Anchored Lyrics**: Lyrics timing now syncs automatically with the hardware audio clock — is it is out of sync pause and resume to fix it
-- **Playback Drift Fix**: Eliminated time drift by using hardware engine time for both `currentTime` and `audioSyncedTime`
-- **Larger Audio Buffer**: Increased from ~4.8s to ~30s
-- **Volume Debounce**: Single command on slider release prevents Cast device (Nest Hub) volume fluctuations (Needs to be verified)
+CarPlay 体验已完全重建。这是 v1.0.7 的核心更新：
 
-### watchOS Fixes
+- **标签栏导航**：专属的主页、音乐库、播放队列和当前播放标签
+- **主页标签**：横向滚动艺术作品行，包含继续收听、最近播放和推荐 — 与 iOS 主屏幕同步
+- **音乐库下钻**：直接从仪表盘浏览艺人 → 专辑 → 歌曲
+- **播放队列标签**：实时队列显示当前曲目标记；点击任意项目跳转播放
+- **当前播放收藏**：在 CarPlay 当前播放屏幕直接红心歌曲
+- **Siri 集成**："嘿 Siri，播放..." 媒体意图支持（暂未完全实现）
+- **模板和图片缓存**：专辑和播放列表曲目模板缓存在内存中 — 返回/重新进入无需重新加载艺术作品。磁盘缓存 240x240 缩放图片确保流畅滚动（首次加载较慢）
+- **性能优化**：主页重建防抖（300ms）防止 UI 卡顿；稳定的重连行为与持久化取消令牌
 
-- **Player Switch**: Clearing stale state before restoring on player switch
-- **Interactive Player Pill**: Tappable player indicator navigates to device switcher
+### 认证 — 用户名与密码
 
-### Other
+不再需要手动寻找访问令牌、从浏览器开发者工具复制并担心使用了过期令牌。Xonora 现在支持使用 **用户名和密码登录** 作为默认认证方式。凭据安全存储在钥匙串中。令牌认证仍可作为备用方式使用。
 
-- **Large Library Pagination**: Count-based pagination with concurrent category loading for libraries exceeding API limits (Needs to be verified)
-- **Response Format Handling**: Graceful parsing of multiple JSON response structures from the server
+- **服务器设置**：新增用户名/密码与令牌认证模式的切换开关
+- **钥匙串存储**：通过 `KeychainHelper` 安全存储凭据
+- **用户与提供者信息**：设置页面现在显示登录用户和已连接的提供者
 
-## Core Features
+### 音乐库排序与视图模式
 
-### Audio Streaming
+- **排序选项**：按名称（A-Z、Z-A）或添加日期（最新/最早）排序任何音乐库板块
+- **视图模式切换**：每个分类可在网格和列表视图之间切换
+- **网格列数自定义**：分别为竖屏和横屏配置列数，每个分类可单独设置 — 移至 设置 > 个性化
+- **设备自适应布局**：准确检测 iPhone 与 iPad，设置合理的默认列数（尚不支持 iPad，仅在 Mac 上作为 iPad 应用测试）
 
-- **Sendspin Protocol**: Lossless PCM/FLAC audio streaming with dynamic buffering
-- **Gapless Playback**: Seamless transitions between tracks
-- **Hardware Acceleration**: vDSP/SIMD audio processing with Accelerate framework
-- **Background Audio**: Continuous playback with lock screen controls
-- **Remote Controls**: Lock screen, Control Center, and Bluetooth hardware button support
-- **CarPlay**: Full tab bar with Home, Library, Queue, and Now Playing; drill-down browsing, template caching, Siri intent
+### 音频与歌词
 
-### Library & Content
+- **硬件同步歌词**：歌词时间现在自动与硬件音频时钟同步 — 如不同步可暂停后恢复以修正
+- **播放漂移修复**：通过使用硬件引擎时间计算 `currentTime` 和 `audioSyncedTime` 消除时间漂移
+- **更大的音频缓冲区**：从约 4.8 秒增加到约 30 秒
+- **音量防抖**：滑块释放时发送单次指令，防止 Cast 设备（Nest Hub）音量波动（待验证）
 
-- **Music**: Albums, Artists, Tracks, Playlists with full browsing and search
-- **Audiobooks**: Dedicated view with chapter support and playback controls
-- **Podcasts**: Browse episodes with grid layout
-- **Radio**: Internet radio station support
-- **Favorites**: Heart/favorite any media type
-- **Add to Library**: Search and add content from streaming services
+### watchOS 修复
 
-### Metadata & Caching
+- **播放器切换**：切换播放器前清除过期状态
+- **交互式播放器按钮**：可点击的播放器指示器导航到设备切换器
 
-- **Local Metadata Cache**: Disk-backed cache with 1-hour expiry for instant library loads
-- **Image Cache**: In-memory caching with size-aware URLs for optimal performance
-- **Intelligent Artwork**: Seamless handling of local (Plex/SMB) and CDN (Apple Music, TheAudioDB) images
+### 其他
 
-### Server Integration
+- **大型音乐库分页**：基于计数的分页，对超过 API 限制的音乐库进行并发分类加载（待验证）
+- **响应格式处理**：优雅解析来自服务器的多种 JSON 响应结构
 
-- **mDNS Discovery**: Automatic local network scanning for Music Assistant servers
-- **Username/Password Auth**: Secure login with Keychain storage (token fallback available)
-- **WebSocket Protocol**: Efficient real-time communication with Music Assistant API
-- **Event-Driven Updates**: Real-time sync of library changes, queue updates, and player states
+## 核心功能
 
-## Completed Features from Development Plan
+### 音频流
 
-### Phase 1: Core Library Enhancements ✅
+- **Sendspin 协议**：无损 PCM/FLAC 音频流，动态缓冲
+- **无缝播放**：曲目之间的平滑过渡
+- **硬件加速**：使用 Accelerate 框架进行 vDSP/SIMD 音频处理
+- **后台音频**：支持锁屏控制的持续播放
+- **远程控制**：支持锁屏、控制中心和蓝牙硬件按钮
+- **CarPlay**：完整标签栏含主页、音乐库、队列和当前播放；下钻浏览、模板缓存、Siri 意图
 
-- ✅ **Playlists Support**: Full browsing and playback
-- ✅ **Favorites (Hearting)**: Toggle favorites for tracks, albums, artists, playlists, audiobooks
-- ✅ **Radio Integration**: Browse and play radio stations
+### 音乐库与内容
 
-### Phase 2: Player & Queue Improvements 🟡
+- **音乐**：专辑、艺人、歌曲、播放列表，完整浏览和搜索
+- **有声书**：专用视图，支持章节和播放控制
+- **播客**：网格布局浏览剧集
+- **电台**：支持网络电台
+- **收藏**：红心/收藏任意媒体类型
+- **添加到音乐库**：搜索并从流媒体服务添加内容
 
-- ✅ **Player Transfer**: Seamless switching with position restoration
-- ✅ **Advanced Queue**: Drag-to-reorder, swipe-to-delete, "Play Next" and "Add to Queue" context menus
-- ⏳ **Player Grouping**: (Partially implemented) Improvements in future releases
+### 元数据与缓存
 
-### Phase 3: Content & Sync ✅
+- **本地元数据缓存**：磁盘支持，1 小时间隔过期，实现即时音乐库加载
+- **图片缓存**：内存缓存，使用尺寸感知 URL 实现最佳性能
+- **智能艺术作品**：无缝处理本地（Plex/SMB）和 CDN（Apple Music、TheAudioDB）图片
 
-- ✅ **Podcasts**: Dedicated view with full support
-- ✅ **Real-time Sync**: Event-driven library and queue updates
-- ✅ **Enhanced Search**: Multi-type search with filtering
+### 服务器集成
 
-### Phase 4: UI/UX Polish 🟡
+- **mDNS 发现**：自动局域网扫描 Music Assistant 服务器
+- **用户名/密码认证**：钥匙串安全存储（令牌认证作为备用）
+- **WebSocket 协议**：与 Music Assistant API 的高效实时通信
+- **事件驱动更新**：音乐库变更、队列更新和播放器状态的实时同步
 
-- ✅ **Customization**: Appearance settings, Home customization, Tab reordering
-- ✅ **Provider Branding**: Service-specific icons and colors
-- ✅ **Toast Notifications**: System-wide toast manager
-- ✅ **Library Sort & View Modes**: Sort options, list/grid toggle, column count customization
-- ✅ **Adaptive Theming**: Album art color extraction (planned)
-- ⏳ **Letter Scrollbar**: Fast navigation (planned)
+## 已完成开发计划
 
-### Phase 5: Platform Expansion ✅
+### 阶段 1：核心音乐库增强 ✅
 
-- ✅ **Apple Watch**: Full WatchConnectivity companion app
-- ✅ **CarPlay**: Tab bar with Home/Library/Queue, artwork, drill-down browsing, Siri intent, template caching
+- ✅ **播放列表支持**：完整浏览和播放
+- ✅ **收藏（红心）**：为歌曲、专辑、艺人、播放列表、有声书切换收藏
+- ✅ **电台集成**：浏览和播放电台
 
-## Requirements
+### 阶段 2：播放器与队列改进 🟡
 
-### iOS App
+- ✅ **播放器切换**：无缝切换并恢复播放位置
+- ✅ **高级队列**：拖拽排序、滑动删除、"接下来播放"和"添加到队列"上下文菜单
+- ⏳ **播放器分组**：（部分实现）将在未来版本中改进
 
-- **iOS**: 17.0 or later
-- **Music Assistant Server**: Version 2.0 (Schema 28) or later
-- **Sendspin**: The Sendspin player provider must be enabled on your server
+### 阶段 3：内容与同步 ✅
 
-### Apple Watch App
+- ✅ **播客**：完整支持的专用视图
+- ✅ **实时同步**：事件驱动的音乐库和队列更新
+- ✅ **增强搜索**：多类型搜索与过滤
 
-- **watchOS**: 10.0 or later
-- **iPhone**: Must be running Xonora iOS app for WatchConnectivity relay
-- **Network**: Watch uses iPhone as relay (WiFi/cellular not required on Watch)
+### 阶段 4：UI/UX 打磨 🟡
 
-## Architecture
+- ✅ **个性化设置**：外观设置、主页自定义、标签重新排序
+- ✅ **提供者品牌标识**：服务特定的图标和颜色
+- ✅ **Toast 通知**：系统级 Toast 管理器
+- ✅ **音乐库排序与视图模式**：排序选项、列表/网格切换、列数自定义
+- ✅ **自适应主题**：专辑艺术色彩提取（计划中）
+- ⏳ **字母滚动条**：快速导航（计划中）
 
-### Design Pattern
+### 阶段 5：平台扩展 ✅
 
-- **MVVM**: Strict separation between views, view models, and data models
-- **SwiftUI**: Modern declarative UI framework
-- **Combine**: Reactive data flow for state management
+- ✅ **Apple Watch**：完整的 WatchConnectivity 配套应用
+- ✅ **CarPlay**：标签栏含主页/音乐库/队列、艺术作品、下钻浏览、Siri 意图、模板缓存
 
-### Key Components
+## 系统要求
 
-- **SendspinKit**: Standalone Swift Package for Sendspin protocol and audio engine
-  - WebSocket transport layer
-  - AVAudioEngine-based playback
-  - Hardware-accelerated audio processing (vDSP/SIMD)
-  - Multi-codec support (PCM, FLAC, Opus)
-  - Burst clock synchronization
-- **XonoraClient**: Music Assistant WebSocket API client
-- **PlayerManager**: Playback state, remote controls, lock screen integration
-- **MetadataCache & ImageCache**: Actor-based caching with disk persistence
-- **WatchSessionManager**: WatchConnectivity bridge between iOS and watchOS
+### iOS 应用
 
-### Service Layer
+- **iOS**：17.0 或更高
+- **Music Assistant 服务器**：2.0 版本（Schema 28）或更高
+- **Sendspin**：服务器上必须启用 Sendspin 播放器提供程序
 
-- **MultiDeviceManager**: Tracks state for all Music Assistant players
-- **PlaybackHistoryManager**: Persistent playback history
-- **LibraryViewModel**: Global library data access
-- **CarPlaySceneDelegate**: CarPlay integration with tab bar, cached templates, and image caching
+### Apple Watch 应用
 
-## Release History
+- **watchOS**：10.0 或更高
+- **iPhone**：必须运行 Xonora iOS 应用以进行 WatchConnectivity 中继
+- **网络**：手表通过 iPhone 中继（手表无需 WiFi/蜂窝网络）
 
-### Version 1.0.7 (Current)
+## 架构
 
-- CarPlay rebuilt: tab bar with Home/Library/Queue/Now Playing, drill-down browsing, template caching, performance fixes
-- Username/password authentication with Keychain storage (token fallback)
-- Library sort options and grid/list view toggle per category
-- Hardware-anchored lyrics timing and playback drift fix
-- Larger audio buffer (~30s) for stutter-free playback
-- Queue: swipe-to-delete
-- watchOS album views with full-screen artwork
-- Large library pagination support
+### 设计模式
 
-### Version 1.0.6
+- **MVVM**：视图、视图模型和数据模型严格分离
+- **SwiftUI**：现代声明式 UI 框架
+- **Combine**：用于状态管理的响应式数据流
 
-- Apple Watch companion app
-- Multi-player management with seamless transfer
-- Podcasts and Radio support
-- Provider branding throughout the app
-- Consolidated sleep timer
-- Enhanced search with filters
-- Critical bug fixes and performance improvements
-- Updated app icon
+### 核心组件
 
-### Version 1.0.5
+- **SendspinKit**：独立的 Swift Package，实现 Sendspin 协议和音频引擎
+  - WebSocket 传输层
+  - 基于 AVAudioEngine 的播放
+  - 硬件加速音频处理（vDSP/SIMD）
+  - 多编解码器支持（PCM、FLAC、Opus）
+  - 突发时钟同步
+- **XonoraClient**：Music Assistant WebSocket API 客户端
+- **PlayerManager**：播放状态、远程控制、锁屏集成
+- **MetadataCache 和 ImageCache**：基于 Actor 的缓存，支持磁盘持久化
+- **WatchSessionManager**：iOS 和 watchOS 之间的 WatchConnectivity 桥接
 
-- mDNS Discovery for automatic server scanning
-- Hardware volume control
-- Artist navigation fixes
-- Shuffle logic overhaul
-- Intelligent artwork handling
-- Auto-reconnection with exponential backoff
-- Background library decoding
+### 服务层
 
-### Version 1.0.4
+- **MultiDeviceManager**：跟踪所有 Music Assistant 播放器的状态
+- **PlaybackHistoryManager**：持久化播放历史
+- **LibraryViewModel**：全局音乐库数据访问
+- **CarPlaySceneDelegate**：CarPlay 集成，含标签栏、缓存模板和图片缓存
 
-- TabView categories for library
-- Persistent mini player
-- Auto-player selection
-- Search UX improvements
-- Queue fixes
-- Stability improvements
+## 版本历史
 
-### Version 1.0.3
+### 版本 1.0.7（当前）
 
-- Songs tab
-- Track management
-- Metadata caching
+- CarPlay 重构：标签栏含主页/音乐库/队列/当前播放、下钻浏览、模板缓存、性能修复
+- 用户名/密码认证，钥匙串存储（令牌备用）
+- 音乐库排序选项和网格/列表视图切换（按分类）
+- 硬件同步歌词时间和播放漂移修复
+- 更大的音频缓冲区（约 30 秒）防止卡顿
+- 队列：滑动删除
+- watchOS 专辑视图含全屏艺术作品
+- 大型音乐库分页支持
 
-## License
+### 版本 1.0.6
 
-This project was open-source up until version 1.0.4. All subsequent versions are closed-source and intended for personal use with Music Assistant.
+- Apple Watch 配套应用
+- 多播放器管理与无缝切换
+- 播客和电台支持
+- 应用中统一的提供者品牌标识
+- 合并睡眠定时器
+- 增强搜索含过滤
+- 关键错误修复和性能改进
+- 更新应用图标
+
+### 版本 1.0.5
+
+- mDNS 发现自动扫描服务器
+- 硬件音量控制
+- 艺人导航修复
+- 随机播放逻辑重构
+- 智能艺术作品处理
+- 自动重连与指数退避
+- 后台音乐库解码
+
+### 版本 1.0.4
+
+- 音乐库 TabView 分类
+- 持久化迷你播放器
+- 自动播放器选择
+- 搜索体验改进
+- 队列修复
+- 稳定性改进
+
+### 版本 1.0.3
+
+- 歌曲标签
+- 曲目管理
+- 元数据缓存
+
+## 许可
+
+本项目在 1.0.4 版本之前为开源。此后所有版本均为闭源，仅供个人与 Music Assistant 配合使用。
 ---
 
-**Enjoy your music with Xonora! 🎶**
+**使用 Xonora 享受你的音乐！**
 
-For support, feature requests, or to report bugs, join our [Discord community](https://discord.gg/x6cWh4AjNG) or open an issue on GitHub.
+如需支持、功能请求或报告错误，请加入我们的 [Discord 社区](https://discord.gg/x6cWh4AjNG) 或在 GitHub 上提交 Issue。
