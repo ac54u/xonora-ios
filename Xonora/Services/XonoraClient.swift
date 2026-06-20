@@ -510,10 +510,25 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     func renamePlayer(playerId: String, name: String) async {
-        _ = try? await sendCommand("config/players/save_player_config", args: [
-            "player_id": playerId,
-            "values": ["name": name]
-        ])
+        guard let baseURL = serverURL else { return }
+        var components = URLComponents()
+        components.scheme = baseURL.scheme
+        components.host = baseURL.host
+        components.port = baseURL.port
+        let basePath = baseURL.path.trimmingCharacters(in: .init(charactersIn: "/"))
+        components.path = basePath.isEmpty
+            ? "/api/config/players/\(playerId)"
+            : "/\(basePath)/api/config/players/\(playerId)"
+        guard let url = components.url else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        let body: [String: Any] = ["name_override": name]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        _ = try? await URLSession.shared.data(for: request)
         await fetchPlayers()
     }
 
