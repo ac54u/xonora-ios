@@ -28,7 +28,6 @@ class XonoraClient: NSObject, ObservableObject {
     private var password: String?
     private var usePasswordAuth: Bool = false
     private let authMessageId = "auth-handshake"
-    private let hiddenPlayerIdsKey = "hiddenPlayerIds"
     private var pingTimer: Timer?
     private var connectionTimeoutTask: Task<Void, Never>?
     private let connectionTimeout: TimeInterval = 5.0
@@ -347,21 +346,19 @@ class XonoraClient: NSObject, ObservableObject {
         } catch {}
     }
 
-    var hiddenPlayerIds: Set<String> {
-        get { Set(UserDefaults.standard.stringArray(forKey: hiddenPlayerIdsKey) ?? []) }
-        set { UserDefaults.standard.set(Array(newValue), forKey: hiddenPlayerIdsKey) }
-    }
-
     var visiblePlayers: [MAPlayer] {
-        players.filter { !hiddenPlayerIds.contains($0.playerId) }
+        players
     }
 
-    func hidePlayer(_ playerId: String) {
-        var hidden = hiddenPlayerIds
-        hidden.insert(playerId)
-        hiddenPlayerIds = hidden
-        players.removeAll { $0.playerId == playerId }
-        if currentPlayer?.playerId == playerId { currentPlayer = nil }
+    func deletePlayer(_ playerId: String) async {
+        do {
+            _ = try await sendCommand("config/players/delete_player", args: ["player_id": playerId])
+            await fetchPlayers()
+        } catch {
+            print("[XonoraClient] Server remove failed, removing locally: \(error)")
+            players.removeAll { $0.playerId == playerId }
+            if currentPlayer?.playerId == playerId { currentPlayer = nil }
+        }
     }
 
     private func parseLibraryResult<T: Codable>(_ data: Data) -> (items: [T], total: Int) {
