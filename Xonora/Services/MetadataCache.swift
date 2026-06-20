@@ -18,6 +18,11 @@ actor MetadataCache {
     private var playlistTracksCache: [String: [Track]] = [:] // playlistId -> tracks
     private var artistAlbumsCache: [String: [Album]] = [:] // artistId -> albums
     private var artistTracksCache: [String: [Track]] = [:] // artistId -> tracks
+    private var podcastsCache: [Podcast]?
+    private var radioStationsCache: [RadioStation]?
+    private var podcastEpisodesCache: [String: [Episode]] = [:]
+    private var podcastsCacheTime: Date?
+    private var radioStationsCacheTime: Date?
 
     // Cache timestamps
     private var albumsCacheTime: Date?
@@ -56,6 +61,44 @@ actor MetadataCache {
         albumsCache = albums
         albumsCacheTime = Date()
         Task { await saveToDisk(albums, filename: "albums.json") }
+    }
+
+    // MARK: - Podcasts
+
+    func getPodcasts() -> [Podcast]? {
+        guard let cache = podcastsCache,
+              let cacheTime = podcastsCacheTime,
+              Date().timeIntervalSince(cacheTime) < cacheExpiry else { return nil }
+        return cache
+    }
+
+    func setPodcasts(_ podcasts: [Podcast]) {
+        podcastsCache = podcasts
+        podcastsCacheTime = Date()
+    }
+
+    // MARK: - Radio Stations
+
+    func getRadioStations() -> [RadioStation]? {
+        guard let cache = radioStationsCache,
+              let cacheTime = radioStationsCacheTime,
+              Date().timeIntervalSince(cacheTime) < cacheExpiry else { return nil }
+        return cache
+    }
+
+    func setRadioStations(_ stations: [RadioStation]) {
+        radioStationsCache = stations
+        radioStationsCacheTime = Date()
+    }
+
+    // MARK: - Podcast Episodes
+
+    func getPodcastEpisodes(podcastId: String) -> [Episode]? {
+        return podcastEpisodesCache[podcastId]
+    }
+
+    func setPodcastEpisodes(_ episodes: [Episode], podcastId: String) {
+        podcastEpisodesCache[podcastId] = episodes
     }
 
     // MARK: - Artists
@@ -162,6 +205,11 @@ actor MetadataCache {
         playlistTracksCache.removeAll()
         artistAlbumsCache.removeAll()
         artistTracksCache.removeAll()
+        podcastsCache = nil
+        radioStationsCache = nil
+        podcastEpisodesCache.removeAll()
+        podcastsCacheTime = nil
+        radioStationsCacheTime = nil
         albumsCacheTime = nil
         artistsCacheTime = nil
         playlistsCacheTime = nil
@@ -178,6 +226,8 @@ actor MetadataCache {
         artistsCacheTime = nil
         playlistsCacheTime = nil
         tracksCacheTime = nil
+        podcastsCacheTime = nil
+        radioStationsCacheTime = nil
     }
 
     // MARK: - Disk Persistence

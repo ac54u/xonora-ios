@@ -141,7 +141,12 @@ struct PlayerControls: View {
                                 get: { Double(playerManager.volume) },
                                 set: { playerManager.setVolume(Float($0)) }
                             ),
-                            in: 0...1
+                            in: 0...1,
+                            onEditingChanged: { editing in
+                                if !editing {
+                                    Task { try? await XonoraClient.shared.setVolume(Int(playerManager.volume * 100)) }
+                                }
+                            }
                         )
                         .tint(.secondary)
                     }

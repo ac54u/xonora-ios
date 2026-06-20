@@ -8,6 +8,7 @@ struct ArtistDetailView: View {
     @State private var tracks: [Track] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var isFavorite = false
 
     var body: some View {
         ScrollView {
@@ -41,16 +42,19 @@ struct ArtistDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
+                    let newValue = !isFavorite
+                    isFavorite = newValue
                     Task {
                         await libraryViewModel.toggleFavorite(item: artist)
                     }
                 } label: {
-                    Image(systemName: artist.favorite ?? false ? "heart.fill" : "heart")
-                        .foregroundColor(artist.favorite ?? false ? .red : .primary)
+                    Image(systemName: isFavorite ? "heart.fill" : "heart")
+                        .foregroundColor(isFavorite ? .red : .primary)
                 }
             }
         }
         .background(Color(UIColor.systemBackground).ignoresSafeArea())
+        .onAppear { isFavorite = artist.favorite ?? false }
         .task {
             await loadData()
         }

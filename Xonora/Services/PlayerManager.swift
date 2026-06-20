@@ -34,6 +34,9 @@ class PlayerManager: ObservableObject {
     @Published var repeatMode: RepeatMode = .off
     @Published var volume: Float = 1.0
     @Published var currentSource: String?
+    @Published var sleepTimerActive = false
+    @Published var sleepTimerEndDate: Date?
+    private var sleepTimerTask: Task<Void, Never>?
 
     private var progressTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -252,6 +255,11 @@ class PlayerManager: ObservableObject {
         playbackState = .stopped
         stopProgressTimer()
         print("[PlayerManager] Track ended")
+
+        if sleepTimerActive && sleepTimerEndDate == nil {
+            pause()
+            sleepTimerActive = false
+        }
     }
 
 
@@ -512,6 +520,47 @@ class PlayerManager: ObservableObject {
     func clearQueue() {
         queue.removeAll()
         currentIndex = 0
+    }
+
+    func setSleepTimer(minutes: Int) {
+        sleepTimerTask?.cancel()
+        sleepTimerActive = true
+        sleepTimerEndDate = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        let endDate = sleepTimerEndDate!
+        sleepTimerTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(minutes * 60_000_000_000))
+            await MainActor.run {
+                guard let self = self, self.sleepTimerActive else { return }
+                if self.isPlaying {
+                    self.pause()
+                }
+                self.sleepTimerActive = false
+                self.sleepTimerEndDate = nil
+            }
+        }
+    }
+
+    func setSleepTimerEndOfTrack() {
+        sleepTimerTask?.cancel()
+        sleepTimerActive = true
+        sleepTimerEndDate = nil
+        // Will be handled by track end detection
+    }
+
+    func cancelSleepTimer() {
+        sleepTimerTask?.cancel()
+        sleepTimerActive = false
+        sleepTimerEndDate = nil
+    }
+
+    var sleepTimerDescription: String {
+        guard sleepTimerActive, let endDate = sleepTimerEndDate else {
+            return sleepTimerActive ? "End of Track" : ""
+        }
+        let remaining = max(0, endDate.timeIntervalSinceNow)
+        let minutes = Int(remaining) / 60
+        let seconds = Int(remaining) % 60
+        return String(format: "Sleep: %d:%02d", minutes, seconds)
     }
 
     func playAlbum(_ tracks: [Track], startingAt index: Int = 0) {

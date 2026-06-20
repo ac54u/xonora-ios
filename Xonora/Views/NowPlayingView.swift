@@ -10,6 +10,8 @@ struct NowPlayingView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var showQueue = false
     @State private var showPlayerPicker = false
+    @State private var showLyrics = false
+    @State private var showSleepTimer = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -64,6 +66,22 @@ struct NowPlayingView: View {
         .sheet(isPresented: $showPlayerPicker) {
             PlayerPickerView()
         }
+        .sheet(isPresented: $showLyrics) {
+            LyricsView()
+        }
+        .actionSheet(isPresented: $showSleepTimer) {
+            ActionSheet(
+                title: Text("Sleep Timer"),
+                buttons: [
+                    .default(Text("15 minutes")) { playerManager.setSleepTimer(minutes: 15) },
+                    .default(Text("30 minutes")) { playerManager.setSleepTimer(minutes: 30) },
+                    .default(Text("45 minutes")) { playerManager.setSleepTimer(minutes: 45) },
+                    .default(Text("60 minutes")) { playerManager.setSleepTimer(minutes: 60) },
+                    .default(Text("End of Track")) { playerManager.setSleepTimerEndOfTrack() },
+                    .cancel(Text("Cancel"))
+                ]
+            )
+        }
     }
     
     private var albumArtView: some View {
@@ -99,37 +117,60 @@ struct NowPlayingView: View {
                         .frame(width: 44, height: 44)
                 }
             } else {
-                Spacer().frame(width: 44) // Balance layout
+                Spacer().frame(width: 44)
             }
 
             Spacer()
 
-            Button {
-                showPlayerPicker = true
-            } label: {
-                VStack(spacing: 2) {
+            VStack(spacing: 2) {
+                if playerManager.sleepTimerActive {
+                    Text(playerManager.sleepTimerDescription)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.orange)
+                } else {
                     Text("PLAYING FROM")
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .foregroundColor(.white.opacity(0.7))
-
-                    Text(playerManager.currentSource ?? playerManager.currentTrack?.album?.name ?? "Library")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                        .lineLimit(1)
                 }
+
+                Text(playerManager.currentSource ?? playerManager.currentTrack?.album?.name ?? "Library")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
             }
 
             Spacer()
 
-            Button {
-                showQueue = true
-            } label: {
-                Image(systemName: "list.bullet")
-                    .font(.title2)
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
+            HStack(spacing: 16) {
+                Button {
+                    showSleepTimer = true
+                } label: {
+                    Image(systemName: playerManager.sleepTimerActive ? "timer" : "timer")
+                        .font(.title2)
+                        .foregroundColor(playerManager.sleepTimerActive ? .orange : .white)
+                        .frame(width: 44, height: 44)
+                }
+
+                Button {
+                    showLyrics = true
+                } label: {
+                    Image(systemName: "text.alignleft")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                }
+
+                Button {
+                    showQueue = true
+                } label: {
+                    Image(systemName: "list.bullet")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                }
             }
         }
         .padding(.horizontal)

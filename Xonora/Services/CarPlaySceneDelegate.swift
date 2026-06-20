@@ -32,11 +32,29 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     // MARK: - Tab Bar
 
     private func buildTabBarTemplates() -> [CPTemplate] {
+        let homeTab = buildHomeTab()
         let libraryTab = buildLibraryTab()
         let nowPlayingTab = buildNowPlayingTab()
         let queueTab = buildQueueTab()
 
-        return [libraryTab, nowPlayingTab, queueTab]
+        return [homeTab, libraryTab, nowPlayingTab, queueTab]
+    }
+
+    private func buildHomeTab() -> CPTemplate {
+        let items = [
+            makeLibraryItem(title: "Continue Listening", subtitle: "Resume where you left off", icon: "play.circle.fill") { [weak self] in
+                self?.showQueue()
+            },
+            makeLibraryItem(title: "Recently Played", subtitle: "Your recent tracks", icon: "clock.fill") { [weak self] in
+                self?.showSongs()
+            },
+            makeLibraryItem(title: "Recommendations", subtitle: "Suggested for you", icon: "star.fill") { [weak self] in
+                self?.showAlbums()
+            }
+        ]
+        let section = CPListSection(items: items)
+        let template = CPListTemplate(title: NSLocalizedString("Home", comment: "CarPlay home title"), sections: [section])
+        return template
     }
 
     private func makeLibraryItem(title: String, subtitle: String, icon: String, handler: @escaping () -> Void) -> CPListItem {
@@ -401,6 +419,12 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
             name: .playbackStateChanged,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(libraryDidUpdate),
+            name: .libraryUpdated,
+            object: nil
+        )
     }
 
     @objc private func queueDidUpdate(_ notification: Notification) {
@@ -411,6 +435,10 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
         // Update now playing info via MPNowPlayingInfoCenter
     }
 
+    @objc private func libraryDidUpdate(_ notification: Notification) {
+        templateCache.removeAllObjects()
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -418,4 +446,5 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
 extension Notification.Name {
     static let playbackStateChanged = Notification.Name("playbackStateChanged")
+    static let libraryUpdated = Notification.Name("libraryUpdated")
 }

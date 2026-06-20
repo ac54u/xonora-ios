@@ -21,15 +21,21 @@ struct ContentView: View {
                     }
                     .tag(1)
 
+                NowPlayingView(isPresentedModally: false)
+                    .tabItem {
+                        Label("Now Playing", systemImage: "play.circle.fill")
+                    }
+                    .tag(2)
+
                 SettingsView()
                     .tabItem {
                         Label("Settings", systemImage: "gear")
                     }
-                    .tag(2)
+                    .tag(3)
             }
 
             // Mini Player Overlay - positioned above system tab bar
-            if playerViewModel.hasTrack && !isPlayerExpanded && selectedTab != 2 {
+            if playerViewModel.hasTrack && !isPlayerExpanded && selectedTab != 3 {
                 MiniPlayerView {
                     withAnimation {
                         isPlayerExpanded = true
@@ -550,6 +556,7 @@ struct ServerSetupView: View {
 struct SearchView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var playerViewModel: PlayerViewModel
+    @ObservedObject private var playerManager = PlayerManager.shared
 
     var body: some View {
         NavigationStack {
@@ -590,6 +597,31 @@ struct SearchView: View {
                                 playerViewModel.playTrack(track, fromQueue: libraryViewModel.searchResults.tracks, sourceName: "Search")
                             }
                         )
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button {
+                                Task { try? await XonoraClient.shared.addToLibrary(itemId: track.itemId, provider: track.provider) }
+                            } label: {
+                                Label("Add to Library", systemImage: "plus")
+                            }
+                            .tint(.accentColor)
+                        }
+                        .contextMenu {
+                            Button {
+                                Task { try? await XonoraClient.shared.addToLibrary(itemId: track.itemId, provider: track.provider) }
+                            } label: {
+                                Label("Add to Library", systemImage: "plus")
+                            }
+                            Button {
+                                playerManager.playNext(track)
+                            } label: {
+                                Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+                            }
+                            Button {
+                                playerManager.addToQueue(track)
+                            } label: {
+                                Label("Add to Queue", systemImage: "music.note.list")
+                            }
+                        }
                     }
                 }
             }
@@ -624,6 +656,13 @@ struct SearchView: View {
                                 }
                             }
                         }
+                        .contextMenu {
+                            Button {
+                                Task { try? await XonoraClient.shared.addToLibrary(itemId: album.itemId, provider: album.provider) }
+                            } label: {
+                                Label("Add to Library", systemImage: "plus")
+                            }
+                        }
                     }
                 }
             }
@@ -641,6 +680,13 @@ struct SearchView: View {
                                 }
 
                             Text(artist.name)
+                        }
+                        .contextMenu {
+                            Button {
+                                Task { try? await XonoraClient.shared.addToLibrary(itemId: artist.itemId, provider: artist.provider) }
+                            } label: {
+                                Label("Add to Library", systemImage: "plus")
+                            }
                         }
                     }
                 }

@@ -25,6 +25,9 @@ class LibraryViewModel: ObservableObject {
     @Published var artists: [Artist] = []
     @Published var playlists: [Playlist] = []
     @Published var tracks: [Track] = []
+    @Published var podcasts: [Podcast] = []
+    @Published var radioStations: [RadioStation] = []
+    @Published var lyrics: LyricsResponse?
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var searchQuery = ""
@@ -40,6 +43,10 @@ class LibraryViewModel: ObservableObject {
     @Published var isLoadingMoreSongs = false
     @Published var isLoadingMorePlaylists = false
     @Published var isLoadingMoreArtists = false
+    @Published var podcastTotal: Int = 0
+    @Published var radioTotal: Int = 0
+    @Published var isLoadingMorePodcasts = false
+    @Published var isLoadingMoreRadio = false
 
     private let pageSize = 200
 
@@ -143,6 +150,11 @@ class LibraryViewModel: ObservableObject {
             isLoading = true
         }
 
+        if !forceRefresh {
+            if let cachedPodcasts = await cache.getPodcasts() { self.podcasts = cachedPodcasts }
+            if let cachedRadio = await cache.getRadioStations() { self.radioStations = cachedRadio }
+        }
+
         errorMessage = nil
 
         do {
@@ -150,26 +162,34 @@ class LibraryViewModel: ObservableObject {
             async let artistsTask = client.fetchArtists(limit: pageSize)
             async let playlistsTask = client.fetchPlaylists(limit: pageSize)
             async let tracksTask = client.fetchTracks(limit: pageSize)
+            async let podcastsTask = client.fetchPodcasts(limit: pageSize)
+            async let radioTask = client.fetchRadioStations(limit: pageSize)
 
-            let (fetchedAlbums, fetchedArtists, fetchedPlaylists, fetchedTracks) = try await (albumsTask, artistsTask, playlistsTask, tracksTask)
+            let (fetchedAlbums, fetchedArtists, fetchedPlaylists, fetchedTracks, fetchedPodcasts, fetchedRadio) = try await (albumsTask, artistsTask, playlistsTask, tracksTask, podcastsTask, radioTask)
 
-            let (sortedAlbums, sortedArtists, sortedPlaylists, sortedTracks) = await Task.detached(priority: .userInitiated) {
+            let (sortedAlbums, sortedArtists, sortedPlaylists, sortedTracks, sortedPodcasts, sortedRadio) = await Task.detached(priority: .userInitiated) {
                 let sortedAlbums = fetchedAlbums.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
                 let sortedArtists = fetchedArtists.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
                 let sortedPlaylists = fetchedPlaylists.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
                 let sortedTracks = fetchedTracks.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                let sortedPodcasts = fetchedPodcasts.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                let sortedRadio = fetchedRadio.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
                 
-                return (sortedAlbums, sortedArtists, sortedPlaylists, sortedTracks)
+                return (sortedAlbums, sortedArtists, sortedPlaylists, sortedTracks, sortedPodcasts, sortedRadio)
             }.value
 
             self.albums = sortedAlbums
             self.artists = sortedArtists
             self.playlists = sortedPlaylists
             self.tracks = sortedTracks
+            self.podcasts = sortedPodcasts
+            self.radioStations = sortedRadio
             self.albumTotal = fetchedAlbums.total
             self.artistTotal = fetchedArtists.total
             self.playlistTotal = fetchedPlaylists.total
             self.songTotal = fetchedTracks.total
+            self.podcastTotal = fetchedPodcasts.total
+            self.radioTotal = fetchedRadio.total
             isLoading = false
             isNetworkFetching = false
 
@@ -178,6 +198,8 @@ class LibraryViewModel: ObservableObject {
                 await self.cache.setArtists(sortedArtists)
                 await self.cache.setPlaylists(sortedPlaylists)
                 await self.cache.setTracks(sortedTracks)
+                await self.cache.setPodcasts(sortedPodcasts)
+                await self.cache.setRadioStations(sortedRadio)
             }
 
             print("[LibraryViewModel] Fetched and cached library (total: \(fetchedAlbums.total) albums, \(fetchedArtists.total) artists, \(fetchedPlaylists.total) playlists, \(fetchedTracks.total) tracks)")
@@ -241,6 +263,43 @@ class LibraryViewModel: ObservableObject {
             print("[LibraryViewModel] Failed to load more artists: \(error)")
         }
         isLoadingMoreArtists = false
+    }
+
+    func loadMorePodcasts() async {
+        guard !isLoadingMorePodcasts, podcasts.count < podcastTotal else { return }
+        isLoadingMorePodcasts = true
+        do {
+            let result = try await client.fetchPodcasts(offset: podcasts.count, limit: pageSize)
+            let sorted = result.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            podcasts.append(contentsOf: sorted)
+        } catch { print("[LibraryViewModel] Failed to load more podcasts: \(error)") }
+        isLoadingMorePodcasts = false
+    }
+
+    func loadMoreRadio() async {
+        guard !isLoadingMoreRadio, radioStations.count < radioTotal else { return }
+        isLoadingMoreRadio = true
+        do {
+            let result = try await client.fetchRadioStations(offset: radioStations.count, limit: pageSize)
+            let sorted = result.items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            radioStations.append(contentsOf: sorted)
+        } catch { print("[LibraryViewModel] Failed to load more radio: \(error)") }
+        isLoadingMoreRadio = false
+    }
+
+    func loadPodcastEpisodes(podcast: Podcast) async throws -> [Episode] {
+        if let cached = await cache.getPodcastEpisodes(podcastId: podcast.itemId) {
+            return cached
+        }
+        let episodes = try await client.fetchPodcastEpisodes(podcastId: podcast.itemId, provider: podcast.provider)
+        await cache.setPodcastEpisodes(episodes, podcastId: podcast.itemId)
+        return episodes
+    }
+
+    func fetchLyrics(uri: String) async {
+        do {
+            lyrics = try await client.fetchLyrics(uri: uri)
+        } catch { print("[LibraryViewModel] Failed to fetch lyrics: \(error)") }
     }
 
     func toggleFavorite<T: Identifiable>(item: T) async {
@@ -380,6 +439,7 @@ class LibraryViewModel: ObservableObject {
     func refreshLibrary() async {
         await cache.invalidateLibrary()
         await loadLibrary(forceRefresh: true)
+        NotificationCenter.default.post(name: .libraryUpdated, object: nil)
     }
 
     func clearCache() async {

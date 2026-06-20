@@ -12,6 +12,8 @@ struct LibraryView: View {
         case songs = "Songs"
         case playlists = "Playlists"
         case artists = "Artists"
+        case podcasts = "Podcasts"
+        case radio = "Radio"
 
         var id: String { self.rawValue }
 
@@ -25,14 +27,21 @@ struct LibraryView: View {
             case .songs: return "music.note"
             case .playlists: return "music.note.list"
             case .artists: return "person.2.fill"
+            case .podcasts: return "antenna.radiowaves.left.and.right"
+            case .radio: return "dot.radiowaves.left.and.right"
             }
         }
     }
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
+    @State private var columnCount: Int = UserDefaults.standard.integer(forKey: "gridColumnCount") != 0
+        ? UserDefaults.standard.integer(forKey: "gridColumnCount")
+        : 2
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var columns: [GridItem] {
+        let count = horizontalSizeClass == .regular ? min(columnCount + 2, 6) : columnCount
+        return Array(repeating: GridItem(.flexible(), spacing: 16), count: max(count, 2))
+    }
 
     var body: some View {
         NavigationStack {
@@ -63,6 +72,8 @@ struct LibraryView: View {
                         categoryScrollView { songsList }.tag(LibraryCategory.songs)
                         categoryScrollView { playlistsContent }.tag(LibraryCategory.playlists)
                         categoryScrollView { artistsList }.tag(LibraryCategory.artists)
+                        categoryScrollView { podcastsContent }.tag(LibraryCategory.podcasts)
+                        categoryScrollView { radioContent }.tag(LibraryCategory.radio)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .safeAreaInset(edge: .top, spacing: 0) {
@@ -142,6 +153,7 @@ struct LibraryView: View {
                 case .songs: return libraryViewModel.songSort
                 case .playlists: return libraryViewModel.playlistSort
                 case .artists: return libraryViewModel.artistSort
+                case .podcasts, .radio: return .name
                 }
             },
             set: { newValue in
@@ -150,6 +162,7 @@ struct LibraryView: View {
                 case .songs: libraryViewModel.setSongSort(newValue)
                 case .playlists: libraryViewModel.setPlaylistSort(newValue)
                 case .artists: libraryViewModel.setArtistSort(newValue)
+                case .podcasts, .radio: break
                 }
             }
         )
@@ -160,6 +173,7 @@ struct LibraryView: View {
             case .songs: return [.name, .artist, .recentlyAdded]
             case .playlists: return [.name, .recentlyAdded]
             case .artists: return [.name]
+            case .podcasts, .radio: return [.name]
             }
         }()
 
@@ -176,15 +190,47 @@ struct LibraryView: View {
     private var viewModeToggle: some View {
         switch selectedCategory {
         case .albums:
-            viewModeButton(
-                isGrid: libraryViewModel.albumViewMode == .grid,
-                toggle: { libraryViewModel.setAlbumViewMode(libraryViewModel.albumViewMode == .grid ? .list : .grid) }
-            )
+            HStack(spacing: 8) {
+                viewModeButton(
+                    isGrid: libraryViewModel.albumViewMode == .grid,
+                    toggle: { libraryViewModel.setAlbumViewMode(libraryViewModel.albumViewMode == .grid ? .list : .grid) }
+                )
+                if libraryViewModel.albumViewMode == .grid {
+                    Menu {
+                        ForEach(2...4, id: \.self) { count in
+                            Button("\(count) Columns") {
+                                columnCount = count
+                                UserDefaults.standard.set(count, forKey: "gridColumnCount")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "rectangle.split.2x2")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
         case .playlists:
-            viewModeButton(
-                isGrid: libraryViewModel.playlistViewMode == .grid,
-                toggle: { libraryViewModel.setPlaylistViewMode(libraryViewModel.playlistViewMode == .grid ? .list : .grid) }
-            )
+            HStack(spacing: 8) {
+                viewModeButton(
+                    isGrid: libraryViewModel.playlistViewMode == .grid,
+                    toggle: { libraryViewModel.setPlaylistViewMode(libraryViewModel.playlistViewMode == .grid ? .list : .grid) }
+                )
+                if libraryViewModel.playlistViewMode == .grid {
+                    Menu {
+                        ForEach(2...4, id: \.self) { count in
+                            Button("\(count) Columns") {
+                                columnCount = count
+                                UserDefaults.standard.set(count, forKey: "gridColumnCount")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "rectangle.split.2x2")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
         default:
             EmptyView()
         }
@@ -314,30 +360,38 @@ struct LibraryView: View {
     // MARK: - Songs
 
     private var songsList: some View {
-        LazyVStack(spacing: 0) {
-            if libraryViewModel.sortedTracks.isEmpty && !libraryViewModel.isLoading {
-                emptyView("No Songs", icon: "music.note", message: "Your library has no songs. Add individual tracks to see them here.")
-            } else {
-                ForEach(Array(libraryViewModel.sortedTracks.enumerated()), id: \.element.id) { index, track in
-                    TrackRow(
-                        track: track,
-                        index: index + 1,
-                        showArtwork: true,
-                        isPlaying: playerViewModel.currentTrack?.itemId == track.itemId,
-                        numberFirst: true
-                    ) {
-                        playerViewModel.playTrack(track, sourceName: "Songs")
-                    }
-                    .padding(.horizontal, 12)
-                }
+        let sorted = libraryViewModel.sortedTracks
+        let grouped = Dictionary(grouping: sorted) { track -> String in
+            guard let first = track.name.first else { return "#" }
+            return first.isLetter ? String(first.uppercased()) : "#"
+        }
+        let keys = grouped.keys.sorted()
 
+        return LazyVStack(spacing: 0) {
+            if sorted.isEmpty && !libraryViewModel.isLoading {
+                emptyView("No Songs", icon: "music.note", message: "Your library has no songs.")
+            } else {
+                ForEach(keys, id: \.self) { key in
+                    Section(header: sectionHeader(key)) {
+                        ForEach(Array(grouped[key]?.enumerated() ?? [].enumerated()), id: \.element.id) { index, track in
+                            TrackRow(
+                                track: track,
+                                index: index + 1,
+                                showArtwork: true,
+                                isPlaying: playerViewModel.currentTrack?.itemId == track.itemId,
+                                numberFirst: true
+                            ) {
+                                playerViewModel.playTrack(track, sourceName: "Songs")
+                            }
+                            .padding(.horizontal, 12)
+                        }
+                    }
+                }
                 if libraryViewModel.tracks.count < libraryViewModel.songTotal {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .task {
-                            await libraryViewModel.loadMoreSongs()
-                        }
+                        .task { await libraryViewModel.loadMoreSongs() }
                 }
             }
         }
@@ -442,56 +496,172 @@ struct LibraryView: View {
     // MARK: - Artists
 
     private var artistsList: some View {
-        LazyVStack(spacing: 0) {
-            if libraryViewModel.sortedArtists.isEmpty && !libraryViewModel.isLoading {
+        let sorted = libraryViewModel.sortedArtists
+        let grouped = Dictionary(grouping: sorted) { artist -> String in
+            guard let first = artist.name.first else { return "#" }
+            return first.isLetter ? String(first.uppercased()) : "#"
+        }
+        let keys = grouped.keys.sorted()
+
+        return LazyVStack(spacing: 0) {
+            if sorted.isEmpty && !libraryViewModel.isLoading {
                 emptyView("No Artists", icon: "person.2", message: "Your library is empty.")
             } else {
-                ForEach(libraryViewModel.sortedArtists) { artist in
-                    NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                        HStack(spacing: 12) {
-                            CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: artist.imageUrl, size: .thumbnail)) {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .overlay {
-                                        Image(systemName: "person.fill")
-                                            .foregroundColor(.gray)
+                ForEach(keys, id: \.self) { key in
+                    Section(header: sectionHeader(key)) {
+                        ForEach(grouped[key] ?? []) { artist in
+                            NavigationLink(destination: ArtistDetailView(artist: artist)) {
+                                HStack(spacing: 12) {
+                                    CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: artist.imageUrl, size: .thumbnail)) {
+                                        Circle().fill(Color.gray.opacity(0.3))
+                                            .overlay { Image(systemName: "person.fill").foregroundColor(.gray) }
                                     }
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 44, height: 44)
+                                    .clipShape(Circle())
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(artist.name).font(.body).foregroundColor(.primary).lineLimit(1)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundColor(.secondary.opacity(0.5))
+                                }
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+                                .contentShape(Rectangle())
                             }
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 44, height: 44)
-                            .clipShape(Circle())
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(artist.name)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.bold))
-                                .foregroundColor(.secondary.opacity(0.5))
+                            .buttonStyle(.plain)
                         }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
                 }
-
                 if libraryViewModel.artists.count < libraryViewModel.artistTotal {
                     ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .task {
-                            await libraryViewModel.loadMoreArtists()
-                        }
+                        .frame(maxWidth: .infinity).padding()
+                        .task { await libraryViewModel.loadMoreArtists() }
                 }
             }
         }
         .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+    }
+
+    // MARK: - Podcasts
+
+    @ViewBuilder
+    private var podcastsContent: some View {
+        if libraryViewModel.podcasts.isEmpty && !libraryViewModel.isLoading {
+            emptyView("No Podcasts", icon: "antenna.radiowaves.left.and.right", message: "Your library has no podcasts.")
+        } else {
+            LazyVStack(spacing: 0) {
+                LazyVGrid(columns: columns, spacing: 20) {
+                    ForEach(libraryViewModel.podcasts) { podcast in
+                        NavigationLink(destination: PodcastDetailView(podcast: podcast)) {
+                            PodcastGridItem(podcast: podcast)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if libraryViewModel.podcasts.count < libraryViewModel.podcastTotal {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .task { await libraryViewModel.loadMorePodcasts() }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+            }
+        }
+    }
+
+    // MARK: - Radio
+
+    @ViewBuilder
+    private var radioContent: some View {
+        if libraryViewModel.radioStations.isEmpty && !libraryViewModel.isLoading {
+            emptyView("No Radio Stations", icon: "dot.radiowaves.left.and.right", message: "Your library has no radio stations.")
+        } else {
+            LazyVStack(spacing: 0) {
+                ForEach(libraryViewModel.radioStations) { station in
+                    HStack(spacing: 12) {
+                        CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: station.imageUrl, size: .thumbnail)) {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.gray.opacity(0.3))
+                                .overlay {
+                                    Image(systemName: "dot.radiowaves.left.and.right")
+                                        .foregroundColor(.gray)
+                                }
+                        }
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 44, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(station.name)
+                                .font(.body)
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                            if let desc = station.description {
+                                Text(desc)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(2)
+                            }
+                        }
+
+                        Spacer()
+
+                        Button {
+                            playRadioStation(station)
+                        } label: {
+                            Image(systemName: "play.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .contentShape(Rectangle())
+
+                    Divider().padding(.leading, 68)
+                }
+                if libraryViewModel.radioStations.count < libraryViewModel.radioTotal {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .task { await libraryViewModel.loadMoreRadio() }
+                }
+            }
+            .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+        }
+    }
+
+    private func playRadioStation(_ station: RadioStation) {
+        let track = Track(
+            itemId: station.itemId,
+            provider: station.provider,
+            name: station.name,
+            version: nil,
+            duration: nil,
+            trackNumber: nil,
+            discNumber: nil,
+            uri: station.uri,
+            artists: nil,
+            album: nil,
+            metadata: station.metadata,
+            providerMappings: nil,
+            favorite: station.favorite
+        )
+        playerViewModel.playTrack(track, sourceName: "Radio")
+    }
+
+    private func sectionHeader(_ key: String) -> some View {
+        Text(key)
+            .font(.caption)
+            .fontWeight(.bold)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(Color(UIColor.systemGroupedBackground))
     }
 
     private func emptyView(_ title: String, icon: String, message: String) -> some View {

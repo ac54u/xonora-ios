@@ -535,6 +535,49 @@ class XonoraClient: NSObject, ObservableObject {
         _ = try await sendCommand(command, args: ["item": uri])
     }
 
+    func fetchPodcasts(offset: Int = 0, limit: Int = 500) async throws -> (items: [Podcast], total: Int) {
+        let data = try await sendCommand("music/podcasts/library_items", args: ["offset": offset, "limit": limit])
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [String: Any],
+              let items = result["items"] as? [[String: Any]] else { return ([], 0) }
+        let total = result["total"] as? Int ?? items.count
+        let decoded: [Podcast] = await Task.detached(priority: .userInitiated) {
+            let itemsData = (try? JSONSerialization.data(withJSONObject: items)) ?? Data()
+            return (try? JSONDecoder().decode([Podcast].self, from: itemsData)) ?? []
+        }.value
+        return (decoded, total)
+    }
+
+    func fetchPodcastEpisodes(podcastId: String, provider: String) async throws -> [Episode] {
+        let data = try await sendCommand("music/podcasts/podcast_episodes", args: ["item_id": podcastId, "provider_instance_id_or_domain": provider])
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any], let result = json["result"] as? [[String: Any]] else { return [] }
+        let resultData = try JSONSerialization.data(withJSONObject: result)
+        return (try? JSONDecoder().decode([Episode].self, from: resultData)) ?? []
+    }
+
+    func fetchRadioStations(offset: Int = 0, limit: Int = 500) async throws -> (items: [RadioStation], total: Int) {
+        let data = try await sendCommand("music/radio/library_items", args: ["offset": offset, "limit": limit])
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [String: Any],
+              let items = result["items"] as? [[String: Any]] else { return ([], 0) }
+        let total = result["total"] as? Int ?? items.count
+        let decoded: [RadioStation] = await Task.detached(priority: .userInitiated) {
+            let itemsData = (try? JSONSerialization.data(withJSONObject: items)) ?? Data()
+            return (try? JSONDecoder().decode([RadioStation].self, from: itemsData)) ?? []
+        }.value
+        return (decoded, total)
+    }
+
+    func fetchLyrics(uri: String) async throws -> LyricsResponse {
+        let data = try await sendCommand("music/tracks/lyrics", args: ["uri": uri])
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [String: Any] else {
+            return LyricsResponse(lyrics: nil, hasSynced: false)
+        }
+        let resultData = try JSONSerialization.data(withJSONObject: result)
+        return (try? JSONDecoder().decode(LyricsResponse.self, from: resultData)) ?? LyricsResponse(lyrics: nil, hasSynced: false)
+    }
+
     enum ImageSize: Int {
         case thumbnail = 150
         case small = 300
@@ -594,4 +637,5 @@ struct ServerInfo {
 extension Notification.Name {
     static let queueUpdated = Notification.Name("queueUpdated")
     static let tokenRefreshed = Notification.Name("tokenRefreshed")
+    static let libraryUpdated = Notification.Name("libraryUpdated")
 }
