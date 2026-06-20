@@ -676,11 +676,15 @@ class XonoraClient: NSObject, ObservableObject {
         return (try? JSONDecoder().decode(LyricsResponse.self, from: resultData)) ?? LyricsResponse(lyrics: nil, hasSynced: false)
     }
 
+    // MA schema >= 31 enforces an imageproxy size whitelist ([80,160,256,512,1024]);
+    // any other size returns HTTP 400 and the image fails to load. These values are
+    // also valid on older servers (which accept arbitrary sizes), so they work
+    // universally without needing a schema check.
     enum ImageSize: Int {
-        case thumbnail = 150
-        case small = 300
-        case medium = 600
-        case large = 1200
+        case thumbnail = 160
+        case small = 256
+        case medium = 512
+        case large = 1024
     }
 
     func getImageURL(for urlString: String?, size: ImageSize = .medium) -> URL? {

@@ -19,157 +19,147 @@ struct TrackRow: View {
     }
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Track number or playing indicator (before artwork if numberFirst is true)
-                if numberFirst, let index = index {
-                    if isPlaying {
-                        if #available(iOS 17.0, *) {
-                            Image(systemName: "waveform")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 24)
-                                .symbolEffect(.variableColor.iterative)
-                        } else {
-                            // Fallback on earlier versions
-                            Image(systemName: "waveform")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 24)
+        // The row is a plain HStack — NOT one big Button — so that the heart and the
+        // "…" menu are independently tappable. Nesting them inside an outer Button made
+        // every tap (including on those controls) fall through to onTap (play).
+        HStack(spacing: 12) {
+            // Tappable content area: number / artwork / info / duration → onTap (play).
+            Button(action: onTap) {
+                HStack(spacing: 12) {
+                    if numberFirst, let index = index {
+                        trackIndicator(index: index)
+                    }
+
+                    if showArtwork {
+                        CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: track.imageUrl ?? track.album?.imageUrl, size: .thumbnail)) {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.gray.opacity(0.3))
+                                .overlay {
+                                    Image(systemName: "music.note")
+                                        .foregroundColor(.gray)
+                                }
                         }
-                    } else {
-                        Text("\(index)")
-                            .font(.subheadline)
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 44, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+
+                    if !numberFirst, let index = index {
+                        trackIndicator(index: index)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(track.name)
+                            .font(.body)
+                            .foregroundColor(isPlaying ? .accentColor : .primary)
+                            .lineLimit(1)
+
+                        Text(track.artistNames)
+                            .font(.caption)
                             .foregroundColor(.secondary)
-                            .frame(width: 24)
+                            .lineLimit(1)
                     }
-                }
 
-                // Artwork
-                if showArtwork {
-                    CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: track.imageUrl ?? track.album?.imageUrl, size: .thumbnail)) {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.gray.opacity(0.3))
-                            .overlay {
-                                Image(systemName: "music.note")
-                                    .foregroundColor(.gray)
-                            }
-                    }
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-                }
+                    Spacer()
 
-                // Track number or playing indicator (after artwork if numberFirst is false)
-                if !numberFirst, let index = index {
-                    if isPlaying {
-                        if #available(iOS 17.0, *) {
-                            Image(systemName: "waveform")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 24)
-                                .symbolEffect(.variableColor.iterative)
-                        } else {
-                            // Fallback on earlier versions
-                            Image(systemName: "waveform")
-                                .font(.caption)
-                                .foregroundColor(.accentColor)
-                                .frame(width: 24)
-                        }
-                    } else {
-                        Text("\(index)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .frame(width: 24)
-                    }
-                }
-
-                // Track info
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(track.name)
-                        .font(.body)
-                        .foregroundColor(isPlaying ? .accentColor : .primary)
-                        .lineLimit(1)
-
-                    Text(track.artistNames)
+                    Text(track.formattedDuration)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .lineLimit(1)
                 }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                Spacer()
+            // Favorite toggle — independent control.
+            Button {
+                Task {
+                    await libraryViewModel.toggleFavorite(item: track)
+                }
+            } label: {
+                Image(systemName: (track.favorite ?? false) ? "heart.fill" : "heart")
+                    .foregroundColor((track.favorite ?? false) ? .pink : .secondary)
+                    .font(.body)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                // Duration
-                Text(track.formattedDuration)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                // Favorite toggle
+            // More options menu — independent control.
+            Menu {
                 Button {
-                    Task {
-                        await libraryViewModel.toggleFavorite(item: track)
-                    }
+                    PlayerManager.shared.playTrack(track)
                 } label: {
-                    Image(systemName: (track.favorite ?? false) ? "heart.fill" : "heart")
-                        .foregroundColor((track.favorite ?? false) ? .pink : .secondary)
-                        .font(.body)
-                        .frame(width: 32, height: 32)
+                    Label("Play", systemImage: "play")
                 }
 
-                // More options menu
-                Menu {
+                if let album = track.album {
                     Button {
-                        PlayerManager.shared.playTrack(track)
-                    } label: {
-                        Label("Play", systemImage: "play")
-                    }
-                    
-                    if let album = track.album {
-                        Button {
-                            Task {
-                                if let tracks = try? await XonoraClient.shared.fetchAlbumTracks(albumId: album.itemId, provider: album.provider) {
-                                    await MainActor.run {
-                                        PlayerManager.shared.playAlbum(tracks)
-                                    }
+                        Task {
+                            if let tracks = try? await XonoraClient.shared.fetchAlbumTracks(albumId: album.itemId, provider: album.provider) {
+                                await MainActor.run {
+                                    PlayerManager.shared.playAlbum(tracks)
                                 }
                             }
-                        } label: {
-                            Label("Play Album", systemImage: "opticaldisc")
                         }
-                    }
-
-                    Button {
-                        PlayerManager.shared.playNext(track)
                     } label: {
-                        Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+                        Label("Play Album", systemImage: "opticaldisc")
                     }
-
-                    Button {
-                        PlayerManager.shared.addToQueue(track)
-                    } label: {
-                        Label("Add to Queue", systemImage: "text.badge.plus")
-                    }
-                    
-                    if track.provider != "library" {
-                        Button {
-                            Task {
-                                try? await XonoraClient.shared.addToLibrary(itemId: track.itemId, provider: track.provider)
-                            }
-                        } label: {
-                            Label("Add to Library", systemImage: "plus.circle")
-                        }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .frame(width: 24, height: 24)
                 }
+
+                Button {
+                    PlayerManager.shared.playNext(track)
+                } label: {
+                    Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+                }
+
+                Button {
+                    PlayerManager.shared.addToQueue(track)
+                } label: {
+                    Label("Add to Queue", systemImage: "text.badge.plus")
+                }
+
+                if track.provider != "library" {
+                    Button {
+                        Task {
+                            try? await XonoraClient.shared.addToLibrary(itemId: track.itemId, provider: track.provider)
+                        }
+                    } label: {
+                        Label("Add to Library", systemImage: "plus.circle")
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .padding(.vertical, 8)
+    }
+
+    @ViewBuilder
+    private func trackIndicator(index: Int) -> some View {
+        if isPlaying {
+            if #available(iOS 17.0, *) {
+                Image(systemName: "waveform")
+                    .font(.caption)
+                    .foregroundColor(.accentColor)
+                    .frame(width: 24)
+                    .symbolEffect(.variableColor.iterative)
+            } else {
+                Image(systemName: "waveform")
+                    .font(.caption)
+                    .foregroundColor(.accentColor)
+                    .frame(width: 24)
+            }
+        } else {
+            Text("\(index)")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .frame(width: 24)
+        }
     }
 }
 

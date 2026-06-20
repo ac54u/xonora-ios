@@ -80,11 +80,13 @@ struct CachedAsyncImage<Placeholder: View>: View {
                     }
             }
         }
-        .onChange(of: url) { newURL in
-            if newURL != url {
-                image = nil
-                loadImage()
-            }
+        .onChange(of: url) { _ in
+            // url has already been updated to the new value here, so reset and reload
+            // unconditionally — the previous `newURL != url` check was always false and
+            // left stale artwork when the track changed.
+            image = nil
+            isLoading = false
+            loadImage()
         }
     }
 
