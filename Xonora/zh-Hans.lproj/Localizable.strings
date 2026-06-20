@@ -149,6 +149,7 @@
 "User" = "用户";
 "Logout" = "退出登录";
 "Auth Method" = "验证方式";
+"Username/Password" = "用户名/密码";
 
 // Sorting
 "Sort" = "排序";

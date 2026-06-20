@@ -542,7 +542,7 @@ struct ServerSetupView: View {
         serverURL.isEmpty || playerViewModel.isConnecting || playerViewModel.isAuthenticating
     }
 
-    private var buttonText: String {
+    private var buttonText: LocalizedStringKey {
         if playerViewModel.isAuthenticating {
             return "Authenticating"
         } else if playerViewModel.isConnecting {
@@ -857,6 +857,13 @@ struct SettingsView: View {
                                 }
                             }
                             .disabled(!player.available)
+                            .swipeActions(edge: .trailing) {
+                                Button("Delete", role: .destructive) {
+                                    if let idx = client.players.firstIndex(where: { $0.playerId == player.playerId }) {
+                                        client.players.remove(at: idx)
+                                    }
+                                }
+                            }
                         }
                     }
                 } header: {
@@ -881,7 +888,7 @@ struct SettingsView: View {
         .ignoresSafeArea(.container, edges: .bottom)
     }
 
-    private var connectionStatusText: String {
+    private var connectionStatusText: LocalizedStringKey {
         if playerViewModel.isConnecting {
             return "Connecting..."
         } else if playerViewModel.isAuthenticating {
