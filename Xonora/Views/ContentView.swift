@@ -859,10 +859,17 @@ struct SettingsView: View {
                             .disabled(!player.available)
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", role: .destructive) {
-                                    Task { await client.deletePlayer(player.playerId) }
+                                    client.hidePlayer(player.playerId)
                                 }
                             }
                         }
+                    }
+                    if !(UserDefaults.standard.stringArray(forKey: "hiddenPlayerIds") ?? []).isEmpty {
+                        Button("Show Hidden Players") {
+                            client.unhideAllPlayers()
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     }
                 } header: {
                     Text("Remote Player")
