@@ -128,9 +128,20 @@ struct PlayerControls: View {
             // Volume slider and destination
             VStack(spacing: 16) {
                 HStack(alignment: .center, spacing: 12) {
-                    Image(systemName: "speaker.fill")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    if isLocalPlayer {
+                        Image(systemName: "speaker.fill")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Button {
+                            Task { await xonoraClient.toggleMute() }
+                        } label: {
+                            Image(systemName: (xonoraClient.currentPlayer?.volumeMuted ?? false) ? "speaker.slash.fill" : "speaker.fill")
+                                .font(.caption)
+                                .foregroundColor((xonoraClient.currentPlayer?.volumeMuted ?? false) ? .accentColor : .secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
 
                     if isLocalPlayer {
                         VolumeView()

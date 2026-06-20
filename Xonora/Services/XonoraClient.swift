@@ -557,6 +557,13 @@ class XonoraClient: NSObject, ObservableObject {
         _ = try await sendCommand("players/cmd/volume_set", args: ["player_id": playerId, "volume_level": volume])
     }
 
+    func toggleMute() async {
+        guard let player = currentPlayer else { return }
+        let newMuted = !(player.volumeMuted ?? false)
+        _ = try? await sendCommand("players/cmd/volume_mute", args: ["player_id": player.playerId, "muted": newMuted])
+        await fetchPlayers()
+    }
+
     func setShuffle(enabled: Bool) async throws {
         guard let playerId = currentPlayer?.playerId else { return }
         _ = try await sendCommand("player_queues/shuffle", args: ["queue_id": playerId, "shuffle_enabled": enabled])

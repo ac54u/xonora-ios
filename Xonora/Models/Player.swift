@@ -8,6 +8,7 @@ struct MAPlayer: Identifiable, Codable, Hashable {
     let available: Bool
     let state: PlayerState?
     let volume: Int?
+    let volumeMuted: Bool?
     let currentMedia: CurrentMedia?
     var queueId: String?
 
@@ -21,6 +22,7 @@ struct MAPlayer: Identifiable, Codable, Hashable {
         case available
         case state
         case volume = "volume_level"
+        case volumeMuted = "volume_muted"
         case currentMedia = "current_media"
         case queueId = "active_source"
     }
