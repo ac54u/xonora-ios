@@ -51,10 +51,17 @@ class SendspinClient: ObservableObject {
         }
     }
     
+    /// The Music Assistant Universal Player ID derived from this device's vendor UUID.
+    /// MA computes this as "up" + lowercase UUID without dashes.
+    var universalPlayerId: String {
+        let uuid = UIDevice.current.identifierForVendor?.uuidString ?? clientId ?? ""
+        return "up" + uuid.lowercased().replacingOccurrences(of: "-", with: "")
+    }
+
     func updatePlayerName(_ name: String) {
         self.playerName = name
         UserDefaults.standard.set(name, forKey: playerNameKey)
-        
+
         // Reconnect if we have connection details
         if let host = lastHost, let port = lastPort, let scheme = lastScheme {
             connect(to: host, port: port, scheme: scheme, accessToken: lastAccessToken)

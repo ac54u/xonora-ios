@@ -516,6 +516,14 @@ class XonoraClient: NSObject, ObservableObject {
         await fetchPlayers()
     }
 
+    func renamePlayer(playerId: String, name: String) async {
+        _ = try? await sendCommand("players/player_config/save", args: [
+            "player_id": playerId,
+            "values": ["name_override": name]
+        ])
+        await fetchPlayers()
+    }
+
     func setVolume(_ volume: Int) async throws {
         guard let playerId = currentPlayer?.playerId else { return }
         _ = try await sendCommand("players/cmd/volume_set", args: ["player_id": playerId, "volume_level": volume])

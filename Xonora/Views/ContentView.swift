@@ -799,6 +799,12 @@ struct SettingsView: View {
                                 .submitLabel(.done)
                                 .onSubmit {
                                     sendspinClient.updatePlayerName(localPlayerName)
+                                    Task {
+                                        await client.renamePlayer(
+                                            playerId: sendspinClient.universalPlayerId,
+                                            name: localPlayerName
+                                        )
+                                    }
                                 }
                         }
                     }
