@@ -664,7 +664,7 @@ struct LibraryView: View {
             .background(Color(UIColor.systemGroupedBackground))
     }
 
-    private func emptyView(_ title: String, icon: String, message: String) -> some View {
+    private func emptyView(_ title: LocalizedStringKey, icon: String, message: LocalizedStringKey) -> some View {
         ContentUnavailableView(
             title,
             systemImage: icon,
