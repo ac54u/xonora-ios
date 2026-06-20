@@ -554,8 +554,15 @@ class XonoraClient: NSObject, ObservableObject {
         return parseLibraryResult(data)
     }
 
-    func fetchLyrics(uri: String) async throws -> LyricsResponse {
-        let data = try await sendCommand("music/tracks/lyrics", args: ["uri": uri])
+    func fetchLyrics(track: Track) async throws -> LyricsResponse {
+        let trackDict: [String: Any] = [
+            "item_id": track.itemId,
+            "provider": track.provider,
+            "name": track.name,
+            "uri": track.uri,
+            "media_type": "track"
+        ]
+        let data = try await sendCommand("metadata/get_track_lyrics", args: ["track": trackDict])
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let result = json["result"] as? [String: Any] else {
             return LyricsResponse(lyrics: nil, hasSynced: false)

@@ -32,14 +32,14 @@ struct LyricsView: View {
             }
         }
         .task {
-            if let uri = playerManager.currentTrack?.uri {
-                await libraryViewModel.fetchLyrics(uri: uri)
+            if let track = playerManager.currentTrack {
+                await libraryViewModel.fetchLyrics(track: track)
             }
         }
-        .onChange(of: playerManager.currentTrack?.uri) { _, newURI in
-            guard let uri = newURI else { return }
+        .onChange(of: playerManager.currentTrack?.uri) { _, _ in
+            guard let track = playerManager.currentTrack else { return }
             Task {
-                await libraryViewModel.fetchLyrics(uri: uri)
+                await libraryViewModel.fetchLyrics(track: track)
             }
         }
     }

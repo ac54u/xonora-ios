@@ -312,9 +312,9 @@ class LibraryViewModel: ObservableObject {
         return episodes
     }
 
-    func fetchLyrics(uri: String) async {
+    func fetchLyrics(track: Track) async {
         do {
-            lyrics = try await client.fetchLyrics(uri: uri)
+            lyrics = try await client.fetchLyrics(track: track)
         } catch { print("[LibraryViewModel] Failed to fetch lyrics: \(error)") }
     }
 
