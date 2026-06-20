@@ -72,6 +72,26 @@ class LibraryViewModel: ObservableObject {
     init() {
         loadSortPreferences()
         setupSearchDebounce()
+        setupLibraryUpdateObserver()
+    }
+
+    /// Reload the library when the server reports newly synced/changed media items.
+    /// Debounced so a sync that adds many tracks triggers a single reload.
+    private func setupLibraryUpdateObserver() {
+        NotificationCenter.default.publisher(for: .libraryUpdated)
+            .debounce(for: .seconds(2), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { await self?.loadLibrary(forceRefresh: true) }
+            }
+            .store(in: &cancellables)
+    }
+
+    /// User-initiated refresh: ask the server to rescan its music sources for new
+    /// files, then refetch the current library. Newly indexed tracks arrive shortly
+    /// after via the .libraryUpdated observer above.
+    func refresh() async {
+        await client.syncLibrary()
+        await loadLibrary(forceRefresh: true)
     }
 
     private func loadSortPreferences() {

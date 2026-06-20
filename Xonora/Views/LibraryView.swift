@@ -252,7 +252,7 @@ struct LibraryView: View {
                 .padding(.top, 16)
         }
         .refreshable {
-            await libraryViewModel.loadLibrary(forceRefresh: true)
+            await libraryViewModel.refresh()
         }
     }
 

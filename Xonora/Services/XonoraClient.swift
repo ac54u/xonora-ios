@@ -287,6 +287,10 @@ class XonoraClient: NSObject, ObservableObject {
             if let eventData = data["data"] as? [String: Any] {
                 NotificationCenter.default.post(name: .queueUpdated, object: nil, userInfo: eventData)
             }
+        case "media_item_added", "media_item_updated", "media_item_deleted", "music_sync_completed":
+            // The server finished (or progressed) a library sync — notify so the
+            // library reloads and newly scanned files appear.
+            NotificationCenter.default.post(name: .libraryUpdated, object: nil)
         default: break
         }
     }
@@ -486,6 +490,14 @@ class XonoraClient: NSObject, ObservableObject {
             "queue_item_id": item.queueItemId,
             "pos_shift": posShift
         ])
+    }
+
+    /// Trigger a full server-side rescan of all music providers so files newly
+    /// added to the server's music folders get indexed into the library.
+    /// Runs in the background on the server; results arrive via media_item_added /
+    /// music_sync_completed events.
+    func syncLibrary() async {
+        _ = try? await sendCommand("music/sync")
     }
 
     func addToLibrary(itemId: String, provider: String) async throws {
