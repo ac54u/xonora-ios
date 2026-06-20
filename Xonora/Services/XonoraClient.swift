@@ -545,10 +545,21 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     func renamePlayer(playerId: String, name: String) async {
+        // MA stores the custom player name as a root-level "name" key in PlayerConfig
+        // (handled by Config.update). "name_override" is not a recognized key and is ignored.
         _ = try? await sendCommand("config/players/save", args: [
             "player_id": playerId,
-            "values": ["name_override": name]
+            "values": ["name": name]
         ])
+        await fetchPlayers()
+    }
+
+    /// Permanently remove a player config from the server (真正删除，而非本地隐藏).
+    /// Works for offline / removable players; for providers that re-announce their
+    /// players we also hide locally so it disappears immediately and stays gone.
+    func removePlayer(_ playerId: String) async {
+        _ = try? await sendCommand("config/players/remove", args: ["player_id": playerId])
+        hidePlayer(playerId)
         await fetchPlayers()
     }
 

@@ -142,8 +142,10 @@ class LibraryViewModel: ObservableObject {
             }
         }
 
-        // 2. Fetch from server
-        guard !isNetworkFetching else { return }
+        // 2. Fetch from server.
+        // A user-initiated pull-to-refresh (forceRefresh) must always re-sync, even if a
+        // background load is in flight; otherwise coalesce concurrent loads.
+        guard forceRefresh || !isNetworkFetching else { return }
         isNetworkFetching = true
         
         if albums.isEmpty {

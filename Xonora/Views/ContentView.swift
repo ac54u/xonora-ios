@@ -863,7 +863,7 @@ struct SettingsView: View {
                             .disabled(!player.available)
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", role: .destructive) {
-                                    client.hidePlayer(player.playerId)
+                                    Task { await client.removePlayer(player.playerId) }
                                 }
                             }
                         }
