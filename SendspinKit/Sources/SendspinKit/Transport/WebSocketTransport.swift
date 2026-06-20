@@ -81,29 +81,30 @@ public actor WebSocketTransport: NSObject, URLSessionWebSocketDelegate {
     
     private func listen() {
         webSocket?.receive { [weak self] result in
-            guard let self = self else { return }
-
-            switch result {
-            case .success(let message):
-                switch message {
-                case .string(let text):
-                    // print("[WebSocketTransport] Received text: \(text.prefix(200))")
-                    self.textContinuation.yield(text)
-                case .data(let data):
-                    // print("[WebSocketTransport] Received binary data: \(data.count) bytes")
-                    self.binaryContinuation.yield(data)
-                @unknown default:
-                    break
-                }
-                // Continue listening
-                self.listen()
-
-            case .failure(let error):
-                print("[WebSocketTransport] Receive error: \(error)")
-                self.textContinuation.finish()
-                self.binaryContinuation.finish()
-                self.webSocket = nil
+            Task { [weak self] in
+                await self?.handleReceiveResult(result)
             }
+        }
+    }
+
+    private func handleReceiveResult(_ result: Result<URLSessionWebSocketTask.Message, Error>) {
+        switch result {
+        case .success(let message):
+            switch message {
+            case .string(let text):
+                textContinuation.yield(text)
+            case .data(let data):
+                binaryContinuation.yield(data)
+            @unknown default:
+                break
+            }
+            listen()
+
+        case .failure(let error):
+            print("[WebSocketTransport] Receive error: \(error)")
+            textContinuation.finish()
+            binaryContinuation.finish()
+            webSocket = nil
         }
     }
 

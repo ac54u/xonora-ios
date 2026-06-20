@@ -107,6 +107,7 @@ public struct DeviceInfo: Codable, Sendable {
         self.softwareVersion = softwareVersion
     }
 
+    @MainActor
     public static var current: DeviceInfo {
         #if os(iOS)
             return DeviceInfo(
