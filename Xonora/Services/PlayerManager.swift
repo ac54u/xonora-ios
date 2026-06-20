@@ -509,6 +509,7 @@ class PlayerManager: ObservableObject {
             }
         }
         queue.remove(at: index)
+        Task { await XonoraClient.shared.deleteQueueItem(at: index) }
     }
 
     func moveInQueue(from source: IndexSet, to destination: Int) {
@@ -521,6 +522,7 @@ class PlayerManager: ObservableObject {
     func clearQueue() {
         queue.removeAll()
         currentIndex = 0
+        Task { await XonoraClient.shared.stopQueue() }
     }
 
     func setSleepTimer(minutes: Int) {

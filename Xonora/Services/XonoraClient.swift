@@ -458,6 +458,14 @@ class XonoraClient: NSObject, ObservableObject {
         return (albums, artists, tracks)
     }
 
+    func deleteQueueItem(at index: Int) async {
+        guard let playerId = currentPlayer?.playerId else { return }
+        _ = try? await sendCommand("player_queues/delete_item", args: [
+            "queue_id": playerId,
+            "item_id_or_index": index
+        ])
+    }
+
     func addToLibrary(itemId: String, provider: String) async throws {
         let trackUri = "\(provider)://track/\(itemId)"
         _ = try await sendCommand("music/library/add_item", args: ["item": trackUri])
@@ -491,6 +499,11 @@ class XonoraClient: NSObject, ObservableObject {
     func previous() async throws {
         guard let playerId = currentPlayer?.playerId else { return }
         _ = try await sendCommand("player_queues/previous", args: ["queue_id": playerId])
+    }
+
+    func stopQueue() async {
+        guard let playerId = currentPlayer?.playerId else { return }
+        _ = try? await sendCommand("player_queues/stop", args: ["queue_id": playerId])
     }
 
     func stop() async throws {
