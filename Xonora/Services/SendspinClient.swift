@@ -251,6 +251,6 @@ class SendspinClient: ObservableObject {
     }
     
     func getPlaybackTime() async -> TimeInterval {
-        return await client?.getPlaybackTime() ?? 0
+        return client?.getPlaybackTime() ?? 0
     }
 }
