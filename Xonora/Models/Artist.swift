@@ -11,10 +11,7 @@ struct Artist: Identifiable, Codable, Hashable {
 
     var id: String { itemId }
     
-    var imageUrl: String? {
-        metadata?.images?.first(where: { $0.type == "thumb" })?.path ?? 
-        metadata?.images?.first?.path
-    }
+    var imageUrl: String? { metadata?.thumbnailImageUrl }
 
     enum CodingKeys: String, CodingKey {
         case itemId = "item_id"

@@ -10,10 +10,7 @@ struct Podcast: Identifiable, Codable, Hashable {
     var favorite: Bool?
 
     var id: String { itemId }
-    var imageUrl: String? {
-        metadata?.images?.first(where: { $0.type == "thumb" })?.path ??
-        metadata?.images?.first?.path
-    }
+    var imageUrl: String? { metadata?.thumbnailImageUrl }
 
     enum CodingKeys: String, CodingKey {
         case itemId = "item_id"
@@ -35,10 +32,7 @@ struct Episode: Identifiable, Codable, Hashable {
     var favorite: Bool?
 
     var id: String { itemId }
-    var imageUrl: String? {
-        metadata?.images?.first(where: { $0.type == "thumb" })?.path ??
-        metadata?.images?.first?.path
-    }
+    var imageUrl: String? { metadata?.thumbnailImageUrl }
 
     var formattedDuration: String {
         guard let duration = duration else { return "--:--" }

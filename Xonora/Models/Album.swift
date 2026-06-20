@@ -17,10 +17,7 @@ struct Album: Identifiable, Codable, Hashable {
         artists?.map { $0.name }.joined(separator: ", ") ?? "Unknown Artist"
     }
     
-    var imageUrl: String? {
-        metadata?.images?.first(where: { $0.type == "thumb" })?.path ?? 
-        metadata?.images?.first?.path
-    }
+    var imageUrl: String? { metadata?.thumbnailImageUrl }
 
     var displayYear: String {
         if let year = year {

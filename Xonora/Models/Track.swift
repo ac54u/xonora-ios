@@ -21,10 +21,7 @@ struct Track: Identifiable, Codable, Hashable {
         artists?.map { $0.name }.joined(separator: ", ") ?? "Unknown Artist"
     }
 
-    var imageUrl: String? {
-        metadata?.images?.first(where: { $0.type == "thumb" })?.path ?? 
-        metadata?.images?.first?.path
-    }
+    var imageUrl: String? { metadata?.thumbnailImageUrl }
 
     var formattedDuration: String {
         guard let duration = duration else { return "--:--" }
@@ -57,6 +54,19 @@ struct MediaItemImage: Codable, Hashable {
     let type: String
     let path: String
     let provider: String
+    let proxyId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case type, path, provider
+        case proxyId = "proxy_id"
+    }
+}
+
+extension MediaItemMetadata {
+    var thumbnailImageUrl: String? {
+        let img = images?.first(where: { $0.type == "thumb" }) ?? images?.first
+        return img?.proxyId ?? img?.path
+    }
 }
 
 struct ProviderMapping: Codable, Hashable {
@@ -89,10 +99,7 @@ struct AlbumReference: Codable, Hashable {
     let name: String
     let metadata: MediaItemMetadata?
     
-    var imageUrl: String? {
-        metadata?.images?.first(where: { $0.type == "thumb" })?.path ?? 
-        metadata?.images?.first?.path
-    }
+    var imageUrl: String? { metadata?.thumbnailImageUrl }
 
     enum CodingKeys: String, CodingKey {
         case itemId = "item_id"

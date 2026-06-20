@@ -638,8 +638,16 @@ class XonoraClient: NSObject, ObservableObject {
         components.host = baseURL.host
         components.port = baseURL.port
         let baseParams = baseURL.path.trimmingCharacters(in: .init(charactersIn: "/"))
-        components.path = baseParams.isEmpty ? "/imageproxy" : "/\(baseParams)/imageproxy"
-        components.queryItems = [URLQueryItem(name: "path", value: urlString), URLQueryItem(name: "size", value: "\(size.rawValue)")]
+
+        // proxy_id format: short alphanumeric string with no slashes or colons
+        // Use the new canonical /imageproxy/{proxy_id} endpoint
+        if !urlString.contains("/") && !urlString.contains(":") {
+            components.path = baseParams.isEmpty ? "/imageproxy/\(urlString)" : "/\(baseParams)/imageproxy/\(urlString)"
+            components.queryItems = [URLQueryItem(name: "size", value: "\(size.rawValue)")]
+        } else {
+            components.path = baseParams.isEmpty ? "/imageproxy" : "/\(baseParams)/imageproxy"
+            components.queryItems = [URLQueryItem(name: "path", value: urlString), URLQueryItem(name: "size", value: "\(size.rawValue)")]
+        }
         if let token = accessToken { components.queryItems?.append(URLQueryItem(name: "token", value: token)) }
         return components.url
     }
