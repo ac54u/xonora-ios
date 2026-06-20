@@ -1,0 +1,56 @@
+2026-06-20 01:33:26.456 INFO (MainThread) [music_assistant] Starting Music Assistant Server (3491c31d936744b8ace3db7292da7992) version 2.9.2 - HA add-on: False - Safe mode: False
+2026-06-20 01:33:26.466 INFO (MainThread) [music_assistant.cache] Initializing cache controller...
+2026-06-20 01:33:26.494 INFO (MainThread) [ffmpeg] Detected ffmpeg version 7.1.2 with libsoxr support
+2026-06-20 01:33:26.494 WARNING (MainThread) [music_assistant.streams] 
+
+################################################################################
+Starting streamserver on  152.53.131.108:8097
+This is the IP address that is communicated to players.
+If this is incorrect, audio will not play!
+See the documentation for how to configure the publish IP for the Streamserver
+in Settings --> System --> Streams
+################################################################################
+
+2026-06-20 01:33:26.556 INFO (MainThread) [music_assistant.auth] Generated new JWT secret key
+2026-06-20 01:33:26.557 INFO (MainThread) [music_assistant.auth] Authentication manager initialized (providers=1)
+2026-06-20 01:33:26.561 WARNING (MainThread) [music_assistant.webserver] 
+
+################################################################################
+###                           SETUP REQUIRED                                 ###
+################################################################################
+
+Music Assistant is running in setup mode.
+Please complete the setup by visiting:
+
+    http://152.53.131.108:8095/setup
+
+################################################################################
+
+2026-06-20 01:33:28.579 INFO (MainThread) [music_assistant] Loaded audio_analysis provider Loudness Analysis
+2026-06-20 01:33:28.579 INFO (MainThread) [music_assistant] Loaded metadata provider MusicBrainz
+2026-06-20 01:33:28.581 INFO (MainThread) [music_assistant] Loaded metadata provider LRCLIB
+2026-06-20 01:33:28.581 INFO (MainThread) [music_assistant] Loaded player provider Sync Group Player
+2026-06-20 01:33:28.582 INFO (MainThread) [music_assistant] Loaded metadata provider fanart.tv
+2026-06-20 01:33:28.582 INFO (MainThread) [music_assistant] Loaded metadata provider Cover Art Archive
+2026-06-20 01:33:28.582 INFO (MainThread) [music_assistant] Loaded player provider Universal Player
+2026-06-20 01:33:28.582 INFO (MainThread) [music_assistant] Loaded music provider Music Assistant
+2026-06-20 01:33:28.583 INFO (MainThread) [music_assistant] Loaded metadata provider Wikipedia
+2026-06-20 01:33:28.583 INFO (MainThread) [music_assistant] Loaded metadata provider The Audio DB
+2026-06-20 01:33:28.583 INFO (MainThread) [music_assistant] Loaded metadata provider iTunes Artwork
+2026-06-20 01:33:28.865 INFO (MainThread) [music_assistant] Loaded player provider Sendspin
+2026-06-20 01:33:28.865 INFO (MainThread) [aiosendspin.server.server] Starting Sendspin server on port 8927
+2026-06-20 01:33:28.867 INFO (MainThread) [aiosendspin.server.server] Sendspin server started successfully on 0.0.0.0:8927
+2026-06-20 01:33:28.953 INFO (MainThread) [music_assistant] Loaded player provider Local Audio Out
+2026-06-20 01:33:28.954 INFO (MainThread) [music_assistant.local_audio.bridge_manager] No local audio output devices found
+2026-06-20 01:33:28.954 INFO (MainThread) [music_assistant.local_audio.bridge_manager] No local audio output devices found
+2026-06-20 01:33:29.624 INFO (MainThread) [music_assistant] Loaded metadata provider Last.fm
+2026-06-20 01:33:29.628 INFO (MainThread) [music_assistant] Loaded plugin provider Party
+2026-06-20 01:33:29.637 INFO (MainThread) [music_assistant] Loaded player provider Chromecast
+2026-06-20 01:33:29.645 INFO (MainThread) [music_assistant] Loaded player provider DLNA
+2026-06-20 01:33:35.189 INFO (MainThread) [music_assistant.audio_analysis] AudioAnalysis runtime: torch intra=2 interop=1, blas<=2, nnpack=on
+2026-06-20 01:33:35.718 INFO (MainThread) [music_assistant] Loaded audio_analysis provider Smart Fades
+2026-06-20 01:33:36.195 INFO (MainThread) [music_assistant] Loaded player provider AirPlay
+2026-06-20 01:33:38.606 INFO (MainThread) [music_assistant.music.genre] Genre mapping scan completed: 0 items mapped (0.0s)
+2026-06-20 01:33:38.633 INFO (MainThread) [music_assistant.music.genre] Genre mapping scan completed: 0 items mapped (0.0s)
+2026-06-20 01:33:49.625 INFO (MainThread) [music_assistant.Last.fm] Building Last.fm recommendations
+2026-06-20 01:33:49.625 INFO (MainThread) [music_assistant.Last.fm] Last.fm recommendations built (0 folders)
