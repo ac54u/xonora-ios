@@ -14,6 +14,7 @@ class XonoraClient: NSObject, ObservableObject {
     @Published var connectionState: ConnectionState = .disconnected
     @Published var players: [MAPlayer] = []
     @Published var currentPlayer: MAPlayer?
+    @Published var hiddenPlayerIds: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "hiddenPlayerIds") ?? [])
     @Published var requiresAuth: Bool = false
     @Published var serverInfo: ServerInfo?
 
@@ -337,10 +338,10 @@ class XonoraClient: NSObject, ObservableObject {
                     } else { currentPlayer = nil }
                 }
 
-                let sendspinPlayer = players.first(where: { $0.available && $0.provider == "sendspin" && !$0.name.contains("Web") })
+                let sendspinPlayer = players.first(where: { $0.available && !hiddenPlayerIds.contains($0.playerId) && $0.provider == "sendspin" && !$0.name.contains("Web") })
                 if let best = sendspinPlayer {
                     if currentPlayer == nil || currentPlayer?.playerId != best.playerId { currentPlayer = best }
-                } else if currentPlayer == nil, let first = players.first(where: { $0.available }) {
+                } else if currentPlayer == nil, let first = players.first(where: { $0.available && !hiddenPlayerIds.contains($0.playerId) }) {
                     currentPlayer = first
                 }
             }
@@ -348,21 +349,21 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     var visiblePlayers: [MAPlayer] {
-        let hidden = Set(UserDefaults.standard.stringArray(forKey: hiddenPlayerIdsKey) ?? [])
-        return players.filter { !hidden.contains($0.playerId) }
+        return players.filter { !hiddenPlayerIds.contains($0.playerId) }
     }
 
     func hidePlayer(_ playerId: String) {
-        var hidden = Set(UserDefaults.standard.stringArray(forKey: hiddenPlayerIdsKey) ?? [])
-        hidden.insert(playerId)
-        UserDefaults.standard.set(Array(hidden), forKey: hiddenPlayerIdsKey)
-        players.removeAll { $0.playerId == playerId }
+        hiddenPlayerIds.insert(playerId)
+        UserDefaults.standard.set(Array(hiddenPlayerIds), forKey: hiddenPlayerIdsKey)
         if currentPlayer?.playerId == playerId { currentPlayer = nil }
     }
 
     func unhideAllPlayers() {
+        hiddenPlayerIds.removeAll()
         UserDefaults.standard.removeObject(forKey: hiddenPlayerIdsKey)
-        Task { await fetchPlayers() }
+        if currentPlayer == nil, let first = players.first(where: { $0.available }) {
+            currentPlayer = first
+        }
     }
 
     private func parseLibraryResult<T: Codable>(_ data: Data) -> (items: [T], total: Int) {

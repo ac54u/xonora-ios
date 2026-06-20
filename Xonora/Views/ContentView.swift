@@ -458,7 +458,7 @@ struct ServerSetupView: View {
             HStack(spacing: 12) {
                 ProgressView()
                     .tint(.white)
-                Text(playerViewModel.isAuthenticating ? "Authenticating..." : "Connecting...")
+                Text(playerViewModel.isAuthenticating ? LocalizedStringKey("Authenticating...") : LocalizedStringKey("Connecting..."))
                     .foregroundColor(.white.opacity(0.8))
             }
             .padding()
@@ -755,7 +755,7 @@ struct SettingsView: View {
                             playerViewModel.connectToServer()
                         }
                     } label: {
-                        Label(playerViewModel.isConnected ? "Disconnect" : "Reconnect",
+                        Label(playerViewModel.isConnected ? LocalizedStringKey("Disconnect") : LocalizedStringKey("Reconnect"),
                               systemImage: playerViewModel.isConnected ? "wifi.slash" : "wifi")
                     }
 
@@ -782,7 +782,7 @@ struct SettingsView: View {
                         HStack {
                             Label("Sendspin Status", systemImage: playerViewModel.sendspinConnected ? "checkmark.circle.fill" : "xmark.circle.fill")
                             Spacer()
-                            Text(playerViewModel.sendspinConnected ? "Connected" : "Disconnected")
+                            Text(playerViewModel.sendspinConnected ? LocalizedStringKey("Connected") : LocalizedStringKey("Disconnected"))
                                 .foregroundColor(playerViewModel.sendspinConnected ? .green : .red)
                         }
 
@@ -829,9 +829,7 @@ struct SettingsView: View {
                         ForEach(client.visiblePlayers) { player in
                             Button {
                                 client.currentPlayer = player
-                                if player.playerId != client.currentPlayer?.playerId {
-                                    Task { try? await client.switchPlayer(playerId: player.playerId) }
-                                }
+                                Task { try? await client.switchPlayer(playerId: player.playerId) }
                             } label: {
                                 HStack {
                                     Image(systemName: ProviderBrand(provider: player.provider).icon)
@@ -864,7 +862,7 @@ struct SettingsView: View {
                             }
                         }
                     }
-                    if !(UserDefaults.standard.stringArray(forKey: "hiddenPlayerIds") ?? []).isEmpty {
+                    if !client.hiddenPlayerIds.isEmpty {
                         Button("Show Hidden Players") {
                             client.unhideAllPlayers()
                         }
@@ -944,7 +942,7 @@ struct MiniPlayerView: View {
 
                 // Track Info
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(playerManager.currentTrack?.name ?? "Not Playing")
+                    Text(playerManager.currentTrack?.name ?? NSLocalizedString("Not Playing", comment: ""))
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .lineLimit(1)

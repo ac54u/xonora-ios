@@ -187,7 +187,7 @@ struct ArtistDetailView: View {
             self.tracks = fetchedTracks
             isLoading = false
         } catch {
-            errorMessage = "Failed to load artist details"
+            errorMessage = NSLocalizedString("Failed to load artist details", comment: "")
             isLoading = false
         }
     }

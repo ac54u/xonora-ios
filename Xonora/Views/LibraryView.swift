@@ -198,7 +198,7 @@ struct LibraryView: View {
                 if libraryViewModel.albumViewMode == .grid {
                     Menu {
                         ForEach(2...4, id: \.self) { count in
-                            Button("\(count) Columns") {
+                            Button(String.localizedStringWithFormat(NSLocalizedString("%lld Columns", comment: ""), count)) {
                                 columnCount = count
                                 UserDefaults.standard.set(count, forKey: "gridColumnCount")
                             }
@@ -219,7 +219,7 @@ struct LibraryView: View {
                 if libraryViewModel.playlistViewMode == .grid {
                     Menu {
                         ForEach(2...4, id: \.self) { count in
-                            Button("\(count) Columns") {
+                            Button(String.localizedStringWithFormat(NSLocalizedString("%lld Columns", comment: ""), count)) {
                                 columnCount = count
                                 UserDefaults.standard.set(count, forKey: "gridColumnCount")
                             }

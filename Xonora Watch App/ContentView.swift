@@ -8,7 +8,7 @@ struct ContentView: View {
 
 struct NowPlayingView: View {
     @State private var isPlaying = false
-    @State private var trackName = "Not Playing"
+    @State private var trackName = NSLocalizedString("Not Playing", comment: "")
     @State private var artistName = ""
 
     var body: some View {

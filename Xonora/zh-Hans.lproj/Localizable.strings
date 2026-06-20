@@ -8,10 +8,10 @@
 "Connect to Music Assistant" = "连接到 Music Assistant";
 "Server Address" = "服务器地址";
 "http://192.168.1.100:8095" = "http://192.168.1.100:8095";
-"Your Music Assistant server URL with port" = "你的 Music Assistant 服务器地址（含端口）";
+"Your Music Assistant server URL with port" = "您的 Music Assistant 服务器地址（含端口）";
 "Access Token" = "访问令牌";
-"Paste your token here" = "在此粘贴你的令牌";
-"Create a token in Music Assistant → Settings → Users" = "在 Music Assistant → 设置 → 用户中创建令牌";
+"Paste your token here" = "在此粘贴您的访问令牌";
+"Create a token in Music Assistant → Settings → Users" = "在 Music Assistant 的「设置 → 用户」中创建访问令牌";
 "Authenticating..." = "正在验证...";
 "Connecting..." = "正在连接...";
 "Authenticating" = "验证中";
@@ -47,7 +47,7 @@
 "Loading players..." = "正在加载播放器...";
 "No players found (not connected)" = "未找到播放器（未连接）";
 "Active Player" = "当前播放器";
-"Playback will be sent to: %@" = "播放将发送至：%@";
+"Playback will be sent to: %@" = "播放将发送到：%@";
 "Remote Player" = "远程播放器";
 "Select a player to send playback commands to." = "选择要发送播放命令的播放器。";
 "Show Hidden Players" = "显示已隐藏的播放器";
@@ -64,19 +64,19 @@
 "Unable to Load" = "无法加载";
 "Try Again" = "重试";
 "No Playlists" = "无播放列表";
-"Your library has no playlists." = "你的音乐库中没有播放列表。";
+"Your library has no playlists." = "您的音乐库中没有播放列表。";
 "No Albums" = "无专辑";
-"Your library is empty. Add some music to get started." = "你的音乐库为空。添加一些音乐开始使用。";
+"Your library is empty. Add some music to get started." = "您的音乐库为空，添加一些音乐开始使用。";
 "No Songs" = "无歌曲";
-"Your library has no songs. Add individual tracks to see them here." = "你的音乐库中没有歌曲。添加单曲后可在此查看。";
+"Your library has no songs." = "您的音乐库中没有歌曲。";
 "No Artists" = "无艺人";
-"Your library is empty." = "你的音乐库为空。";
+"Your library is empty." = "您的音乐库为空。";
 
 // Now Playing
 "PLAYING FROM" = "正在播放来自";
 "Queue" = "播放队列";
 "Queue is Empty" = "队列为空";
-"Add some songs to your queue" = "添加一些歌曲到你的播放队列";
+"Add some songs to your queue" = "添加歌曲到播放队列";
 "Up Next" = "即将播放";
 "Done" = "完成";
 "Clear" = "清空";
@@ -165,8 +165,22 @@
 "Password" = "密码";
 "Music Assistant username" = "Music Assistant 用户名";
 "Music Assistant password" = "Music Assistant 密码";
-"Use your Music Assistant login credentials" = "使用你的 Music Assistant 登录凭证";
+"Use your Music Assistant login credentials" = "使用您的 Music Assistant 登录凭证";
 "%lld Columns" = "%lld 列";
+
+// CarPlay
+"Home" = "主页";
+"Continue Listening" = "继续收听";
+"Resume where you left off" = "继续上次播放";
+"Recently Played" = "最近播放";
+"Your recent tracks" = "您最近播放的曲目";
+"Recommendations" = "推荐";
+"Suggested for you" = "为您推荐";
+"Browse your album collection" = "浏览您的专辑";
+"Browse by artist" = "按艺人浏览";
+"Your custom collections" = "您的播放列表";
+"All tracks" = "全部歌曲";
+"Queue is empty" = "队列为空";
 
 // Error strings (from services)
 "Sendspin not connected. Please enable it in Settings." = "Sendspin 未连接。请在设置中启用。";

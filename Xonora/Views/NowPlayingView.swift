@@ -135,7 +135,7 @@ struct NowPlayingView: View {
                         .foregroundColor(.white.opacity(0.7))
                 }
 
-                Text(playerManager.currentSource ?? playerManager.currentTrack?.album?.name ?? "Library")
+                Text(playerManager.currentSource ?? playerManager.currentTrack?.album?.name ?? NSLocalizedString("Library", comment: ""))
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(.white)
@@ -220,7 +220,7 @@ struct NowPlayingView: View {
 
     private var trackInfo: some View {
         VStack(spacing: 4) {
-            Text(playerManager.currentTrack?.name ?? "Not Playing")
+            Text(playerManager.currentTrack?.name ?? NSLocalizedString("Not Playing", comment: ""))
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.white)

@@ -23,7 +23,7 @@ struct PodcastGridItem: View {
                     .lineLimit(2)
                     .foregroundColor(.primary)
                 if let total = podcast.totalEpisodes {
-                    Text("\(total) episodes")
+                    Text(String.localizedStringWithFormat(NSLocalizedString("%lld episodes", comment: ""), total))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
