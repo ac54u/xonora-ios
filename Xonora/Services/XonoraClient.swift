@@ -466,6 +466,28 @@ class XonoraClient: NSObject, ObservableObject {
         ])
     }
 
+    func fetchQueueItems() async -> [QueueItem] {
+        guard let playerId = currentPlayer?.playerId else { return [] }
+        guard let data = try? await sendCommand("player_queues/items", args: ["queue_id": playerId]),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [[String: Any]],
+              let resultData = try? JSONSerialization.data(withJSONObject: result) else { return [] }
+        return (try? JSONDecoder().decode([QueueItem].self, from: resultData)) ?? []
+    }
+
+    /// Move a queue item identified by its URI by a relative position shift.
+    /// Resolves the server-side queue_item_id via URI match to stay robust against index drift.
+    func moveQueueItem(matchingURI uri: String, posShift: Int) async {
+        guard posShift != 0, let playerId = currentPlayer?.playerId else { return }
+        let items = await fetchQueueItems()
+        guard let item = items.first(where: { $0.uri == uri }) else { return }
+        _ = try? await sendCommand("player_queues/move_item", args: [
+            "queue_id": playerId,
+            "queue_item_id": item.queueItemId,
+            "pos_shift": posShift
+        ])
+    }
+
     func addToLibrary(itemId: String, provider: String) async throws {
         let trackUri = "\(provider)://track/\(itemId)"
         _ = try await sendCommand("music/library/add_item", args: ["item": trackUri])

@@ -513,10 +513,15 @@ class PlayerManager: ObservableObject {
     }
 
     func moveInQueue(from source: IndexSet, to destination: Int) {
+        guard let sourceIndex = source.first else { return }
+        let movedTrack = queue[sourceIndex]
         queue.move(fromOffsets: source, toOffset: destination)
         if let current = currentTrack {
             currentIndex = queue.firstIndex(where: { $0.id == current.id }) ?? 0
         }
+        let newIndex = queue.firstIndex(where: { $0.id == movedTrack.id }) ?? sourceIndex
+        let posShift = newIndex - sourceIndex
+        Task { await XonoraClient.shared.moveQueueItem(matchingURI: movedTrack.uri, posShift: posShift) }
     }
 
     func clearQueue() {
