@@ -18,6 +18,8 @@ DerivedData/
 *.moved-aside
 *.xccheckout
 *.xcscmblueprint
+ma-data/
+**/__pycache__/
 
 # CocoaPods
 Pods/
