@@ -26,8 +26,6 @@ struct NowPlayingView: View {
                 .id(playerManager.currentTrack?.id ?? "no-track")
                 .padding(.horizontal, 40)
                 .padding(.vertical, 20)
-                .scaleEffect(playerManager.isPlaying ? 1.0 : 0.95)
-                .animation(.easeInOut(duration: 0.3), value: playerManager.isPlaying)
 
             Spacer()
 
@@ -175,18 +173,19 @@ struct NowPlayingView: View {
     }
 
     private var albumArtwork: some View {
-        Group {
+        ZStack {
             if let image = playerManager.artworkImage {
                 Image(uiImage: image)
                     .resizable()
+                    .aspectRatio(contentMode: .fit)
             } else if let url = trackImageURL, let image = SyncImageMemoryCache.shared.image(for: url) {
                 Image(uiImage: image)
                     .resizable()
+                    .aspectRatio(contentMode: .fit)
             } else {
-                Color.clear
+                artworkPlaceholder
             }
         }
-        .aspectRatio(contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 20)
     }
