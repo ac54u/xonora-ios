@@ -248,7 +248,7 @@ struct ServerSetupView: View {
             // 放大以隐藏渐变边缘
             .scaleEffect(1.8)
             // 使用 linear 匀速旋转，且不反转，形成持续的流体循环
-            .animation(.linear(duration: 20.0).repeatForever(autoreverses: false), value: gradientAnim)
+            .animation(.linear(duration: 12.0).repeatForever(autoreverses: false), value: gradientAnim)
         }
         .onAppear {
             gradientAnim = true
