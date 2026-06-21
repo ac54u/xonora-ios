@@ -91,6 +91,28 @@ actor ImageCache {
     }
 }
 
+/// A synchronous, thread-safe in-memory image cache. Lets a view render an
+/// already-loaded image on its very first frame (no async actor hop), which is
+/// what removes the gray-placeholder flash when switching tabs or toggling
+/// play/pause causes the view to re-create.
+final class SyncImageMemoryCache {
+    static let shared = SyncImageMemoryCache()
+    private let cache = NSCache<NSString, UIImage>()
+
+    private init() {
+        cache.countLimit = 250
+        cache.totalCostLimit = 80 * 1024 * 1024
+    }
+
+    func image(for url: URL) -> UIImage? {
+        cache.object(forKey: url.absoluteString as NSString)
+    }
+
+    func set(_ image: UIImage, for url: URL) {
+        cache.setObject(image, forKey: url.absoluteString as NSString)
+    }
+}
+
 /// A view that displays an image from a URL with caching support.
 struct CachedAsyncImage<Placeholder: View>: View {
     let url: URL?
@@ -101,6 +123,9 @@ struct CachedAsyncImage<Placeholder: View>: View {
     init(url: URL?, @ViewBuilder placeholder: @escaping () -> Placeholder) {
         self.url = url
         self.placeholder = placeholder
+        // Seed from the synchronous memory cache so warm artwork shows on the first
+        // frame — no placeholder flash on tab switch / play-pause re-render.
+        _image = State(initialValue: url.flatMap { SyncImageMemoryCache.shared.image(for: $0) })
     }
 
     var body: some View {
@@ -129,8 +154,15 @@ struct CachedAsyncImage<Placeholder: View>: View {
             return
         }
 
-        // Synchronous-feeling cache hit (memory or disk) — no placeholder flash.
+        // Fast synchronous memory hit — no flash, no await.
+        if let mem = SyncImageMemoryCache.shared.image(for: url) {
+            if image !== mem { image = mem }
+            return
+        }
+
+        // Disk/actor cache hit.
         if let cached = await ImageCache.shared.image(for: url) {
+            SyncImageMemoryCache.shared.set(cached, for: url)
             image = cached
             return
         }
@@ -155,6 +187,7 @@ struct CachedAsyncImage<Placeholder: View>: View {
             }
 
             if let downloadedImage = UIImage(data: data) {
+                SyncImageMemoryCache.shared.set(downloadedImage, for: url)
                 await ImageCache.shared.setImage(downloadedImage, for: url)
                 if !Task.isCancelled && self.url == url {
                     image = downloadedImage

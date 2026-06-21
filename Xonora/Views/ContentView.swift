@@ -602,11 +602,7 @@ struct SearchView: View {
                     ForEach(libraryViewModel.searchResults.albums) { album in
                         NavigationLink(destination: AlbumDetailView(album: album)) {
                             HStack(spacing: 12) {
-                                AsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl)) { image in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                } placeholder: {
+                                CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl, size: .thumbnail)) {
                                     Rectangle()
                                         .fill(Color.gray.opacity(0.3))
                                         .overlay {
@@ -614,6 +610,7 @@ struct SearchView: View {
                                                 .foregroundColor(.gray)
                                         }
                                 }
+                                .aspectRatio(contentMode: .fill)
                                 .frame(width: 50, height: 50)
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
 

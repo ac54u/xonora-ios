@@ -24,6 +24,14 @@ struct Playlist: Identifiable, Codable, Hashable {
             return NSLocalizedString("Infinite Mix (favorites)", comment: "Built-in playlist name")
         case "Infinite Mix (library)":
             return NSLocalizedString("Infinite Mix (library)", comment: "Built-in playlist name")
+        case "Random Album (from library)":
+            return NSLocalizedString("Random Album (from library)", comment: "Built-in playlist name")
+        case "Random Artist (from library)":
+            return NSLocalizedString("Random Artist (from library)", comment: "Built-in playlist name")
+        case "Recently added tracks":
+            return NSLocalizedString("Recently added tracks", comment: "Built-in playlist name")
+        case "Recently played tracks":
+            return NSLocalizedString("Recently played tracks", comment: "Built-in playlist name")
         default:
             // "<N> Random tracks (from library)" — count varies.
             if name.range(of: #"^\d+ Random tracks \(from library\)$"#, options: .regularExpression) != nil {

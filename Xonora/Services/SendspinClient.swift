@@ -33,7 +33,12 @@ class SendspinClient: ObservableObject {
     static let shared = SendspinClient()
     
     private init() {
-        if let savedName = UserDefaults.standard.string(forKey: playerNameKey) {
+        // Prefer the Keychain-persisted name (survives reinstall), then UserDefaults,
+        // then the device default. iOS 16+ returns a generic "iPhone" for
+        // UIDevice.name, so without this the user's custom name was lost on reinstall.
+        if let keychainName = KeychainHelper.shared.getPlayerName(), !keychainName.isEmpty {
+            self.playerName = keychainName
+        } else if let savedName = UserDefaults.standard.string(forKey: playerNameKey) {
             self.playerName = savedName
         }
         
@@ -51,16 +56,25 @@ class SendspinClient: ObservableObject {
         }
     }
     
-    /// The Music Assistant Universal Player ID derived from this device's vendor UUID.
-    /// MA computes this as "up" + lowercase UUID without dashes.
+    /// A stable client id that survives reinstalls (persisted in the Keychain),
+    /// seeded once from the vendor UUID. Using the raw vendor UUID directly caused a
+    /// brand-new player to register on every reinstall.
+    var stableClientId: String {
+        KeychainHelper.shared.getOrCreateClientId(
+            seedIfMissing: UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+        )
+    }
+
+    /// The Music Assistant Universal Player ID. MA computes this as "up" + lowercase
+    /// UUID without dashes.
     var universalPlayerId: String {
-        let uuid = UIDevice.current.identifierForVendor?.uuidString ?? clientId ?? ""
-        return "up" + uuid.lowercased().replacingOccurrences(of: "-", with: "")
+        return "up" + stableClientId.lowercased().replacingOccurrences(of: "-", with: "")
     }
 
     func updatePlayerName(_ name: String) {
         self.playerName = name
         UserDefaults.standard.set(name, forKey: playerNameKey)
+        KeychainHelper.shared.savePlayerName(name)
 
         // Reconnect if we have connection details
         if let host = lastHost, let port = lastPort, let scheme = lastScheme {
@@ -102,7 +116,8 @@ class SendspinClient: ObservableObject {
         )
 
         let clientName = self.playerName
-        let clientId = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
+        // Stable across reinstalls so we keep the SAME server player_id.
+        let clientId = self.stableClientId
         self.clientId = clientId
         // self.playerName is already set
 

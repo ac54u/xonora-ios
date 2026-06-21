@@ -345,11 +345,19 @@ class XonoraClient: NSObject, ObservableObject {
                     } else { currentPlayer = nil }
                 }
 
-                let sendspinPlayer = players.first(where: { $0.available && !hiddenPlayerIds.contains($0.playerId) && $0.provider == "sendspin" && !$0.name.contains("Web") })
-                if let best = sendspinPlayer {
-                    if currentPlayer == nil || currentPlayer?.playerId != best.playerId { currentPlayer = best }
-                } else if currentPlayer == nil, let first = players.first(where: { $0.available && !hiddenPlayerIds.contains($0.playerId) }) {
-                    currentPlayer = first
+                // Prefer THIS device's own player (matched by our stable universal
+                // player id) when it is available, so commands and resume always
+                // target the right player even when stale duplicates linger.
+                let myId = SendspinClient.shared.universalPlayerId
+                if let mine = players.first(where: { $0.playerId == myId && $0.available && !hiddenPlayerIds.contains($0.playerId) }) {
+                    if currentPlayer == nil || currentPlayer?.playerId != mine.playerId { currentPlayer = mine }
+                } else {
+                    let sendspinPlayer = players.first(where: { $0.available && !hiddenPlayerIds.contains($0.playerId) && $0.provider == "sendspin" && !$0.name.contains("Web") })
+                    if let best = sendspinPlayer {
+                        if currentPlayer == nil || currentPlayer?.playerId != best.playerId { currentPlayer = best }
+                    } else if currentPlayer == nil, let first = players.first(where: { $0.available && !hiddenPlayerIds.contains($0.playerId) }) {
+                        currentPlayer = first
+                    }
                 }
             }
         } catch {}
@@ -485,7 +493,9 @@ class XonoraClient: NSObject, ObservableObject {
     /// item list) so the app can restore the Now Playing screen after a cold launch.
     func fetchActiveQueue() async -> ActiveQueueSnapshot? {
         guard let playerId = currentPlayer?.playerId else { return nil }
-        guard let data = try? await sendCommand("player_queues/get_active_queue", args: ["queue_id": playerId]),
+        // NOTE: get_active_queue takes `player_id` (NOT `queue_id`); passing queue_id
+        // silently returns nothing.
+        guard let data = try? await sendCommand("player_queues/get_active_queue", args: ["player_id": playerId]),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let result = json["result"] as? [String: Any] else { return nil }
 

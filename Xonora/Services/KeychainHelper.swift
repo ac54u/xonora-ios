@@ -7,6 +7,8 @@ struct KeychainHelper {
     private let tokenAccount = "access-token"
     private let usernameAccount = "saved-username"
     private let serverAccount = "saved-server"
+    private let clientIdAccount = "sendspin-client-id"
+    private let playerNameAccount = "sendspin-player-name"
 
     func saveToken(_ token: String) {
         save(key: tokenAccount, data: Data(token.utf8))
@@ -51,6 +53,31 @@ struct KeychainHelper {
         deleteToken()
         deleteUsername()
         deleteServerURL()
+        // Intentionally keep the Sendspin client id and player name so the device
+        // stays the SAME player across logout/login (and reinstalls).
+    }
+
+    /// A stable client identifier that survives app reinstalls (the Keychain
+    /// persists across delete+install), unlike `UIDevice.identifierForVendor`,
+    /// which resets on reinstall and spawned a duplicate player on the server each
+    /// time (e.g. "iPhone Pro" → a fresh "iPhone"). On first run we seed it with the
+    /// current vendor id so existing installs keep their current player_id.
+    func getOrCreateClientId(seedIfMissing seed: @autoclosure () -> String) -> String {
+        if let data = load(key: clientIdAccount), let s = String(data: data, encoding: .utf8), !s.isEmpty {
+            return s
+        }
+        let new = seed()
+        save(key: clientIdAccount, data: Data(new.utf8))
+        return new
+    }
+
+    func savePlayerName(_ name: String) {
+        save(key: playerNameAccount, data: Data(name.utf8))
+    }
+
+    func getPlayerName() -> String? {
+        guard let data = load(key: playerNameAccount) else { return nil }
+        return String(data: data, encoding: .utf8)
     }
 
     private func save(key: String, data: Data) {

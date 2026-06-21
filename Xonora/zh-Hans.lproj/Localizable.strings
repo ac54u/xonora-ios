@@ -211,3 +211,7 @@
 "No logs yet" = "暂无日志";
 "Copy All" = "复制全部";
 "View the app's connection and playback logs for troubleshooting." = "查看 App 的连接与播放日志，便于排查问题。";
+"Random Album (from library)" = "随机专辑（资料库）";
+"Random Artist (from library)" = "随机艺人（资料库）";
+"Recently added tracks" = "最近添加的歌曲";
+"Recently played tracks" = "最近播放的歌曲";
