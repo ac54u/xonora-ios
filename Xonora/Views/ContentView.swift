@@ -229,20 +229,29 @@ struct ServerSetupView: View {
     // MARK: - Background
 
     private var backgroundView: some View {
-        LinearGradient(
-            colors: [
-                Color.pink.opacity(0.6),
-                Color.purple.opacity(0.4),
-                Color.pink.opacity(0.5),
-            ],
-            startPoint: gradientAnim ? .bottomLeading : .topLeading,
-            endPoint: gradientAnim ? .topTrailing : .bottomTrailing
-        )
-        .blur(radius: 60)
-        .scaleEffect(1.5)
-        .animation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true), value: gradientAnim)
+        ZStack {
+            // 铺一层极浅的蓝紫色底色
+            Color(UIColor.systemBackground)
+
+            AngularGradient(
+                gradient: Gradient(colors: [
+                    Color.pink.opacity(0.4),
+                    Color.cyan.opacity(0.3),   // 视频中明显的冰蓝色团
+                    Color.purple.opacity(0.3),
+                    Color.pink.opacity(0.4)    // 首尾呼应，保证旋转无缝衔接
+                ]),
+                center: .center,
+                angle: .degrees(gradientAnim ? 360 : 0)
+            )
+            // 极大的模糊度是核心！打散圆锥渐变的中心点，形成云朵状色块
+            .blur(radius: 120)
+            // 放大以隐藏渐变边缘
+            .scaleEffect(1.8)
+            // 使用 linear 匀速旋转，且不反转，形成持续的流体循环
+            .animation(.linear(duration: 20.0).repeatForever(autoreverses: false), value: gradientAnim)
+        }
         .onAppear {
-            gradientAnim.toggle()
+            gradientAnim = true
         }
     }
 
