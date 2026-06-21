@@ -10,6 +10,7 @@
 		1D861CD32F0FB2DD007D0C6A /* Color+Xonora.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D861CD22F0FB2DD007D0C6A /* Color+Xonora.swift */; };
 		1D861D2F2F110D01007D0C6A /* SendspinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1D861D2E2F110D01007D0C6A /* SendspinKit */; };
 		MMM00003 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = MMM00001 /* Localizable.strings */; };
+		1D861D322F110D01007D0C6A /* FluidGradient in Frameworks */ = {isa = PBXBuildFile; productRef = 1D861D312F110D01007D0C6A /* FluidGradient */; };
 		AAA00001 /* XonoraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00001 /* XonoraApp.swift */; };
 		AAA00002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00002 /* ContentView.swift */; };
 		AAA00003 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00003 /* LibraryView.swift */; };
@@ -165,6 +166,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1D861D2F2F110D01007D0C6A /* SendspinKit in Frameworks */,
+				1D861D322F110D01007D0C6A /* FluidGradient in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -589,6 +591,7 @@
 			mainGroup = EEE00001;
 			packageReferences = (
 				1D861D2D2F110D01007D0C6A /* XCLocalSwiftPackageReference "SendspinKit" */,
+				1D861D302F110D01007D0C6A /* XCRemoteSwiftPackageReference "fluidgradient" */,
 			);
 			productRefGroup = EEE00003 /* Products */;
 			projectDirPath = "";
@@ -872,10 +875,26 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		1D861D302F110D01007D0C6A /* XCRemoteSwiftPackageReference "fluidgradient" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Cindori/FluidGradient.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		1D861D2E2F110D01007D0C6A /* SendspinKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SendspinKit;
+		};
+		1D861D312F110D01007D0C6A /* FluidGradient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FluidGradient;
+			package = 1D861D302F110D01007D0C6A /* XCRemoteSwiftPackageReference "fluidgradient" */;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,6 +1,6 @@
 import SwiftUI
 import UIKit
-import Combine
+import FluidGradient
 
 struct ContentView: View {
     @EnvironmentObject var playerViewModel: PlayerViewModel
@@ -230,19 +230,13 @@ struct ServerSetupView: View {
     // MARK: - Background
 
     private var backgroundView: some View {
-        ZStack {
-            Color(UIColor.systemBackground)
-
-            FluidBlobsView(
-                blobs: [
-                    FluidBlob(color: .pink, opacity: 0.4),
-                    FluidBlob(color: .cyan, opacity: 0.3),
-                    FluidBlob(color: .purple, opacity: 0.3),
-                    FluidBlob(color: .pink, opacity: 0.4),
-                ],
-                speed: 0.6
-            )
-        }
+        FluidGradient(
+            blobs: [.pink, .cyan, .purple, .pink],
+            highlights: [.pink, .cyan, .purple],
+            speed: 0.5,
+            blur: 0.95
+        )
+        .background(.quaternary)
     }
 
     // MARK: - Header
@@ -1095,75 +1089,3 @@ struct MiniPlayerView: View {
     }
 }
 
-// MARK: - Fluid Blobs
-
-struct FluidBlob {
-    let color: Color
-    let opacity: CGFloat
-}
-
-struct FluidBlobsView: View {
-    let blobs: [FluidBlob]
-    let speed: CGFloat
-
-    @State private var positions: [CGPoint]
-    @State private var scales: [CGFloat]
-    @State private var opacities: [CGFloat]
-
-    init(blobs: [FluidBlob], speed: CGFloat) {
-        self.blobs = blobs
-        self.speed = speed
-        _positions = State(initialValue: (0..<blobs.count).map { _ in
-            CGPoint(x: .random(in: 0...1), y: .random(in: 0...1))
-        })
-        _scales = State(initialValue: (0..<blobs.count).map { _ in
-            .random(in: 0.3...0.8)
-        })
-        _opacities = State(initialValue: blobs.map { $0.opacity })
-    }
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                ForEach(0..<blobs.count, id: \.self) { i in
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    blobs[i].color.opacity(opacities[i]),
-                                    blobs[i].color.opacity(opacities[i] * 0.3),
-                                    .clear,
-                                ],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: geo.width * scales[i] * 0.5
-                            )
-                        )
-                        .frame(
-                            width: geo.width * scales[i],
-                            height: geo.width * scales[i]
-                        )
-                        .position(
-                            x: geo.width * positions[i].x,
-                            y: geo.height * positions[i].y
-                        )
-                }
-            }
-            .blur(radius: 60)
-            .scaleEffect(1.5)
-        }
-        .onReceive(Timer.publish(every: 1.2 / speed, on: .main, in: .common).autoconnect()) { _ in
-            animateBlobs()
-        }
-    }
-
-    private func animateBlobs() {
-        withAnimation(.interpolatingSpring(stiffness: 30 * speed, damping: 8)) {
-            for i in 0..<blobs.count {
-                positions[i] = CGPoint(x: .random(in: 0...1), y: .random(in: 0...1))
-                scales[i] = .random(in: 0.25...0.7)
-                opacities[i] = blobs[i].opacity * .random(in: 0.8...1.0)
-            }
-        }
-    }
-}
