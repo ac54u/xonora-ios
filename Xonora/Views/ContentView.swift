@@ -1108,18 +1108,17 @@ struct FluidBlobsView: View {
     @State private var positions: [CGPoint]
     @State private var scales: [CGFloat]
     @State private var opacities: [CGFloat]
-    @State private var timer: Timer?
 
     init(blobs: [FluidBlob], speed: CGFloat) {
         self.blobs = blobs
         self.speed = speed
-        _positions = State(initialValue: (0..<blobs.count).map { _ in
+        self._positions = State(initialValue: (0..<blobs.count).map { _ in
             CGPoint(x: .random(in: 0...1), y: .random(in: 0...1))
         })
-        _scales = State(initialValue: (0..<blobs.count).map { _ in
+        self._scales = State(initialValue: (0..<blobs.count).map { _ in
             .random(in: 0.3...0.8)
         })
-        _opacities = State(initialValue: blobs.map { $0.opacity })
+        self._opacities = State(initialValue: blobs.map(\.opacity))
     }
 
     var body: some View {
@@ -1151,29 +1150,14 @@ struct FluidBlobsView: View {
             }
             .blur(radius: 60)
             .scaleEffect(1.5)
-            .onAppear {
-                startAnimating(in: geo.size)
-            }
-            .onDisappear {
-                timer?.invalidate()
-            }
-            .onChange(of: geo.size) { _, _ in
-                startAnimating(in: geo.size)
-            }
         }
-    }
-
-    private func startAnimating(in size: CGSize) {
-        timer?.invalidate()
-        animateBlobs()
-        let interval = 1.2 / speed
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+        .onReceive(Timer.publish(every: 1.2 / speed, on: .main, in: .common).autoconnect()) { _ in
             animateBlobs()
         }
     }
 
     private func animateBlobs() {
-        withAnimation(.spring(response: 1.0 / speed, dampingFraction: 0.6)) {
+        withAnimation(.interpolatingSpring(stiffness: 30 * speed, damping: 8)) {
             for i in 0..<blobs.count {
                 positions[i] = CGPoint(x: .random(in: 0...1), y: .random(in: 0...1))
                 scales[i] = .random(in: 0.25...0.7)
