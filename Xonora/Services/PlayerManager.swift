@@ -90,8 +90,6 @@ class PlayerManager: ObservableObject {
 
             Task { @MainActor in
                 if self.playbackState == .playing {
-                    self.objectWillChange.send()
-
                     // Drift-corrected time: start from last server time, add wall-clock delta
                     let elapsedSinceServer = Date().timeIntervalSince(self.serverTimeReceivedAt)
                     let correctedTime = self.serverTime + elapsedSinceServer + self.localTimeOffset
@@ -387,8 +385,20 @@ class PlayerManager: ObservableObject {
 
         SendspinClient.shared.stopPlayback()
         stopProgressTimer()
+
+        // Seed artworkImage synchronously from cache so NowPlayingView
+        // shows artwork immediately (no empty/gray square while loading).
+        artworkImage = nil
+        if let urlString = track.imageUrl ?? track.album?.imageUrl,
+           let url = XonoraClient.shared.getImageURL(for: urlString, size: .medium),
+           let cached = SyncImageMemoryCache.shared.image(for: url) {
+            artworkImage = cached
+        }
+
         Task {
             await self.updateNowPlayingInfoAsync()
+            // Pre-load thumbnail into both caches for MiniPlayer/TrackRow
+            await self.cacheThumbnailArtwork(for: track)
         }
 
         // Prepare URIs to play (current track + subsequent queue items)
@@ -754,6 +764,26 @@ class PlayerManager: ObservableObject {
     }
 
     // MARK: - Now Playing Info
+
+    /// Pre-load thumbnail artwork into the caches so MiniPlayer / TrackRow
+    /// show artwork immediately on the next render cycle instead of a gray placeholder.
+    private func cacheThumbnailArtwork(for track: Track) async {
+        guard let urlString = track.imageUrl ?? track.album?.imageUrl,
+              let url = XonoraClient.shared.getImageURL(for: urlString, size: .thumbnail) else { return }
+        // Already cached — nothing to do.
+        if SyncImageMemoryCache.shared.image(for: url) != nil { return }
+        if let cached = await ImageCache.shared.image(for: url) {
+            SyncImageMemoryCache.shared.set(cached, for: url)
+            return
+        }
+        // Not cached anywhere, and we may already have the .medium version
+        // downloaded. Reuse it as thumbnail rather than a second network fetch.
+        if let mediumURL = XonoraClient.shared.getImageURL(for: urlString, size: .medium),
+           let medium = await ImageCache.shared.image(for: mediumURL) {
+            SyncImageMemoryCache.shared.set(medium, for: url)
+            return
+        }
+    }
 
     private func updateNowPlayingInfo() {
         Task { await updateNowPlayingInfoAsync() }

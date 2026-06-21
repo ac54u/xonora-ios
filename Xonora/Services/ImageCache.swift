@@ -125,35 +125,32 @@ struct CachedAsyncImage<Placeholder: View>: View {
     let url: URL?
     let placeholder: () -> Placeholder
 
+    // NOT seeded from sync cache in init — when `url` changes, `@State` retains
+    // the previous track's image so we keep showing it while the new one loads,
+    // eliminating the gray-placeholder flash on play/pause/next/prev.
     @State private var image: UIImage?
 
     init(url: URL?, @ViewBuilder placeholder: @escaping () -> Placeholder) {
         self.url = url
         self.placeholder = placeholder
-        // Seed from the synchronous memory cache so warm artwork shows on the first
-        // frame — no placeholder flash on tab switch / play-pause re-render.
-        _image = State(initialValue: url.flatMap { SyncImageMemoryCache.shared.image(for: $0) })
     }
 
     var body: some View {
         Group {
-            if let image = image {
-                Image(uiImage: image)
+            if let url = url, let cached = SyncImageMemoryCache.shared.image(for: url) {
+                // Current URL is already cached — show it immediately,
+                // overriding any stale image from a previous track.
+                Image(uiImage: cached)
                     .resizable()
-            } else if let cachedImage = url.flatMap({ SyncImageMemoryCache.shared.image(for: $0) }) {
-                // Sync cache fallback — catches the rare case where the view's
-                // @State was reset (e.g. fullScreenCover identity edge case) but
-                // the image is already cached from a previous load. Without this,
-                // the gray placeholder flashes until the .task runs.
-                Image(uiImage: cachedImage)
+            } else if let image = image {
+                // Keep showing the previous track's image while the new one
+                // downloads, rather than flashing to the gray placeholder.
+                Image(uiImage: image)
                     .resizable()
             } else {
                 placeholder()
             }
         }
-        // `.task(id:)` re-runs whenever `url` changes and auto-cancels the prior
-        // load — this replaces the fragile onAppear/onChange combination that
-        // could leave stale artwork or never fire when the URL went nil→value.
         .task(id: url) {
             await loadImage()
         }
