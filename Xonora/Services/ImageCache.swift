@@ -161,12 +161,7 @@ struct CachedAsyncImage<Placeholder: View>: View {
 
     @MainActor
     private func loadImage() async {
-        guard let url = url else {
-            // No artwork for this item — drop any previous image so we show the
-            // placeholder instead of the last track's cover.
-            image = nil
-            return
-        }
+        guard let url = url else { return }
 
         // Fast synchronous memory hit — no flash, no await.
         if let mem = SyncImageMemoryCache.shared.image(for: url) {
