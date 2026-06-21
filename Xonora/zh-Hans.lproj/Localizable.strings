@@ -198,3 +198,9 @@
 "Invalid URL: %@" = "无效的地址：%@";
 "Connection failed: %@" = "连接失败：%@";
 "Failed to reconnect after multiple attempts" = "多次尝试后仍无法重新连接";
+
+// Built-in (Music Assistant) playlist names
+"All favorited tracks" = "所有收藏歌曲";
+"Infinite Mix (favorites)" = "无限混音（收藏）";
+"Infinite Mix (library)" = "无限混音（资料库）";
+"%@ Random tracks (from library)" = "随机播放 %@ 首（资料库）";

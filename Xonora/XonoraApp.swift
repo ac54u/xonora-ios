@@ -39,6 +39,9 @@ struct XonoraApp: App {
                 if playerViewModel.isConnected {
                     Task {
                         await XonoraClient.shared.fetchPlayers()
+                        // Reconcile the player UI with the server's real state so the
+                        // controls don't stay frozen after returning from another app.
+                        PlayerManager.shared.syncStateFromServer()
                     }
                 }
             } else if newPhase == .background {

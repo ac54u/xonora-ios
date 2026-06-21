@@ -216,7 +216,9 @@ struct NowPlayingView: View {
 
     private var trackImageURL: URL? {
         let imageString = playerManager.currentTrack?.imageUrl ?? playerManager.currentTrack?.album?.imageUrl
-        return XonoraClient.shared.getImageURL(for: imageString, size: .large)
+        // Use .medium (512px) so this shares the same cache key as the lock-screen /
+        // now-playing artwork — usually already cached, avoiding the gray-square flash.
+        return XonoraClient.shared.getImageURL(for: imageString, size: .medium)
     }
 
     private var thumbnailImageURL: URL? {

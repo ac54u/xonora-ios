@@ -120,7 +120,7 @@ struct PlaylistDetailView: View {
 
             // Playlist info
             VStack(spacing: 4) {
-                Text(playlist.name)
+                Text(playlist.displayName)
                     .font(.title2)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
@@ -145,17 +145,11 @@ struct PlaylistDetailView: View {
 
     private var playlistArtPlaceholder: some View {
         Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .fill(Color.xonoraGradient)
             .overlay {
                 Image(systemName: "music.note.list")
                     .font(.system(size: 60))
-                    .foregroundColor(.gray)
+                    .foregroundColor(.white.opacity(0.85))
             }
     }
 

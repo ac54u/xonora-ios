@@ -240,16 +240,25 @@ class PlayerManager: ObservableObject {
                     if let mediaItemDict = currentItem["media_item"] as? [String: Any] {
                         do {
                             let data = try JSONSerialization.data(withJSONObject: mediaItemDict)
-                            let track = try JSONDecoder().decode(Track.self, from: data)
+                            let serverTrack = try JSONDecoder().decode(Track.self, from: data)
                             let oldTrack = self.currentTrack
-                            if oldTrack?.uri != track.uri {
-                                print("[PlayerManager] Server advanced to next track: \(track.name)")
+                            if oldTrack?.uri != serverTrack.uri {
+                                print("[PlayerManager] Server advanced to next track: \(serverTrack.name)")
+                                // The server's queue_updated media_item is often stripped of
+                                // image metadata, which left the artwork blank after auto-advance.
+                                // Prefer the full Track from our local queue (it carries the
+                                // library image) and only fall back to the server's copy.
+                                let queueIdx = self.queue.firstIndex(where: { $0.uri == serverTrack.uri })
+                                let track = queueIdx.map { self.queue[$0] } ?? serverTrack
                                 self.currentTrack = track
                                 self.currentTime = 0
+                                // Re-anchor drift correction for the new track.
+                                self.serverTime = 0
+                                self.serverTimeReceivedAt = Date()
                                 // Reset lastTrackId to trigger artwork reload
                                 self.lastTrackId = nil
                                 // Sync queue index
-                                if let idx = self.queue.firstIndex(where: { $0.uri == track.uri }) {
+                                if let idx = queueIdx {
                                     self.currentIndex = idx
                                 }
                                 // If track ended naturally and server auto-advanced but the
@@ -339,6 +348,12 @@ class PlayerManager: ObservableObject {
 
         currentTrack = track
         currentTime = 0
+        // Reset the drift-correction anchor too. Otherwise the progress timer keeps
+        // adding wall-clock time onto the PREVIOUS track's last server time and snaps
+        // the progress bar back to where the old song was — the "wrong progress after
+        // skip" bug.
+        serverTime = 0
+        serverTimeReceivedAt = Date()
         duration = track.duration ?? 0
         playbackState = .loading
         postPlaybackStateChange()
@@ -410,18 +425,67 @@ class PlayerManager: ObservableObject {
         postPlaybackStateChange()
     }
 
+    /// Reconcile the UI with the server's authoritative playback state. Called on
+    /// app foreground: switching to another audio app and back could otherwise leave
+    /// the UI showing a paused/idle state while the stream is actually still playing.
+    func syncStateFromServer() {
+        guard let player = XonoraClient.shared.currentPlayer else { return }
+
+        if let media = player.currentMedia {
+            if let pos = media.position {
+                currentTime = pos
+                serverTime = pos
+                serverTimeReceivedAt = Date()
+            }
+            if let dur = media.duration, dur > 0 { duration = dur }
+            // Re-attach to the right track if the server moved on while we were away.
+            if let uri = media.uri, uri != currentTrack?.uri,
+               let idx = queue.firstIndex(where: { $0.uri == uri }) {
+                currentIndex = idx
+                currentTrack = queue[idx]
+                lastTrackId = nil
+            }
+        }
+
+        switch player.state {
+        case .playing?:
+            if playbackState != .playing {
+                playbackState = .playing
+                startProgressTimer()
+                SendspinClient.shared.resumePlayback()
+                postPlaybackStateChange()
+            }
+        case .paused?:
+            if playbackState != .paused {
+                playbackState = .paused
+                stopProgressTimer()
+                postPlaybackStateChange()
+            }
+        default:
+            break
+        }
+        updateNowPlayingInfo()
+    }
+
     func next() {
         guard !queue.isEmpty else { return }
 
-        // Always advance sequentially. Shuffle is handled by reordering the queue itself.
-        currentIndex = (currentIndex + 1) % queue.count
+        // Ask the SERVER to advance its own queue rather than rebuilding the queue
+        // with a fresh play_media. This respects any reordering the user made and
+        // drives the UI through the same queue_updated event path as auto-advance
+        // (which also resumes the Sendspin stream).
+        if SendspinClient.shared.isConnected {
+            Task { try? await XonoraClient.shared.next() }
+            return
+        }
 
-        let nextTrack = queue[currentIndex]
-        playTrack(nextTrack, fromQueue: queue, sourceName: currentSource)
+        // Fallback if the local player isn't connected: advance locally.
+        currentIndex = (currentIndex + 1) % queue.count
+        playTrack(queue[currentIndex], fromQueue: queue, sourceName: currentSource)
     }
 
     func previous() {
-        // If we are more than 3 seconds into the track, restart it
+        // If we are more than 3 seconds into the track, restart it (standard behavior).
         if currentTime > 3 {
             seek(to: 0)
             return
@@ -429,16 +493,18 @@ class PlayerManager: ObservableObject {
 
         guard !queue.isEmpty else { return }
 
-        // Check if we are at the start of the queue
+        if SendspinClient.shared.isConnected {
+            Task { try? await XonoraClient.shared.previous() }
+            return
+        }
+
+        // Fallback if the local player isn't connected: go back locally.
         if currentIndex > 0 {
             currentIndex -= 1
         } else {
-            // Wrap around to the last track
             currentIndex = queue.count - 1
         }
-
-        let previousTrack = queue[currentIndex]
-        playTrack(previousTrack, fromQueue: queue, sourceName: currentSource)
+        playTrack(queue[currentIndex], fromQueue: queue, sourceName: currentSource)
     }
 
     func seek(to time: TimeInterval) {
@@ -446,6 +512,10 @@ class PlayerManager: ObservableObject {
             Task { try? await XonoraClient.shared.seek(position: time) }
         }
         currentTime = time
+        // Re-anchor drift correction to the seeked position so the progress timer
+        // doesn't immediately snap back to the pre-seek time.
+        serverTime = time
+        serverTimeReceivedAt = Date()
         Task {
             await self.updateNowPlayingInfoAsync()
         }
@@ -545,7 +615,7 @@ class PlayerManager: ObservableObject {
         }
         let newIndex = queue.firstIndex(where: { $0.id == movedTrack.id }) ?? sourceIndex
         let posShift = newIndex - sourceIndex
-        Task { await XonoraClient.shared.moveQueueItem(matchingURI: movedTrack.uri, posShift: posShift) }
+        Task { await XonoraClient.shared.moveQueueItem(matchingURI: movedTrack.uri, posShift: posShift, fallbackName: movedTrack.name) }
     }
 
     func clearQueue() {

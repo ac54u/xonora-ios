@@ -1,17 +1,21 @@
 import Foundation
 import SwiftUI
 
-/// In-memory image cache with automatic cleanup
+/// Two-tier image cache: fast in-memory NSCache backed by a persistent on-disk
+/// cache. The disk tier survives app relaunches so album artwork no longer
+/// reloads every time the app is opened.
 actor ImageCache {
     static let shared = ImageCache()
 
     private var cache = NSCache<NSString, UIImage>()
     private var downloadingURLs = Set<String>()
     private let urlSession: URLSession
+    private let diskURL: URL
+    private let fileManager = FileManager.default
 
     private init() {
-        cache.countLimit = 100 // Max 100 images
-        cache.totalCostLimit = 50 * 1024 * 1024 // 50MB max
+        cache.countLimit = 200 // Max images held in memory
+        cache.totalCostLimit = 80 * 1024 * 1024 // 80MB max in memory
 
         // Reuse single URLSession to avoid reporter disconnection errors
         let config = URLSessionConfiguration.ephemeral
@@ -21,17 +25,47 @@ actor ImageCache {
         config.timeoutIntervalForRequest = 30
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         self.urlSession = URLSession(configuration: config)
+
+        // Persistent on-disk cache directory
+        let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        self.diskURL = caches.appendingPathComponent("XonoraImageCache", isDirectory: true)
+        try? fileManager.createDirectory(at: diskURL, withIntermediateDirectories: true)
     }
 
+    /// Stable FNV-1a hash so the same URL maps to the same file across launches
+    /// (Swift's `hashValue` is randomized per process and cannot be used here).
+    private func diskFileURL(for url: URL) -> URL {
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in url.absoluteString.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 0x100000001b3
+        }
+        return diskURL.appendingPathComponent(String(hash, radix: 16))
+    }
+
+    /// Look up the image in memory first, then fall back to disk (promoting it
+    /// into memory on a hit).
     func image(for url: URL) -> UIImage? {
         let key = url.absoluteString as NSString
-        return cache.object(forKey: key)
+        if let cached = cache.object(forKey: key) {
+            return cached
+        }
+        let fileURL = diskFileURL(for: url)
+        if let data = try? Data(contentsOf: fileURL), let image = UIImage(data: data) {
+            cache.setObject(image, forKey: key, cost: data.count)
+            return image
+        }
+        return nil
     }
 
     func setImage(_ image: UIImage, for url: URL) {
         let key = url.absoluteString as NSString
-        let cost = image.pngData()?.count ?? 0
-        cache.setObject(image, forKey: key, cost: cost)
+        let data = image.jpegData(compressionQuality: 0.9) ?? image.pngData()
+        cache.setObject(image, forKey: key, cost: data?.count ?? 0)
+        if let data = data {
+            try? data.write(to: diskFileURL(for: url), options: .atomic)
+        }
     }
 
     func isDownloading(_ url: URL) -> Bool {
@@ -48,6 +82,8 @@ actor ImageCache {
 
     func clearCache() {
         cache.removeAllObjects()
+        try? fileManager.removeItem(at: diskURL)
+        try? fileManager.createDirectory(at: diskURL, withIntermediateDirectories: true)
     }
 
     var session: URLSession {
@@ -55,13 +91,12 @@ actor ImageCache {
     }
 }
 
-/// A view that displays an image from a URL with caching support
+/// A view that displays an image from a URL with caching support.
 struct CachedAsyncImage<Placeholder: View>: View {
     let url: URL?
     let placeholder: () -> Placeholder
 
     @State private var image: UIImage?
-    @State private var isLoading = false
 
     init(url: URL?, @ViewBuilder placeholder: @escaping () -> Placeholder) {
         self.url = url
@@ -75,63 +110,60 @@ struct CachedAsyncImage<Placeholder: View>: View {
                     .resizable()
             } else {
                 placeholder()
-                    .onAppear {
-                        loadImage()
-                    }
             }
         }
-        .onChange(of: url) { _ in
-            // url has already been updated to the new value here, so reset and reload
-            // unconditionally — the previous `newURL != url` check was always false and
-            // left stale artwork when the track changed.
-            image = nil
-            isLoading = false
-            loadImage()
+        // `.task(id:)` re-runs whenever `url` changes and auto-cancels the prior
+        // load — this replaces the fragile onAppear/onChange combination that
+        // could leave stale artwork or never fire when the URL went nil→value.
+        .task(id: url) {
+            await loadImage()
         }
     }
 
-    private func loadImage() {
-        guard let url = url else { return }
-        guard !isLoading else { return }
+    @MainActor
+    private func loadImage() async {
+        guard let url = url else {
+            // No artwork for this item — drop any previous image so we show the
+            // placeholder instead of the last track's cover.
+            image = nil
+            return
+        }
 
-        // Check cache first
-        Task {
-            if let cached = await ImageCache.shared.image(for: url) {
-                await MainActor.run {
-                    self.image = cached
-                }
+        // Synchronous-feeling cache hit (memory or disk) — no placeholder flash.
+        if let cached = await ImageCache.shared.image(for: url) {
+            image = cached
+            return
+        }
+
+        // Cache miss: clear the old image so we don't show the wrong cover while
+        // the new one downloads.
+        image = nil
+
+        guard await !ImageCache.shared.isDownloading(url) else { return }
+        await ImageCache.shared.startDownloading(url)
+        defer { Task { await ImageCache.shared.finishDownloading(url) } }
+
+        do {
+            let session = await ImageCache.shared.session
+            let (data, response) = try await session.data(from: url)
+
+            if Task.isCancelled { return }
+
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+                safeLog("[ImageCache] Error loading image from \(url.absoluteString): HTTP \(httpResponse.statusCode)")
                 return
             }
 
-            // Check if already downloading
-            guard await !ImageCache.shared.isDownloading(url) else { return }
-
-            await MainActor.run { isLoading = true }
-            await ImageCache.shared.startDownloading(url)
-
-            do {
-                // Use shared URLSession to avoid creating multiple sessions
-                let session = await ImageCache.shared.session
-                let (data, response) = try await session.data(from: url)
-                
-                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                    safeLog("[ImageCache] Error loading image from \(url.absoluteString): HTTP \(httpResponse.statusCode)")
+            if let downloadedImage = UIImage(data: data) {
+                await ImageCache.shared.setImage(downloadedImage, for: url)
+                if !Task.isCancelled && self.url == url {
+                    image = downloadedImage
                 }
-
-                if let downloadedImage = UIImage(data: data) {
-                    await ImageCache.shared.setImage(downloadedImage, for: url)
-                    await MainActor.run {
-                        self.image = downloadedImage
-                    }
-                } else {
-                    safeLog("[ImageCache] Failed to decode image data from \(url.absoluteString)")
-                }
-            } catch {
-                safeLog("[ImageCache] Exception loading image from \(url.absoluteString): \(error.localizedDescription)")
+            } else {
+                safeLog("[ImageCache] Failed to decode image data from \(url.absoluteString)")
             }
-
-            await ImageCache.shared.finishDownloading(url)
-            await MainActor.run { isLoading = false }
+        } catch {
+            safeLog("[ImageCache] Exception loading image from \(url.absoluteString): \(error.localizedDescription)")
         }
     }
 

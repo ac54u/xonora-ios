@@ -15,7 +15,7 @@ struct PlaylistGridItem: View {
             .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(playlist.name)
+                Text(playlist.displayName)
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .lineLimit(1)
@@ -31,17 +31,11 @@ struct PlaylistGridItem: View {
 
     private var playlistPlaceholder: some View {
         Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
+            .fill(Color.xonoraGradient)
             .overlay {
                 Image(systemName: "music.note.list")
                     .font(.largeTitle)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.white.opacity(0.85))
             }
     }
 }

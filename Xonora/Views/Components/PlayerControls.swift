@@ -8,6 +8,10 @@ struct PlayerControls: View {
     
     let size: ControlSize
 
+    // Live preview of the scrub position while the user drags the progress bar.
+    // Keeps the time labels in sync with the thumb without spamming seek commands.
+    @State private var scrubPreview: TimeInterval?
+
     enum ControlSize {
         case compact
         case full
@@ -62,21 +66,23 @@ struct PlayerControls: View {
             // Progress bar
             VStack(spacing: 4) {
                 ProgressSlider(
-                    value: Binding(
-                        get: { playerManager.currentTime },
-                        set: { playerManager.seek(to: $0) }
-                    ),
-                    range: 0...max(playerManager.duration, 1)
+                    value: playerManager.currentTime,
+                    range: 0...max(playerManager.duration, 1),
+                    onScrub: { scrubPreview = $0 },
+                    onCommit: { time in
+                        playerManager.seek(to: time)
+                        scrubPreview = nil
+                    }
                 )
 
                 HStack {
-                    Text(formatTime(playerManager.currentTime))
+                    Text(formatTime(scrubPreview ?? playerManager.currentTime))
                         .font(.caption)
                         .foregroundColor(.secondary)
 
                     Spacer()
 
-                    Text("-\(formatTime(playerManager.duration - playerManager.currentTime))")
+                    Text("-\(formatTime(playerManager.duration - (scrubPreview ?? playerManager.currentTime)))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -213,10 +219,20 @@ struct PlayerControls: View {
 }
 
 struct ProgressSlider: View {
-    @Binding var value: TimeInterval
+    /// Current playback time, used for display when the user isn't dragging.
+    let value: TimeInterval
     let range: ClosedRange<TimeInterval>
+    /// Called continuously with the previewed time while dragging (no seek).
+    var onScrub: ((TimeInterval) -> Void)? = nil
+    /// Called once with the final time when the drag ends (performs the seek).
+    var onCommit: (TimeInterval) -> Void
 
     @State private var isDragging = false
+    @State private var dragValue: TimeInterval = 0
+
+    private var displayValue: TimeInterval {
+        isDragging ? dragValue : value
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -231,10 +247,10 @@ struct ProgressSlider: View {
                     .fill(Color.primary)
                     .frame(width: progressWidth(in: geometry.size.width), height: 4)
 
-                // Thumb (only visible when dragging)
+                // Thumb (enlarges while dragging)
                 Circle()
                     .fill(Color.primary)
-                    .frame(width: isDragging ? 12 : 0, height: isDragging ? 12 : 0)
+                    .frame(width: isDragging ? 16 : 0, height: isDragging ? 16 : 0)
                     .offset(x: thumbOffset(in: geometry.size.width))
             }
             .contentShape(Rectangle())
@@ -242,14 +258,21 @@ struct ProgressSlider: View {
                 DragGesture(minimumDistance: 0)
                     .onChanged { gesture in
                         isDragging = true
-                        let percentage = gesture.location.x / geometry.size.width
-                        let newValue = range.lowerBound + (range.upperBound - range.lowerBound) * max(0, min(1, Double(percentage)))
-                        value = newValue
+                        let percentage = max(0, min(1, gesture.location.x / geometry.size.width))
+                        let newValue = range.lowerBound + (range.upperBound - range.lowerBound) * Double(percentage)
+                        dragValue = newValue
+                        // Local-only preview — do NOT seek on every frame. Seeking per
+                        // frame round-trips to the server and fights the incoming time
+                        // updates, which is what made dragging feel laggy/imprecise.
+                        onScrub?(newValue)
                     }
                     .onEnded { _ in
+                        // Commit a single seek to the released position.
+                        onCommit(dragValue)
                         isDragging = false
                     }
             )
+            .animation(.easeOut(duration: 0.15), value: isDragging)
         }
         .frame(height: 20)
     }
@@ -257,12 +280,12 @@ struct ProgressSlider: View {
     private func progressWidth(in totalWidth: CGFloat) -> CGFloat {
         let rangeSpan = range.upperBound - range.lowerBound
         guard rangeSpan > 0 else { return 0 }
-        let percentage = (value - range.lowerBound) / rangeSpan
+        let percentage = (displayValue - range.lowerBound) / rangeSpan
         return max(0, min(totalWidth, CGFloat(percentage) * totalWidth))
     }
 
     private func thumbOffset(in totalWidth: CGFloat) -> CGFloat {
-        progressWidth(in: totalWidth) - 6
+        progressWidth(in: totalWidth) - (isDragging ? 8 : 0)
     }
 }
 

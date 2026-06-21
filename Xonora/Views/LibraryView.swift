@@ -442,10 +442,10 @@ struct LibraryView: View {
                     HStack(spacing: 12) {
                         CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: playlist.imageUrl, size: .thumbnail)) {
                             RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.gray.opacity(0.3))
+                                .fill(Color.xonoraGradient)
                                 .overlay {
                                     Image(systemName: "music.note.list")
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(.white.opacity(0.85))
                                 }
                         }
                         .aspectRatio(contentMode: .fill)
@@ -453,7 +453,7 @@ struct LibraryView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6))
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(playlist.name)
+                            Text(playlist.displayName)
                                 .font(.body)
                                 .foregroundColor(.primary)
                                 .lineLimit(1)

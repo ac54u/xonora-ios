@@ -480,10 +480,15 @@ class XonoraClient: NSObject, ObservableObject {
 
     /// Move a queue item identified by its URI by a relative position shift.
     /// Resolves the server-side queue_item_id via URI match to stay robust against index drift.
-    func moveQueueItem(matchingURI uri: String, posShift: Int) async {
+    func moveQueueItem(matchingURI uri: String, posShift: Int, fallbackName: String? = nil) async {
         guard posShift != 0, let playerId = currentPlayer?.playerId else { return }
         let items = await fetchQueueItems()
-        guard let item = items.first(where: { $0.uri == uri }) else { return }
+        let item = items.first(where: { $0.uri == uri })
+            ?? fallbackName.flatMap { name in items.first(where: { $0.name == name }) }
+        guard let item = item else {
+            print("[XonoraClient] moveQueueItem: no matching queue item for \(uri)")
+            return
+        }
         _ = try? await sendCommand("player_queues/move_item", args: [
             "queue_id": playerId,
             "queue_item_id": item.queueItemId,
