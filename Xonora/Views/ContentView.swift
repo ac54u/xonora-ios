@@ -229,36 +229,20 @@ struct ServerSetupView: View {
     // MARK: - Background
 
     private var backgroundView: some View {
-        ZStack {
-            AngularGradient(
-                colors: [
-                    Color.pink.opacity(0.35),
-                    Color.purple.opacity(0.25),
-                    Color.blue.opacity(0.15),
-                    Color.mint.opacity(0.1),
-                    Color.pink.opacity(0.35),
-                ],
-                center: .center,
-                angle: .degrees(gradientAnim ? 360 : 0)
-            )
-            .blur(radius: 60)
-            .scaleEffect(1.5)
-
-            LinearGradient(
-                colors: [
-                    Color.pink.opacity(0.2),
-                    Color.purple.opacity(0.15),
-                    Color.clear,
-                ],
-                startPoint: gradientAnim ? .topLeading : .bottomTrailing,
-                endPoint: gradientAnim ? .bottomTrailing : .topLeading
-            )
-            .blur(radius: 40)
-        }
+        LinearGradient(
+            colors: [
+                Color.pink.opacity(0.4),
+                Color.purple.opacity(0.2),
+                Color.pink.opacity(0.3),
+            ],
+            startPoint: gradientAnim ? .bottomLeading : .topLeading,
+            endPoint: gradientAnim ? .topTrailing : .bottomTrailing
+        )
+        .blur(radius: 60)
+        .scaleEffect(1.5)
+        .animation(.easeInOut(duration: 8.0).repeatForever(autoreverses: true), value: gradientAnim)
         .onAppear {
-            withAnimation(.linear(duration: 10.0).repeatForever(autoreverses: true)) {
-                gradientAnim.toggle()
-            }
+            gradientAnim.toggle()
         }
     }
 
