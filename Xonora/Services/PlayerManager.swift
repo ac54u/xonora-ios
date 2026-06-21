@@ -311,7 +311,7 @@ class PlayerManager: ObservableObject {
         NotificationCenter.default.post(name: .playbackStateChanged, object: nil)
     }
 
-    func playTrack(_ track: Track, fromQueue tracks: [Track]? = nil, sourceName: String? = nil) {
+    func playTrack(_ track: Track, fromQueue tracks: [Track]? = nil, sourceName: String? = nil, shuffle: Bool = false) {
         if let tracks = tracks {
             queue = tracks
             currentIndex = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
@@ -323,6 +323,25 @@ class PlayerManager: ObservableObject {
         
         self.currentSource = sourceName
 
+        // Shuffle the local queue when the caller requests shuffle (e.g. album
+        // shuffle play). The server's shuffle flag randomizes auto-advance, but
+        // the local queue must match so UI state (currentIndex, queue order)
+        // stays in sync.
+        if shuffle {
+            var shuffledTracks = queue
+            let current = track
+            if let idx = shuffledTracks.firstIndex(where: { $0.id == current.id }) {
+                shuffledTracks.remove(at: idx)
+                shuffledTracks.shuffle()
+                shuffledTracks.insert(current, at: 0)
+                currentIndex = 0
+            } else {
+                shuffledTracks.shuffle()
+                currentIndex = 0
+            }
+            queue = shuffledTracks
+        }
+
         guard SendspinClient.shared.isConnected else {
             playbackState = .error(NSLocalizedString("Sendspin not connected. Please enable it in Settings.", comment: "Playback error"))
             return
@@ -330,9 +349,9 @@ class PlayerManager: ObservableObject {
 
         appLog("[PlayerManager] Playing: \(track.name)")
 
-        // Force Shuffle OFF for direct track selection to ensure the selected track plays
-        self.shuffleEnabled = false
-        Task { try? await XonoraClient.shared.setShuffle(enabled: false) }
+        // Sync shuffle to the server.
+        self.shuffleEnabled = shuffle
+        Task { try? await XonoraClient.shared.setShuffle(enabled: shuffle) }
 
         // Sync Repeat Mode to ensure server matches client state (fixes stuck repeat issues)
         let modeString: String
@@ -724,12 +743,12 @@ class PlayerManager: ObservableObject {
         return String(format: NSLocalizedString("Sleep: %d:%02d", comment: "Sleep timer countdown"), minutes, seconds)
     }
 
-    func playAlbum(_ tracks: [Track], startingAt index: Int = 0) {
+    func playAlbum(_ tracks: [Track], startingAt index: Int = 0, shuffle: Bool = false) {
         guard !tracks.isEmpty else { return }
         let albumName = tracks[index].album?.name
         queue = tracks
         currentIndex = index
-        playTrack(tracks[index], fromQueue: tracks, sourceName: albumName)
+        playTrack(tracks[index], fromQueue: tracks, sourceName: albumName, shuffle: shuffle)
     }
 
     // MARK: - Now Playing Info

@@ -44,9 +44,7 @@ struct AlbumDetailView: View {
 
                     Button {
                         if !tracks.isEmpty {
-                            let shuffledTracks = tracks.shuffled()
-                            playerViewModel.playerManager.shuffleEnabled = true
-                            playerViewModel.playAlbum(shuffledTracks)
+                            playerViewModel.playAlbum(tracks, shuffle: true)
                         }
                     } label: {
                         HStack {

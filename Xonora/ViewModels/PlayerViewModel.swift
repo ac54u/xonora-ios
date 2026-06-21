@@ -245,12 +245,12 @@ class PlayerViewModel: ObservableObject {
 
     // MARK: - Playback Control
 
-    func playTrack(_ track: Track, fromQueue tracks: [Track]? = nil, sourceName: String? = nil) {
-        playerManager.playTrack(track, fromQueue: tracks, sourceName: sourceName)
+    func playTrack(_ track: Track, fromQueue tracks: [Track]? = nil, sourceName: String? = nil, shuffle: Bool = false) {
+        playerManager.playTrack(track, fromQueue: tracks, sourceName: sourceName, shuffle: shuffle)
     }
 
-    func playAlbum(_ tracks: [Track], startingAt index: Int = 0) {
-        playerManager.playAlbum(tracks, startingAt: index)
+    func playAlbum(_ tracks: [Track], startingAt index: Int = 0, shuffle: Bool = false) {
+        playerManager.playAlbum(tracks, startingAt: index, shuffle: shuffle)
     }
 
     func togglePlayPause() {

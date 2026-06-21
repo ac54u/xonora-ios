@@ -54,6 +54,8 @@ actor ImageCache {
         let fileURL = diskFileURL(for: url)
         if let data = try? Data(contentsOf: fileURL), let image = UIImage(data: data) {
             cache.setObject(image, forKey: key, cost: data.count)
+            // Mirror into the synchronous tier so views render it flash-free.
+            SyncImageMemoryCache.shared.set(image, for: url)
             return image
         }
         return nil
@@ -63,6 +65,11 @@ actor ImageCache {
         let key = url.absoluteString as NSString
         let data = image.jpegData(compressionQuality: 0.9) ?? image.pngData()
         cache.setObject(image, forKey: key, cost: data?.count ?? 0)
+        // Mirror into the synchronous tier. This is the key to the flash-free Now
+        // Playing artwork: the lock-screen artwork load (PlayerManager) calls
+        // setImage with the same .medium URL the Now Playing view uses, so by the
+        // time the page opens the image is already synchronously available.
+        SyncImageMemoryCache.shared.set(image, for: url)
         if let data = data {
             try? data.write(to: diskFileURL(for: url), options: .atomic)
         }
@@ -132,6 +139,13 @@ struct CachedAsyncImage<Placeholder: View>: View {
         Group {
             if let image = image {
                 Image(uiImage: image)
+                    .resizable()
+            } else if let cachedImage = url.flatMap({ SyncImageMemoryCache.shared.image(for: $0) }) {
+                // Sync cache fallback — catches the rare case where the view's
+                // @State was reset (e.g. fullScreenCover identity edge case) but
+                // the image is already cached from a previous load. Without this,
+                // the gray placeholder flashes until the .task runs.
+                Image(uiImage: cachedImage)
                     .resizable()
             } else {
                 placeholder()
