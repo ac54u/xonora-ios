@@ -373,7 +373,6 @@ class PlayerManager: ObservableObject {
             }
         }
 
-        artworkImage = nil
         currentTrack = track
         currentTime = 0
         // Reset the drift-correction anchor too. Otherwise the progress timer keeps
