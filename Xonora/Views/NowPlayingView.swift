@@ -23,8 +23,11 @@ struct NowPlayingView: View {
 
             // Album artwork
             albumArtwork
+                .id(playerManager.currentTrack?.id ?? "no-track")
                 .padding(.horizontal, 40)
                 .padding(.vertical, 20)
+                .scaleEffect(playerManager.isPlaying ? 1.0 : 0.95)
+                .animation(.easeInOut(duration: 0.3), value: playerManager.isPlaying)
 
             Spacer()
 
@@ -178,8 +181,6 @@ struct NowPlayingView: View {
         .aspectRatio(contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 20)
-        .scaleEffect(playerManager.isPlaying ? 1.0 : 0.95)
-        .animation(.easeInOut(duration: 0.3), value: playerManager.isPlaying)
     }
 
     private var artworkPlaceholder: some View {
