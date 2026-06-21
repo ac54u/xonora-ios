@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Combine
 
 struct ContentView: View {
     @EnvironmentObject var playerViewModel: PlayerViewModel
@@ -1112,13 +1113,13 @@ struct FluidBlobsView: View {
     init(blobs: [FluidBlob], speed: CGFloat) {
         self.blobs = blobs
         self.speed = speed
-        self._positions = State(initialValue: (0..<blobs.count).map { _ in
+        _positions = State(initialValue: (0..<blobs.count).map { _ in
             CGPoint(x: .random(in: 0...1), y: .random(in: 0...1))
         })
-        self._scales = State(initialValue: (0..<blobs.count).map { _ in
+        _scales = State(initialValue: (0..<blobs.count).map { _ in
             .random(in: 0.3...0.8)
         })
-        self._opacities = State(initialValue: blobs.map(\.opacity))
+        _opacities = State(initialValue: blobs.map { $0.opacity })
     }
 
     var body: some View {
