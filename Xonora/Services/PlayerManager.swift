@@ -52,6 +52,12 @@ class PlayerManager: ObservableObject {
     private var serverTimeReceivedAt: Date = Date()
     private var localTimeOffset: TimeInterval = 0 // local clock drift between timer ticks
 
+    // After a user-initiated seek, ignore the server's reported elapsed_time briefly.
+    // The server keeps streaming the PRE-seek position for a beat, and applying it
+    // snapped the progress bar back — the "drag, bar doesn't move, next drag jumps to
+    // the previous spot" bug.
+    private var seekGuardUntil: Date = .distantPast
+
     static let shared = PlayerManager()
 
     init() {
@@ -68,7 +74,7 @@ class PlayerManager: ObservableObject {
                 if !isBuffering && self.playbackState == .loading {
                     self.playbackState = .playing
                     self.startProgressTimer()
-                    print("[PlayerManager] Playback started, progress timer enabled")
+                    appLog("[PlayerManager] Playback started, progress timer enabled")
                 }
             }
             .store(in: &cancellables)
@@ -186,7 +192,8 @@ class PlayerManager: ObservableObject {
                     return
                 }
 
-                if let elapsed = userInfo["elapsed_time"] as? Double {
+                // Skip stale server time right after a user seek so the bar doesn't snap back.
+                if let elapsed = userInfo["elapsed_time"] as? Double, Date() >= self.seekGuardUntil {
                     self.serverTime = elapsed
                     self.serverTimeReceivedAt = Date()
                     self.currentTime = elapsed
@@ -243,7 +250,7 @@ class PlayerManager: ObservableObject {
                             let serverTrack = try JSONDecoder().decode(Track.self, from: data)
                             let oldTrack = self.currentTrack
                             if oldTrack?.uri != serverTrack.uri {
-                                print("[PlayerManager] Server advanced to next track: \(serverTrack.name)")
+                                appLog("[PlayerManager] Server advanced to next track: \(serverTrack.name)")
                                 // The server's queue_updated media_item is often stripped of
                                 // image metadata, which left the artwork blank after auto-advance.
                                 // Prefer the full Track from our local queue (it carries the
@@ -272,7 +279,7 @@ class PlayerManager: ObservableObject {
                                 }
                             }
                         } catch {
-                            print("[PlayerManager] Failed to decode track from server: \(error)")
+                            appLog("[PlayerManager] Failed to decode track from server: \(error)")
                         }
                     }
                 }
@@ -287,7 +294,7 @@ class PlayerManager: ObservableObject {
         // We only update UI state here
         playbackState = .stopped
         stopProgressTimer()
-        print("[PlayerManager] Track ended")
+        appLog("[PlayerManager] Track ended")
 
         if sleepTimerActive && sleepTimerEndDate == nil {
             pause()
@@ -321,7 +328,7 @@ class PlayerManager: ObservableObject {
             return
         }
 
-        print("[PlayerManager] Playing: \(track.name)")
+        appLog("[PlayerManager] Playing: \(track.name)")
 
         // Force Shuffle OFF for direct track selection to ensure the selected track plays
         self.shuffleEnabled = false
@@ -377,13 +384,13 @@ class PlayerManager: ObservableObject {
             do {
                 try await XonoraClient.shared.playMedia(uris: uris)
             } catch {
-                print("[PlayerManager] Failed to send play command: \(error)")
+                appLog("[PlayerManager] Failed to send play command: \(error)")
                 
                 // Suppress "Request timeout" error if it happens, as it often means the server 
                 // processed the command but the acknowledgement was lost/delayed, while music plays fine.
                 let nsError = error as NSError
                 if nsError.code == -1 && nsError.userInfo[NSLocalizedDescriptionKey] as? String == "Request timeout" {
-                    print("[PlayerManager] Suppressing Request timeout error.")
+                    appLog("[PlayerManager] Suppressing Request timeout error.")
                     return
                 }
                 
@@ -467,6 +474,56 @@ class PlayerManager: ObservableObject {
         updateNowPlayingInfo()
     }
 
+    /// Rebuild the Now Playing state from the server's active queue. Called after a
+    /// cold launch (force-quit then reopen) so the player page shows the currently
+    /// playing track instead of the empty default state.
+    func restoreFromServer() async {
+        // Only restore when we have nothing locally — don't clobber live state.
+        guard currentTrack == nil else { return }
+        if XonoraClient.shared.currentPlayer == nil {
+            await XonoraClient.shared.fetchPlayers()
+        }
+        guard let snapshot = await XonoraClient.shared.fetchActiveQueue() else { return }
+
+        if !snapshot.tracks.isEmpty {
+            queue = snapshot.tracks
+        }
+        if snapshot.currentIndex >= 0 && snapshot.currentIndex < queue.count {
+            currentIndex = snapshot.currentIndex
+        }
+
+        let restored: Track?
+        if let ct = snapshot.currentTrack, let idx = queue.firstIndex(where: { $0.uri == ct.uri }) {
+            currentIndex = idx
+            restored = queue[idx]
+        } else if !queue.isEmpty && currentIndex < queue.count {
+            restored = queue[currentIndex]
+        } else {
+            restored = snapshot.currentTrack
+        }
+
+        guard let track = restored else { return }
+        currentTrack = track
+        duration = track.duration ?? 0
+        currentTime = snapshot.elapsed
+        serverTime = snapshot.elapsed
+        serverTimeReceivedAt = Date()
+        lastTrackId = nil
+
+        switch snapshot.state {
+        case "playing":
+            playbackState = .playing
+            startProgressTimer()
+        case "paused":
+            playbackState = .paused
+        default:
+            playbackState = .paused
+        }
+        appLog("[PlayerManager] Restored now playing: \(track.name) [\(snapshot.state ?? "?")] @ \(Int(snapshot.elapsed))s")
+        updateNowPlayingInfo()
+        postPlaybackStateChange()
+    }
+
     func next() {
         guard !queue.isEmpty else { return }
 
@@ -516,6 +573,8 @@ class PlayerManager: ObservableObject {
         // doesn't immediately snap back to the pre-seek time.
         serverTime = time
         serverTimeReceivedAt = Date()
+        // Ignore the server's stale elapsed_time for a short window after the seek.
+        seekGuardUntil = Date().addingTimeInterval(2.0)
         Task {
             await self.updateNowPlayingInfoAsync()
         }
@@ -747,7 +806,7 @@ class PlayerManager: ObservableObject {
             }
             return artwork
         } catch {
-            print("[PlayerManager] Failed to load artwork: \(error)")
+            appLog("[PlayerManager] Failed to load artwork: \(error)")
             return nil
         }
     }

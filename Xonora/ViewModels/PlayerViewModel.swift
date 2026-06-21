@@ -59,6 +59,9 @@ class PlayerViewModel: ObservableObject {
                     self.isConnecting = false
                     self.isAuthenticating = false
                     self.connectionError = nil
+                    // Restore the Now Playing screen from the server's active queue
+                    // (e.g. after a force-quit relaunch where local state was lost).
+                    Task { await PlayerManager.shared.restoreFromServer() }
                 case .connecting:
                     self.isConnecting = true
                     self.isAuthenticating = false

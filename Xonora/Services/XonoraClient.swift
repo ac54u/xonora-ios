@@ -92,6 +92,8 @@ class XonoraClient: NSObject, ObservableObject {
         stopPingTimer()
         cancelConnectionTimeout()
 
+        appLog("[XonoraClient] Connecting to \(wsURL.absoluteString)")
+
         webSocketTask = urlSession.webSocketTask(with: request)
         webSocketTask?.resume()
 
@@ -186,6 +188,7 @@ class XonoraClient: NSObject, ObservableObject {
                 self.receiveMessage()
             case .failure(let error):
                 Task { @MainActor in
+                    appLog("[XonoraClient] WebSocket failure: \(error.localizedDescription)")
                     self.connectionState = .error(error.localizedDescription)
                     self.reconnect()
                 }
@@ -200,6 +203,7 @@ class XonoraClient: NSObject, ObservableObject {
         Task { @MainActor in
             if let messageId = json["message_id"] as? String, messageId == authMessageId {
                 if let result = json["result"] as? [String: Any], let authenticated = result["authenticated"] as? Bool, authenticated {
+                    appLog("[XonoraClient] Authenticated successfully")
                     connectionState = .connected
                     reconnectAttempts = 0
                     if let token = result["token"] as? String {
@@ -467,6 +471,46 @@ class XonoraClient: NSObject, ObservableObject {
             "queue_id": playerId,
             "item_id_or_index": index
         ])
+    }
+
+    struct ActiveQueueSnapshot {
+        let tracks: [Track]
+        let currentIndex: Int
+        let elapsed: TimeInterval
+        let state: String?
+        let currentTrack: Track?
+    }
+
+    /// Fetch the server's active queue (current track, position, state and the full
+    /// item list) so the app can restore the Now Playing screen after a cold launch.
+    func fetchActiveQueue() async -> ActiveQueueSnapshot? {
+        guard let playerId = currentPlayer?.playerId else { return nil }
+        guard let data = try? await sendCommand("player_queues/get_active_queue", args: ["queue_id": playerId]),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [String: Any] else { return nil }
+
+        let state = result["state"] as? String
+        let currentIndex = result["current_index"] as? Int ?? 0
+        let elapsed: TimeInterval = (result["elapsed_time"] as? Double)
+            ?? (result["elapsed_time"] as? Int).map { TimeInterval($0) } ?? 0
+
+        func decodeTrack(_ container: [String: Any]?) -> Track? {
+            // Queue items carry the full track only inside `media_item`.
+            guard let mi = container?["media_item"] as? [String: Any],
+                  let d = try? JSONSerialization.data(withJSONObject: mi) else { return nil }
+            return try? JSONDecoder().decode(Track.self, from: d)
+        }
+
+        let currentTrack = decodeTrack(result["current_item"] as? [String: Any])
+
+        var tracks: [Track] = []
+        if let itemsData = try? await sendCommand("player_queues/items", args: ["queue_id": playerId, "limit": 500]),
+           let itemsJson = try? JSONSerialization.jsonObject(with: itemsData) as? [String: Any],
+           let items = itemsJson["result"] as? [[String: Any]] {
+            tracks = items.compactMap { decodeTrack($0) }
+        }
+
+        return ActiveQueueSnapshot(tracks: tracks, currentIndex: currentIndex, elapsed: elapsed, state: state, currentTrack: currentTrack)
     }
 
     func fetchQueueItems() async -> [QueueItem] {
@@ -803,4 +847,54 @@ extension Notification.Name {
     static let queueUpdated = Notification.Name("queueUpdated")
     static let tokenRefreshed = Notification.Name("tokenRefreshed")
     static let libraryUpdated = Notification.Name("libraryUpdated")
+}
+
+// MARK: - In-app diagnostics log
+
+struct AppLogEntry: Identifiable, Equatable {
+    let id = UUID()
+    let date: Date
+    let message: String
+}
+
+/// Captures the diagnostic log lines that previously only went to the Xcode
+/// console, so they can be viewed on-device from Settings → Logs. Backed by a
+/// bounded ring buffer. Mutations are funneled onto the main queue so it is safe
+/// to call `log(_:)` from any thread.
+final class AppLogger: ObservableObject {
+    static let shared = AppLogger()
+    @Published private(set) var entries: [AppLogEntry] = []
+    private let maxEntries = 2000
+
+    private init() {}
+
+    func log(_ message: String) {
+        let truncated = message.count > 2000 ? String(message.prefix(2000)) + "…" : message
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.entries.append(AppLogEntry(date: Date(), message: truncated))
+            if self.entries.count > self.maxEntries {
+                self.entries.removeFirst(self.entries.count - self.maxEntries)
+            }
+        }
+    }
+
+    func clear() {
+        DispatchQueue.main.async { [weak self] in
+            self?.entries.removeAll()
+        }
+    }
+
+    func exportText() -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+        return entries.map { "[\(fmt.string(from: $0.date))] \($0.message)" }.joined(separator: "\n")
+    }
+}
+
+/// Global helper used across the app so important events surface both in the
+/// Xcode console and in the in-app log viewer.
+func appLog(_ message: String) {
+    print(message)
+    AppLogger.shared.log(message)
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @EnvironmentObject var playerViewModel: PlayerViewModel
@@ -852,6 +853,18 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    NavigationLink {
+                        LogView()
+                    } label: {
+                        Label("Logs", systemImage: "doc.text.magnifyingglass")
+                    }
+                } header: {
+                    Text("Diagnostics")
+                } footer: {
+                    Text("View the app's connection and playback logs for troubleshooting.")
+                }
+
+                Section {
                     HStack {
                         Label("App Version", systemImage: "info.circle")
                         Spacer()
@@ -886,6 +899,61 @@ struct SettingsView: View {
             return .orange
         } else {
             return .red
+        }
+    }
+}
+
+struct LogView: View {
+    @ObservedObject private var logger = AppLogger.shared
+
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss.SSS"
+        return f
+    }()
+
+    var body: some View {
+        List {
+            if logger.entries.isEmpty {
+                Text("No logs yet")
+                    .foregroundColor(.secondary)
+            } else {
+                // Newest first.
+                ForEach(logger.entries.reversed()) { entry in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(entry.message)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundColor(.primary)
+                        Text(Self.timeFormatter.string(from: entry.date))
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(.secondary)
+                    }
+                    .textSelection(.enabled)
+                    .listRowSeparator(.hidden)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .navigationTitle("Logs")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button {
+                        UIPasteboard.general.string = logger.exportText()
+                    } label: {
+                        Label("Copy All", systemImage: "doc.on.doc")
+                    }
+                    Button(role: .destructive) {
+                        logger.clear()
+                    } label: {
+                        Label("Clear", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .disabled(logger.entries.isEmpty)
+            }
         }
     }
 }

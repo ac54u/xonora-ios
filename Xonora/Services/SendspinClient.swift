@@ -230,6 +230,7 @@ class SendspinClient: ObservableObject {
     private func safeLog(_ message: String) {
         let logMessage = message.count > 1000 ? String(message.prefix(1000)) + "... (truncated)" : message
         print(logMessage)
+        AppLogger.shared.log(logMessage)
     }
     
     // Playback controls (proxied to client if supported, or handled via server commands)

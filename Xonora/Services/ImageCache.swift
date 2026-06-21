@@ -135,10 +135,10 @@ struct CachedAsyncImage<Placeholder: View>: View {
             return
         }
 
-        // Cache miss: clear the old image so we don't show the wrong cover while
-        // the new one downloads.
-        image = nil
-
+        // Cache miss: keep showing the previous image (if any) while the new one
+        // downloads, rather than flashing to the gray placeholder. This kills the
+        // "gray square on play/pause" flicker; the image is swapped in atomically
+        // once the download completes.
         guard await !ImageCache.shared.isDownloading(url) else { return }
         await ImageCache.shared.startDownloading(url)
         defer { Task { await ImageCache.shared.finishDownloading(url) } }

@@ -204,3 +204,10 @@
 "Infinite Mix (favorites)" = "无限混音（收藏）";
 "Infinite Mix (library)" = "无限混音（资料库）";
 "%@ Random tracks (from library)" = "随机播放 %@ 首（资料库）";
+
+// Diagnostics / Logs
+"Diagnostics" = "诊断";
+"Logs" = "日志";
+"No logs yet" = "暂无日志";
+"Copy All" = "复制全部";
+"View the app's connection and playback logs for troubleshooting." = "查看 App 的连接与播放日志，便于排查问题。";
