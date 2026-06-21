@@ -183,7 +183,7 @@ struct NowPlayingView: View {
                 Image(uiImage: image)
                     .resizable()
             } else {
-                artworkPlaceholder
+                Color.clear
             }
         }
         .aspectRatio(contentMode: .fit)
