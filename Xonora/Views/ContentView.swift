@@ -83,7 +83,7 @@ struct ServerSetupView: View {
     @State private var password: String = ""
     @State private var showPassword: Bool = false
     @State private var authMethod: AuthMethod = .token
-    @State private var gradientAnim = false
+
     @Environment(\.dismiss) private var dismiss
 
     enum AuthMethod: String, CaseIterable {
@@ -230,28 +230,17 @@ struct ServerSetupView: View {
 
     private var backgroundView: some View {
         ZStack {
-            // 铺一层极浅的蓝紫色底色
             Color(UIColor.systemBackground)
 
-            AngularGradient(
-                gradient: Gradient(colors: [
-                    Color.pink.opacity(0.4),
-                    Color.cyan.opacity(0.3),   // 视频中明显的冰蓝色团
-                    Color.purple.opacity(0.3),
-                    Color.pink.opacity(0.4)    // 首尾呼应，保证旋转无缝衔接
-                ]),
-                center: .center,
-                angle: .degrees(gradientAnim ? 360 : 0)
+            FluidBlobsView(
+                blobs: [
+                    FluidBlob(color: .pink, opacity: 0.4),
+                    FluidBlob(color: .cyan, opacity: 0.3),
+                    FluidBlob(color: .purple, opacity: 0.3),
+                    FluidBlob(color: .pink, opacity: 0.4),
+                ],
+                speed: 0.6
             )
-            // 极大的模糊度是核心！打散圆锥渐变的中心点，形成云朵状色块
-            .blur(radius: 120)
-            // 放大以隐藏渐变边缘
-            .scaleEffect(1.8)
-            // 使用 linear 匀速旋转，且不反转，形成持续的流体循环
-            .animation(.linear(duration: 12.0).repeatForever(autoreverses: false), value: gradientAnim)
-        }
-        .onAppear {
-            gradientAnim = true
         }
     }
 
@@ -1102,5 +1091,94 @@ struct MiniPlayerView: View {
         }
         .frame(width: 52, height: 52)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - Fluid Blobs
+
+struct FluidBlob {
+    let color: Color
+    let opacity: CGFloat
+}
+
+struct FluidBlobsView: View {
+    let blobs: [FluidBlob]
+    let speed: CGFloat
+
+    @State private var positions: [CGPoint]
+    @State private var scales: [CGFloat]
+    @State private var opacities: [CGFloat]
+    @State private var timer: Timer?
+
+    init(blobs: [FluidBlob], speed: CGFloat) {
+        self.blobs = blobs
+        self.speed = speed
+        _positions = State(initialValue: (0..<blobs.count).map { _ in
+            CGPoint(x: .random(in: 0...1), y: .random(in: 0...1))
+        })
+        _scales = State(initialValue: (0..<blobs.count).map { _ in
+            .random(in: 0.3...0.8)
+        })
+        _opacities = State(initialValue: blobs.map { $0.opacity })
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                ForEach(0..<blobs.count, id: \.self) { i in
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    blobs[i].color.opacity(opacities[i]),
+                                    blobs[i].color.opacity(opacities[i] * 0.3),
+                                    .clear,
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: geo.width * scales[i] * 0.5
+                            )
+                        )
+                        .frame(
+                            width: geo.width * scales[i],
+                            height: geo.width * scales[i]
+                        )
+                        .position(
+                            x: geo.width * positions[i].x,
+                            y: geo.height * positions[i].y
+                        )
+                }
+            }
+            .blur(radius: 60)
+            .scaleEffect(1.5)
+            .onAppear {
+                startAnimating(in: geo.size)
+            }
+            .onDisappear {
+                timer?.invalidate()
+            }
+            .onChange(of: geo.size) { _, _ in
+                startAnimating(in: geo.size)
+            }
+        }
+    }
+
+    private func startAnimating(in size: CGSize) {
+        timer?.invalidate()
+        animateBlobs()
+        let interval = 1.2 / speed
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+            animateBlobs()
+        }
+    }
+
+    private func animateBlobs() {
+        withAnimation(.spring(response: 1.0 / speed, dampingFraction: 0.6)) {
+            for i in 0..<blobs.count {
+                positions[i] = CGPoint(x: .random(in: 0...1), y: .random(in: 0...1))
+                scales[i] = .random(in: 0.25...0.7)
+                opacities[i] = blobs[i].opacity * .random(in: 0.8...1.0)
+            }
+        }
     }
 }
