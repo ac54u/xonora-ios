@@ -123,7 +123,7 @@ struct ServerSetupView: View {
                         }
                     }
                     .padding(24)
-                    .background(.ultraThinMaterial)
+                    .background(Color(UIColor.systemBackground).opacity(0.2).background(.thinMaterial))
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .padding(.horizontal, 24)
 
@@ -187,7 +187,7 @@ struct ServerSetupView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Discovered Servers")
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white.opacity(0.9))
+                .foregroundColor(.primary)
                 .padding(.leading, 4)
 
             ForEach(playerViewModel.discoveredServers) { server in
@@ -231,9 +231,9 @@ struct ServerSetupView: View {
     private var backgroundView: some View {
         LinearGradient(
             colors: [
-                Color.pink.opacity(0.4),
-                Color.purple.opacity(0.2),
-                Color.pink.opacity(0.3),
+                Color.pink.opacity(0.6),
+                Color.purple.opacity(0.4),
+                Color.pink.opacity(0.5),
             ],
             startPoint: gradientAnim ? .bottomLeading : .topLeading,
             endPoint: gradientAnim ? .topTrailing : .bottomTrailing
@@ -272,15 +272,15 @@ struct ServerSetupView: View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Server Address", systemImage: "server.rack")
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white.opacity(0.9))
+                .foregroundColor(.primary)
 
             HStack(spacing: 12) {
                 Image(systemName: "link")
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(.secondary)
                     .frame(width: 20)
 
-                TextField("", text: $serverURL, prompt: Text("http://192.168.1.100:8095").foregroundColor(.white.opacity(0.3)))
-                    .foregroundColor(.white)
+                TextField("", text: $serverURL, prompt: Text("http://192.168.1.100:8095").foregroundColor(.secondary.opacity(0.5)))
+                    .foregroundColor(.primary)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
@@ -295,7 +295,7 @@ struct ServerSetupView: View {
 
             Text("Your Music Assistant server URL with port")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundColor(.secondary)
                 .padding(.leading, 4)
         }
     }
@@ -317,21 +317,21 @@ struct ServerSetupView: View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Access Token", systemImage: "key.fill")
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white.opacity(0.9))
+                .foregroundColor(.primary)
 
             HStack(spacing: 12) {
                 Image(systemName: "lock.fill")
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(.secondary)
                     .frame(width: 20)
 
                 Group {
                     if showPassword {
-                        TextField("", text: $accessToken, prompt: Text("Paste your token here").foregroundColor(.white.opacity(0.3)))
+                        TextField("", text: $accessToken, prompt: Text("Paste your token here").foregroundColor(.secondary.opacity(0.5)))
                     } else {
-                        SecureField("", text: $accessToken, prompt: Text("Paste your token here").foregroundColor(.white.opacity(0.3)))
+                        SecureField("", text: $accessToken, prompt: Text("Paste your token here").foregroundColor(.secondary.opacity(0.5)))
                     }
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
 
@@ -339,7 +339,7 @@ struct ServerSetupView: View {
                     showPassword.toggle()
                 } label: {
                     Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(.secondary)
                 }
             }
             .padding()
@@ -352,7 +352,7 @@ struct ServerSetupView: View {
 
             Text("Create a token in Music Assistant → Settings → Users")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundColor(.secondary)
                 .padding(.leading, 4)
         }
     }
@@ -363,15 +363,15 @@ struct ServerSetupView: View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Username", systemImage: "person.fill")
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white.opacity(0.9))
+                .foregroundColor(.primary)
 
             HStack(spacing: 12) {
                 Image(systemName: "person")
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(.secondary)
                     .frame(width: 20)
 
-                TextField("", text: $username, prompt: Text("Music Assistant username").foregroundColor(.white.opacity(0.3)))
-                    .foregroundColor(.white)
+                TextField("", text: $username, prompt: Text("Music Assistant username").foregroundColor(.secondary.opacity(0.5)))
+                    .foregroundColor(.primary)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
             }
@@ -391,21 +391,21 @@ struct ServerSetupView: View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Password", systemImage: "lock.shield.fill")
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white.opacity(0.9))
+                .foregroundColor(.primary)
 
             HStack(spacing: 12) {
                 Image(systemName: "lock.fill")
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(.secondary)
                     .frame(width: 20)
 
                 Group {
                     if showPassword {
-                        TextField("", text: $password, prompt: Text("Music Assistant password").foregroundColor(.white.opacity(0.3)))
+                        TextField("", text: $password, prompt: Text("Music Assistant password").foregroundColor(.secondary.opacity(0.5)))
                     } else {
-                        SecureField("", text: $password, prompt: Text("Music Assistant password").foregroundColor(.white.opacity(0.3)))
+                        SecureField("", text: $password, prompt: Text("Music Assistant password").foregroundColor(.secondary.opacity(0.5)))
                     }
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
 
@@ -413,7 +413,7 @@ struct ServerSetupView: View {
                     showPassword.toggle()
                 } label: {
                     Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(.secondary)
                 }
             }
             .padding()
@@ -426,7 +426,7 @@ struct ServerSetupView: View {
 
             Text("Use your Music Assistant login credentials")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundColor(.secondary)
                 .padding(.leading, 4)
         }
     }
@@ -452,7 +452,7 @@ struct ServerSetupView: View {
                     .foregroundColor(.orange)
                 Text(error)
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(.primary)
                     .multilineTextAlignment(.leading)
             }
             .padding()
