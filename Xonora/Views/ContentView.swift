@@ -83,6 +83,7 @@ struct ServerSetupView: View {
     @State private var password: String = ""
     @State private var showPassword: Bool = false
     @State private var authMethod: AuthMethod = .token
+    @State private var gradientAnim = false
     @Environment(\.dismiss) private var dismiss
 
     enum AuthMethod: String, CaseIterable {
@@ -121,6 +122,9 @@ struct ServerSetupView: View {
                             passwordField
                         }
                     }
+                    .padding(24)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                     .padding(.horizontal, 24)
 
                     if !playerViewModel.discoveredServers.isEmpty {
@@ -227,13 +231,17 @@ struct ServerSetupView: View {
     private var backgroundView: some View {
         LinearGradient(
             colors: [
-                Color.xonoraPurple.opacity(0.45),
-                Color.black,
-                Color.black
+                Color.pink.opacity(0.3),
+                Color.purple.opacity(0.2),
             ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
+            startPoint: gradientAnim ? .topLeading : .bottomTrailing,
+            endPoint: gradientAnim ? .bottomTrailing : .topLeading
         )
+        .onAppear {
+            withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true)) {
+                gradientAnim.toggle()
+            }
+        }
     }
 
     // MARK: - Header
