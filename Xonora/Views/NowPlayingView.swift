@@ -176,7 +176,10 @@ struct NowPlayingView: View {
 
     private var albumArtwork: some View {
         Group {
-            if let url = trackImageURL, let image = SyncImageMemoryCache.shared.image(for: url) {
+            if let image = playerManager.artworkImage {
+                Image(uiImage: image)
+                    .resizable()
+            } else if let url = trackImageURL, let image = SyncImageMemoryCache.shared.image(for: url) {
                 Image(uiImage: image)
                     .resizable()
             } else {
@@ -186,38 +189,6 @@ struct NowPlayingView: View {
         .aspectRatio(contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 20)
-        .task(id: trackImageURL) {
-            await loadAlbumArtwork()
-        }
-    }
-
-    @MainActor
-    private func loadAlbumArtwork() async {
-        guard let url = trackImageURL else { return }
-        if SyncImageMemoryCache.shared.image(for: url) != nil { return }
-        if let cached = await ImageCache.shared.image(for: url) {
-            SyncImageMemoryCache.shared.set(cached, for: url)
-            return
-        }
-        guard await !ImageCache.shared.isDownloading(url) else { return }
-        await ImageCache.shared.startDownloading(url)
-        defer { Task { await ImageCache.shared.finishDownloading(url) } }
-        do {
-            let session = await ImageCache.shared.session
-            let (data, _) = try await session.data(from: url)
-            if Task.isCancelled { return }
-            if let image = UIImage(data: data) {
-                SyncImageMemoryCache.shared.set(image, for: url)
-                await ImageCache.shared.setImage(image, for: url)
-            }
-        } catch {
-            safeLog("[NowPlayingView] Failed to load artwork: \(error.localizedDescription)")
-        }
-    }
-
-    private func safeLog(_ message: String) {
-        let logMessage = message.count > 1000 ? String(message.prefix(1000)) + "..." : message
-        print(logMessage)
     }
 
     private var artworkPlaceholder: some View {

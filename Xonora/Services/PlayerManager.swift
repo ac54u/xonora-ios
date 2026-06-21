@@ -40,6 +40,7 @@ class PlayerManager: ObservableObject {
 
     private var progressTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    @Published var artworkImage: UIImage?
     private var lastTrackId: String?
     private var cachedArtwork: MPMediaItemArtwork?
 
@@ -372,6 +373,7 @@ class PlayerManager: ObservableObject {
             }
         }
 
+        artworkImage = nil
         currentTrack = track
         currentTime = 0
         // Reset the drift-correction anchor too. Otherwise the progress timer keeps
@@ -443,6 +445,7 @@ class PlayerManager: ObservableObject {
             try? await XonoraClient.shared.stop()
         }
         currentTrack = nil
+        artworkImage = nil
         currentTime = 0
         duration = 0
         playbackState = .stopped
@@ -808,6 +811,7 @@ class PlayerManager: ObservableObject {
             await MainActor.run {
                 guard self.currentTrack?.id == trackId else { return }
                 self.cachedArtwork = artwork
+                self.artworkImage = cachedImage
             }
             return artwork
         }
@@ -822,6 +826,7 @@ class PlayerManager: ObservableObject {
             await MainActor.run {
                 guard self.currentTrack?.id == trackId else { return }
                 self.cachedArtwork = artwork
+                self.artworkImage = image
             }
             return artwork
         } catch {
