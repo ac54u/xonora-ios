@@ -162,14 +162,14 @@ class SendspinClient: ObservableObject {
     private func disconnectInternal(keepConfig: Bool) {
         reconnectTask?.cancel()
         if !keepConfig {
-            // Prevent auto-reconnect if user explicitly disconnected
             reconnectAttempts = maxReconnectAttempts
         }
         
         eventTask?.cancel()
-        Task {
-            await client?.disconnect()
-            self.client = nil
+        let oldClient = client
+        client = nil
+        Task { [weak oldClient] in
+            await oldClient?.disconnect()
         }
         isConnected = false
         isBuffering = false

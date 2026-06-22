@@ -157,11 +157,13 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 
     private func setupRemoteCommands() {
         let cmd = MPRemoteCommandCenter.shared()
+        cmd.changeShuffleModeCommand.removeTarget(nil)
         cmd.changeShuffleModeCommand.isEnabled = true
         cmd.changeShuffleModeCommand.addTarget { [weak self] _ in
             self?.playerManager.toggleShuffle()
             return .success
         }
+        cmd.changeRepeatModeCommand.removeTarget(nil)
         cmd.changeRepeatModeCommand.isEnabled = true
         cmd.changeRepeatModeCommand.addTarget { [weak self] _ in
             self?.playerManager.cycleRepeatMode()
@@ -438,11 +440,11 @@ class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private func showQueue() {
         let template: CPListTemplate
         if let cached = templateCache.object(forKey: queueKey) as? CPListTemplate {
-            // Update cache
             refreshQueueTab()
             template = cached
         } else {
-            template = buildQueueTab() as! CPListTemplate
+            guard let t = buildQueueTab() as? CPListTemplate else { return }
+            template = t
         }
         interfaceController?.pushTemplate(template, animated: true, completion: nil)
     }

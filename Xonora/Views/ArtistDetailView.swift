@@ -42,10 +42,18 @@ struct ArtistDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    let newValue = !isFavorite
+                    let previousValue = isFavorite
+                    let newValue = !previousValue
                     isFavorite = newValue
                     Task {
                         await libraryViewModel.toggleFavorite(item: artist)
+                        // Revert optimistic update on failure
+                        await MainActor.run {
+                            if self.isFavorite == newValue,
+                               libraryViewModel.artists.first(where: { $0.id == artist.id })?.favorite != newValue {
+                                self.isFavorite = previousValue
+                            }
+                        }
                     }
                 } label: {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
@@ -54,7 +62,7 @@ struct ArtistDetailView: View {
             }
         }
         .background(Color(UIColor.systemBackground).ignoresSafeArea())
-        .onAppear { isFavorite = artist.favorite ?? false }
+        .task(id: artist.id) { isFavorite = artist.favorite ?? false }
         .task {
             await loadData()
         }

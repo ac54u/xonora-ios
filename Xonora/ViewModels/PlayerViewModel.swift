@@ -103,12 +103,16 @@ class PlayerViewModel: ObservableObject {
             .assign(to: &$currentSource)
     }
 
+    deinit {
+        discoveryTask?.cancel()
+    }
+
     func startDiscovery() {
         discoveryTask?.cancel()
-        discoveryTask = Task {
-            await discovery.startDiscovery()
-            for await servers in await discovery.servers {
-                self.discoveredServers = servers
+        discoveryTask = Task { [weak self] in
+            await self?.discovery.startDiscovery()
+            for await servers in await self?.discovery.servers ?? AsyncStream<[DiscoveredServer]>([]) {
+                self?.discoveredServers = servers
             }
         }
     }
@@ -231,7 +235,8 @@ class PlayerViewModel: ObservableObject {
         var normalizedURL = url.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // Add http:// if no scheme provided
-        if !normalizedURL.hasPrefix("http://") && !normalizedURL.hasPrefix("https://") {
+        let lowercased = normalizedURL.lowercased()
+        if !lowercased.hasPrefix("http://") && !lowercased.hasPrefix("https://") {
             normalizedURL = "http://\(normalizedURL)"
         }
 

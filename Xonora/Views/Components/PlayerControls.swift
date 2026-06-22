@@ -163,7 +163,7 @@ struct PlayerControls: View {
                             in: 0...1,
                             onEditingChanged: { editing in
                                 if !editing {
-                                    Task { try? await XonoraClient.shared.setVolume(Int(playerManager.volume * 100)) }
+                                    Task { try? await xonoraClient.setVolume(Int(playerManager.volume * 100)) }
                                 }
                             }
                         )

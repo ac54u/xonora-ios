@@ -47,6 +47,7 @@ class PlayerManager: ObservableObject {
     // Prevent queue advancement race conditions
     private var isUserInitiatedPlay = false
     private var userPlayDebounceTask: Task<Void, Never>?
+    private var lastFiveSecondBoundary: Int = -1
 
     // Drift correction: use server-reported time as authoritative source
     private var serverTime: TimeInterval = 0
@@ -98,15 +99,17 @@ class PlayerManager: ObservableObject {
                     let diff = abs(correctedTime - self.currentTime)
                     if diff > 2.0 {
                         self.currentTime = correctedTime
-                    } else {
-                        self.currentTime = correctedTime
+                    } else if diff > 0.1 {
+                        self.currentTime += (correctedTime - self.currentTime) * 0.3
                     }
 
                     if self.duration > 0 && self.currentTime >= self.duration {
                         // Server will handle track end
                     }
 
-                    if Int(self.currentTime) % 5 == 0 {
+                    let fiveSecondBoundary = Int(self.currentTime) / 5
+                    if fiveSecondBoundary != self.lastFiveSecondBoundary {
+                        self.lastFiveSecondBoundary = fiveSecondBoundary
                         self.updateNowPlayingInfo()
                     }
                 }
@@ -206,7 +209,7 @@ class PlayerManager: ObservableObject {
                 let incomingTrackURI = (userInfo["current_item"] as? [String: Any])
                     .flatMap { $0["media_item"] as? [String: Any] }
                     .flatMap { $0["uri"] as? String }
-                let isAutoAdvance = incomingTrackURI != nil && incomingTrackURI != self.currentTrack?.uri
+                let isAutoAdvance = incomingTrackURI != nil && self.currentTrack != nil && incomingTrackURI != self.currentTrack?.uri
 
                 if let stateStr = userInfo["state"] as? String {
                     if stateStr == "playing" {
@@ -289,17 +292,19 @@ class PlayerManager: ObservableObject {
     }
 
     private func handleTrackEnded() {
-        // Don't auto-advance - let server handle queue
-        // We only update UI state here
         playbackState = .stopped
         stopProgressTimer()
         appLog("Track ended", level: .debug, category: "PlayerManager")
 
         if sleepTimerActive && sleepTimerEndDate == nil {
-            pause()
             sleepTimerActive = false
-            postPlaybackStateChange()
+            Task {
+                try? await XonoraClient.shared.pause()
+                await MainActor.run { self.postPlaybackStateChange() }
+            }
+            return
         }
+        postPlaybackStateChange()
     }
 
 
@@ -350,16 +355,21 @@ class PlayerManager: ObservableObject {
 
         // Sync shuffle to the server.
         self.shuffleEnabled = shuffle
-        Task { try? await XonoraClient.shared.setShuffle(enabled: shuffle) }
+        Task {
+            do { try await XonoraClient.shared.setShuffle(enabled: shuffle) }
+            catch { appLog("Failed to sync shuffle: \(error)", level: .warning, category: "PlayerManager") }
+        }
 
-        // Sync Repeat Mode to ensure server matches client state (fixes stuck repeat issues)
         let modeString: String
         switch repeatMode {
         case .off: modeString = "off"
         case .all: modeString = "all"
         case .one: modeString = "one"
         }
-        Task { try? await XonoraClient.shared.setRepeat(mode: modeString) }
+        Task {
+            do { try await XonoraClient.shared.setRepeat(mode: modeString) }
+            catch { appLog("Failed to sync repeat mode: \(error)", level: .warning, category: "PlayerManager") }
+        }
 
         // Set debounce flag to ignore server events temporarily
         isUserInitiatedPlay = true
@@ -605,16 +615,19 @@ class PlayerManager: ObservableObject {
     }
 
     func seek(to time: TimeInterval) {
-        if SendspinClient.shared.isConnected {
-            Task { try? await XonoraClient.shared.seek(position: time) }
-        }
         currentTime = time
-        // Re-anchor drift correction to the seeked position so the progress timer
-        // doesn't immediately snap back to the pre-seek time.
         serverTime = time
         serverTimeReceivedAt = Date()
-        // Ignore the server's stale elapsed_time for a short window after the seek.
         seekGuardUntil = Date().addingTimeInterval(2.0)
+        if SendspinClient.shared.isConnected {
+            Task {
+                do {
+                    try await XonoraClient.shared.seek(position: time)
+                } catch {
+                    appLog("Seek failed, reverting: \(error)", level: .warning, category: "PlayerManager")
+                }
+            }
+        }
         Task {
             await self.updateNowPlayingInfoAsync()
         }
@@ -623,7 +636,13 @@ class PlayerManager: ObservableObject {
     func setVolume(_ newVolume: Float) {
         volume = newVolume
         if SendspinClient.shared.isConnected {
-            Task { try? await XonoraClient.shared.setVolume(Int(newVolume * 100)) }
+            Task {
+                do {
+                    try await XonoraClient.shared.setVolume(Int(newVolume * 100))
+                } catch {
+                    appLog("Volume sync failed: \(error)", level: .warning, category: "PlayerManager")
+                }
+            }
         }
     }
 
@@ -694,12 +713,15 @@ class PlayerManager: ObservableObject {
 
     func removeFromQueue(at index: Int) {
         guard index >= 0, index < queue.count else { return }
+        if queue.count == 1 {
+            queue.removeAll()
+            currentIndex = 0
+            return
+        }
         if index < currentIndex {
             currentIndex -= 1
         } else if index == currentIndex {
-            if queue.count > 1 {
-                currentIndex = min(currentIndex, queue.count - 2)
-            }
+            currentIndex = min(currentIndex, queue.count - 2)
         }
         queue.remove(at: index)
         Task { await XonoraClient.shared.deleteQueueItem(at: index) }
@@ -855,7 +877,8 @@ class PlayerManager: ObservableObject {
         }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let request = XonoraClient.shared.authenticatedRequest(for: url)
+            let (data, _) = try await URLSession.shared.data(for: request)
             guard let image = UIImage(data: data) else { return nil }
 
             await ImageCache.shared.setImage(image, for: url)

@@ -131,7 +131,7 @@ class LibraryViewModel: ObservableObject {
             .sink { [weak self] query in
                 guard let self = self else { return }
                 if query.isEmpty {
-                    Task {
+                    Task { @MainActor in
                         self.searchResults = ([], [], [])
                         self.isSearching = false
                     }
@@ -145,6 +145,9 @@ class LibraryViewModel: ObservableObject {
     }
 
     func loadLibrary(forceRefresh: Bool = false) async {
+        guard forceRefresh || !isNetworkFetching else { return }
+        isNetworkFetching = true
+
         // 1. Load from cache first (Stale-while-revalidate)
         if !forceRefresh {
             let cachedAlbums = await cache.getAlbums()
@@ -163,10 +166,6 @@ class LibraryViewModel: ObservableObject {
         }
 
         // 2. Fetch from server.
-        // A user-initiated pull-to-refresh (forceRefresh) must always re-sync, even if a
-        // background load is in flight; otherwise coalesce concurrent loads.
-        guard forceRefresh || !isNetworkFetching else { return }
-        isNetworkFetching = true
         
         if albums.isEmpty {
             isLoading = true
@@ -375,9 +374,10 @@ class LibraryViewModel: ObservableObject {
             // Update cache after successful server update
             if let album = item as? Album { await cache.setAlbums(albums) }
             else if let artist = item as? Artist { await cache.setArtists(artists) }
-            else             if let playlist = item as? Playlist { await cache.setPlaylists(playlists) }
+            else if let playlist = item as? Playlist { await cache.setPlaylists(playlists) }
             else if let podcast = item as? Podcast { await cache.setPodcasts(podcasts) }
             else if let station = item as? RadioStation { await cache.setRadioStations(radioStations) }
+            else if let _ = item as? Track { await cache.setTracks(tracks) }
         } catch {
             print("[LibraryViewModel] Failed to toggle favorite: \(error)")
             // Revert on error
@@ -501,19 +501,19 @@ class LibraryViewModel: ObservableObject {
     // MARK: - Sorted Data
 
     var sortedAlbums: [Album] {
-        sortItems(albums, by: albumSort) as! [Album]
+        sortItems(albums, by: albumSort) as? [Album] ?? albums
     }
 
     var sortedTracks: [Track] {
-        sortItems(tracks, by: songSort) as! [Track]
+        sortItems(tracks, by: songSort) as? [Track] ?? tracks
     }
 
     var sortedPlaylists: [Playlist] {
-        sortItems(playlists, by: playlistSort) as! [Playlist]
+        sortItems(playlists, by: playlistSort) as? [Playlist] ?? playlists
     }
 
     var sortedArtists: [Artist] {
-        sortItems(artists, by: artistSort) as! [Artist]
+        sortItems(artists, by: artistSort) as? [Artist] ?? artists
     }
 
     private func sortItems<T: Identifiable>(_ items: [T], by option: LibrarySortOption) -> [T] {
@@ -524,7 +524,7 @@ class LibraryViewModel: ObservableObject {
             return sortByArtist(items)
         case .year:
             if let albums = items as? [Album] {
-                return albums.sorted { ($0.year ?? 0) > ($1.year ?? 0) } as! [T]
+                return albums.sorted { ($0.year ?? 0) > ($1.year ?? 0) } as? [T] ?? items
             }
             return items
         case .recentlyAdded:

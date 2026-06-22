@@ -87,6 +87,15 @@ actor ImageCache {
         downloadingURLs.remove(url.absoluteString)
     }
 
+    func fetchImageData(from url: URL) async throws -> Data {
+        let request = XonoraClient.shared.authenticatedRequest(for: url)
+        let (data, response) = try await urlSession.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+
     func clearCache() {
         cache.removeAllObjects()
         try? fileManager.removeItem(at: diskURL)
@@ -182,15 +191,9 @@ struct CachedAsyncImage<Placeholder: View>: View {
         defer { Task { await ImageCache.shared.finishDownloading(url) } }
 
         do {
-            let session = await ImageCache.shared.session
-            let (data, response) = try await session.data(from: url)
+            let data = try await ImageCache.shared.fetchImageData(from: url)
 
             if Task.isCancelled { return }
-
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                safeLog("[ImageCache] Error loading image from \(url.absoluteString): HTTP \(httpResponse.statusCode)")
-                return
-            }
 
             if let downloadedImage = UIImage(data: data) {
                 SyncImageMemoryCache.shared.set(downloadedImage, for: url)

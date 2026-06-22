@@ -31,16 +31,9 @@ struct LyricsView: View {
                 }
             }
         }
-        .task {
-            if let track = playerManager.currentTrack {
-                await libraryViewModel.fetchLyrics(track: track)
-            }
-        }
-        .onChange(of: playerManager.currentTrack?.uri) { _, _ in
+        .task(id: playerManager.currentTrack?.uri) {
             guard let track = playerManager.currentTrack else { return }
-            Task {
-                await libraryViewModel.fetchLyrics(track: track)
-            }
+            await libraryViewModel.fetchLyrics(track: track)
         }
     }
 
@@ -61,7 +54,7 @@ struct LyricsView: View {
                 .padding(.vertical)
             }
             .onReceive(playerManager.$currentTime) { time in
-                let matched = lyrics.first(where: { $0.start ?? 0 <= time && ($0.end ?? Double.greatestFiniteMagnitude) >= time })
+                let matched = lyrics.first(where: { ($0.start ?? 0) <= time && ($0.end ?? Double.greatestFiniteMagnitude) >= time })
                 if matched?.id != currentLineId {
                     currentLineId = matched?.id
                     if let id = matched?.id {

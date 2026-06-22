@@ -162,7 +162,6 @@ public class FLACDecoder: AudioDecoder {
         self.decoder = flacDecoder
 
         // Initialize decoder with callbacks
-        // We need to use Unmanaged to pass self to C callbacks
         let clientData = Unmanaged.passUnretained(self).toOpaque()
 
         let initStatus = FLAC__stream_decoder_init_stream(
@@ -278,7 +277,8 @@ public class FLACDecoder: AudioDecoder {
 
         // Copy data from pending buffer
         pendingData.withUnsafeBytes { srcBytes in
-            let src = srcBytes.baseAddress!.advanced(by: readOffset)
+            guard let base = srcBytes.baseAddress else { return }
+            let src = base.advanced(by: readOffset)
             memcpy(buffer, src, bytesToRead)
         }
 

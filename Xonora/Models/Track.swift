@@ -24,7 +24,7 @@ struct Track: Identifiable, Codable, Hashable {
     var imageUrl: String? { metadata?.thumbnailImageUrl }
 
     var formattedDuration: String {
-        guard let duration = duration else { return "--:--" }
+        guard let duration = duration, duration >= 0 else { return "--:--" }
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)

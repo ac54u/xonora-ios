@@ -21,6 +21,7 @@ class XonoraClient: NSObject, ObservableObject {
     private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession!
     private var serverURL: URL?
+    private let callbackLock = NSLock()
     private var pendingCallbacks: [String: (Result<Data, Error>) -> Void] = [:]
     private var reconnectAttempts = 0
     private let maxReconnectAttempts = 5
@@ -105,7 +106,7 @@ class XonoraClient: NSObject, ObservableObject {
     private func startConnectionTimeout() {
         cancelConnectionTimeout()
         connectionTimeoutTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: UInt64(5.0 * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64(connectionTimeout * 1_000_000_000))
             guard let self = self, !Task.isCancelled else { return }
             if self.connectionState == .connecting {
                 self.webSocketTask?.cancel(with: .goingAway, reason: nil)
@@ -139,6 +140,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     private func reconnect() {
         guard reconnectAttempts < maxReconnectAttempts, let serverURL = serverURL else {
+            stopPingTimer()
             connectionState = .error(NSLocalizedString("Failed to reconnect.", comment: "Connection error"))
             return
         }
@@ -179,13 +181,15 @@ class XonoraClient: NSObject, ObservableObject {
             guard let self = self else { return }
             switch result {
             case .success(let message):
-                switch message {
-                case .string(let text): self.handleMessage(text)
-                case .data(let data):
-                    if let text = String(data: data, encoding: .utf8) { self.handleMessage(text) }
-                @unknown default: break
+                Task { @MainActor in
+                    switch message {
+                    case .string(let text): self.handleMessage(text)
+                    case .data(let data):
+                        if let text = String(data: data, encoding: .utf8) { self.handleMessage(text) }
+                    @unknown default: break
+                    }
+                    self.receiveMessage()
                 }
-                self.receiveMessage()
             case .failure(let error):
                 Task { @MainActor in
                     appLog("WebSocket failure: \(error.localizedDescription)", level: .error, category: "XonoraClient")
@@ -230,6 +234,14 @@ class XonoraClient: NSObject, ObservableObject {
                 if (serverInfo?.schemaVersion ?? 0) >= 28 {
                     if accessToken != nil {
                         connectionState = .authenticating
+                        Task { [weak self] in
+                            try? await Task.sleep(nanoseconds: UInt64(connectionTimeout * 1_000_000_000))
+                            await MainActor.run {
+                                if self?.connectionState == .authenticating {
+                                    self?.connectionState = .error(NSLocalizedString("Authentication timed out.", comment: "Auth error"))
+                                }
+                            }
+                        }
                         await authenticate()
                     } else {
                         connectionState = .error(NSLocalizedString("Authentication required.", comment: "Auth error"))
@@ -242,9 +254,13 @@ class XonoraClient: NSObject, ObservableObject {
                 return
             }
 
-            if let messageId = json["message_id"] as? String,
-               let callback = pendingCallbacks.removeValue(forKey: messageId) {
-                callback(.success(data))
+            if let messageId = json["message_id"] as? String {
+                callbackLock.lock()
+                let callback = pendingCallbacks.removeValue(forKey: messageId)
+                callbackLock.unlock()
+                if let callback = callback {
+                    callback(.success(data))
+                }
             }
 
             if let event = json["event"] as? String {
@@ -308,20 +324,27 @@ class XonoraClient: NSObject, ObservableObject {
         let text = String(data: data, encoding: .utf8) ?? ""
 
         return try await withCheckedThrowingContinuation { continuation in
+            callbackLock.lock()
             pendingCallbacks[messageId] = { result in
                 switch result {
                 case .success(let data): continuation.resume(returning: data)
                 case .failure(let error): continuation.resume(throwing: error)
                 }
             }
+            callbackLock.unlock()
             webSocketTask?.send(.string(text)) { error in
                 if let error = error {
+                    self.callbackLock.lock()
                     self.pendingCallbacks.removeValue(forKey: messageId)
+                    self.callbackLock.unlock()
                     continuation.resume(throwing: error)
                 }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { [weak self] in
-                if let callback = self?.pendingCallbacks.removeValue(forKey: messageId) {
+                self?.callbackLock.lock()
+                let callback = self?.pendingCallbacks.removeValue(forKey: messageId)
+                self?.callbackLock.unlock()
+                if let callback = callback {
                     callback(.failure(NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Timeout", comment: "Connection error")])))
                 }
             }
@@ -819,7 +842,6 @@ class XonoraClient: NSObject, ObservableObject {
             components.path = baseParams.isEmpty ? "/imageproxy" : "/\(baseParams)/imageproxy"
             components.queryItems = [URLQueryItem(name: "path", value: urlString), URLQueryItem(name: "size", value: "\(size.rawValue)")]
         }
-        if let token = accessToken { components.queryItems?.append(URLQueryItem(name: "token", value: token)) }
         return components.url
     }
 
@@ -833,6 +855,14 @@ class XonoraClient: NSObject, ObservableObject {
             }
         }
         return URL(string: optimizedString)
+    }
+
+    func authenticatedRequest(for url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        if let token = accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
     }
 
     private func debugLog(_ message: String) {

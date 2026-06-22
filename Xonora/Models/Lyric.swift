@@ -5,8 +5,15 @@ struct Lyric: Identifiable, Codable, Hashable {
     let start: TimeInterval?
     let end: TimeInterval?
     let text: String
+    let id: String
 
-    var id: String { lineId ?? UUID().uuidString }
+    init(lineId: String? = nil, start: TimeInterval? = nil, end: TimeInterval? = nil, text: String) {
+        self.lineId = lineId
+        self.start = start
+        self.end = end
+        self.text = text
+        self.id = lineId ?? UUID().uuidString
+    }
 }
 
 struct LyricsResponse: Codable {

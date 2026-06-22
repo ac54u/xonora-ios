@@ -26,8 +26,7 @@ struct XonoraApp: App {
                 .environmentObject(playerViewModel)
                 .environmentObject(libraryViewModel)
                 .onAppear {
-                    // Configure audio session asynchronously to avoid blocking startup
-                    DispatchQueue.global(qos: .userInitiated).async {
+                    Task { @MainActor in
                         self.configureAudioSession()
                     }
                 }

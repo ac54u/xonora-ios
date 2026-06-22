@@ -98,9 +98,22 @@ enum ProviderBrand: String, CaseIterable {
         case .jellyfin: return Color(red: 0.0, green: 0.48, blue: 0.82)
         case .subsonic, .navidrome: return Color(red: 0.2, green: 0.6, blue: 0.86)
         case .filesystemLocal: return .gray
+        case .soundcloud: return Color(red: 1.0, green: 0.49, blue: 0.0)
+        case .bandcamp: return Color(red: 0.25, green: 0.47, blue: 0.82)
+        case .emby: return Color(red: 0.0, green: 0.55, blue: 0.70)
+        case .airplay: return Color(red: 0.4, green: 0.4, blue: 0.4)
+        case .chromecast: return Color(red: 0.0, green: 0.64, blue: 0.28)
+        case .dlna: return Color(red: 0.0, green: 0.38, blue: 0.66)
+        case .sonos: return Color(red: 0.0, green: 0.0, blue: 0.0)
+        case .squeezebox: return Color(red: 0.12, green: 0.55, blue: 0.82)
+        case .snapcast: return Color(red: 0.82, green: 0.35, blue: 0.0)
+        case .slimproto: return Color(red: 0.12, green: 0.55, blue: 0.82)
         case .sendspin: return .accentColor
         case .builtin: return .gray
-        default: return .gray
+        case .test: return Color(red: 0.6, green: 0.6, blue: 0.6)
+        case .web: return Color(red: 0.0, green: 0.48, blue: 1.0)
+        case .universalPlayer: return .accentColor
+        case .unknown: return .gray
         }
     }
 }

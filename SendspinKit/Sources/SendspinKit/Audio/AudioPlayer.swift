@@ -205,12 +205,12 @@ public final class AudioPlayer: @unchecked Sendable {
     }
 
     public func decode(_ data: Data) throws -> Data {
-        // Decoding happens on the calling thread (usually Kit's message loop task)
-        // Ensure only one decoder is used at a time (sequential message loop handles this)
-        guard let decoder = decoder else {
-            throw AudioPlayerError.notStarted
+        try audioThread.sync {
+            guard let decoder = decoder else {
+                throw AudioPlayerError.notStarted
+            }
+            return try decoder.decode(data)
         }
-        return try decoder.decode(data)
     }
 
     public func playPCM(_ pcmData: Data) {
@@ -389,9 +389,10 @@ public final class AudioPlayer: @unchecked Sendable {
         }
 
         playerNode.scheduleBuffer(buffer) { [weak self] in
-            self?.bufferLock.lock()
-            self?.chunksInNode = max(0, (self?.chunksInNode ?? 1) - 1)
-            self?.bufferLock.unlock()
+            guard let self = self else { return }
+            self.bufferLock.lock()
+            self.chunksInNode = max(0, self.chunksInNode - 1)
+            self.bufferLock.unlock()
         }
     }
 
@@ -513,12 +514,17 @@ public final class AudioPlayer: @unchecked Sendable {
     private func handleMediaServicesReset() {
         let wasPlaying = _isPlaying
         let savedFormat = currentFormat
-        let savedDecoder = decoder
 
         teardownEngine()
 
         if wasPlaying, let format = savedFormat {
-            decoder = savedDecoder
+            decoder = try? AudioDecoderFactory.create(
+                codec: format.codec,
+                sampleRate: format.sampleRate,
+                channels: format.channels,
+                bitDepth: format.bitDepth,
+                header: nil
+            )
             currentFormat = savedFormat
             setupEngine(format: format)
             startEngine()

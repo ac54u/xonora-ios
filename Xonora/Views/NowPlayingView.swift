@@ -70,18 +70,13 @@ struct NowPlayingView: View {
         .sheet(isPresented: $showLyrics) {
             LyricsView()
         }
-        .actionSheet(isPresented: $showSleepTimer) {
-            ActionSheet(
-                title: Text("Sleep Timer"),
-                buttons: [
-                    .default(Text("15 minutes")) { playerManager.setSleepTimer(minutes: 15) },
-                    .default(Text("30 minutes")) { playerManager.setSleepTimer(minutes: 30) },
-                    .default(Text("45 minutes")) { playerManager.setSleepTimer(minutes: 45) },
-                    .default(Text("60 minutes")) { playerManager.setSleepTimer(minutes: 60) },
-                    .default(Text("End of Track")) { playerManager.setSleepTimerEndOfTrack() },
-                    .cancel(Text("Cancel"))
-                ]
-            )
+        .confirmationDialog("Sleep Timer", isPresented: $showSleepTimer) {
+            Button("15 minutes") { playerManager.setSleepTimer(minutes: 15) }
+            Button("30 minutes") { playerManager.setSleepTimer(minutes: 30) }
+            Button("45 minutes") { playerManager.setSleepTimer(minutes: 45) }
+            Button("60 minutes") { playerManager.setSleepTimer(minutes: 60) }
+            Button("End of Track") { playerManager.setSleepTimerEndOfTrack() }
+            Button("Cancel", role: .cancel) {}
         }
     }
     
@@ -313,8 +308,9 @@ struct QueueView: View {
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         Button {
-                            playerManager.playNext(track)
+                            let track = playerManager.queue[index]
                             playerManager.removeFromQueue(at: index)
+                            playerManager.playNext(track)
                         } label: {
                             Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
                         }
@@ -327,8 +323,9 @@ struct QueueView: View {
                             Label("Play Now", systemImage: "play")
                         }
                         Button {
-                            playerManager.playNext(track)
+                            let track = playerManager.queue[index]
                             playerManager.removeFromQueue(at: index)
+                            playerManager.playNext(track)
                         } label: {
                             Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
                         }

@@ -85,10 +85,18 @@ struct KeychainHelper {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
             kSecValueData as String: data
         ]
-        SecItemDelete(query as CFDictionary)
-        SecItemAdd(query as CFDictionary, nil)
+        let deleteStatus = SecItemDelete(query as CFDictionary)
+        guard deleteStatus == errSecSuccess || deleteStatus == errSecItemNotFound else {
+            print("[KeychainHelper] Failed to delete existing item: \(deleteStatus)")
+            return
+        }
+        let addStatus = SecItemAdd(query as CFDictionary, nil)
+        if addStatus != errSecSuccess {
+            print("[KeychainHelper] Failed to save item: \(addStatus)")
+        }
     }
 
     private func load(key: String) -> Data? {
@@ -111,6 +119,9 @@ struct KeychainHelper {
             kSecAttrService as String: service,
             kSecAttrAccount as String: key
         ]
-        SecItemDelete(query as CFDictionary)
+        let status = SecItemDelete(query as CFDictionary)
+        if status != errSecSuccess && status != errSecItemNotFound {
+            print("[KeychainHelper] Failed to delete item: \(status)")
+        }
     }
 }

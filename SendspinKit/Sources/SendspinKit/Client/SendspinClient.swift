@@ -30,6 +30,7 @@ public final class SendspinClient {
     // Task management
     private var messageLoopTask: Task<Void, Never>?
     private var clockSyncTask: Task<Void, Never>?
+    private var connectTimeoutTask: Task<Void, Never>?
 
     // Event stream
     private let eventsContinuation: AsyncStream<ClientEvent>.Continuation
@@ -148,13 +149,14 @@ public final class SendspinClient {
         }
 
         // Start timeout handler to detect if server doesn't respond with server/hello
-        Task {
+        connectTimeoutTask?.cancel()
+        connectTimeoutTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(10))
-            if await connectionState == .connecting {
-                // print("[SendspinKit] ⚠️ Connection timeout - no server/hello received after 10 seconds")
+            guard !Task.isCancelled else { return }
+            if await self?.connectionState == .connecting {
                 await MainActor.run {
-                    connectionState = .error("Connection timeout: Server did not respond with server/hello")
-                    eventsContinuation.yield(.error("Connection timeout: Server did not respond"))
+                    self?.connectionState = .error("Connection timeout: Server did not respond with server/hello")
+                    self?.eventsContinuation.yield(.error("Connection timeout: Server did not respond"))
                 }
             }
         }
@@ -333,8 +335,7 @@ public final class SendspinClient {
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(1))
                 if connectionState == .connecting {
-                    // print("[SendspinKit] ⚠️ Server did not send server/hello")
-                    // print("[SendspinKit] Treating connection as established (Music Assistant compatibility mode)")
+                    connectTimeoutTask?.cancel()
                     connectionState = .connected
                     let info = ServerInfo(
                         serverId: "music-assistant",
@@ -403,7 +404,7 @@ public final class SendspinClient {
     }
 
     private func handleServerHello(_ message: ServerHelloMessage) async {
-        // print("[SendspinKit] ✅ Received server/hello from \(message.payload.name)")
+        connectTimeoutTask?.cancel()
         connectionState = .connected
 
         let info = ServerInfo(
@@ -575,6 +576,7 @@ public final class SendspinClient {
                     playerState = .synchronized
                     eventsContinuation.yield(.streamStarted(defaultFormat))
                     try? await sendClientState()
+                    isAutoStarting = false
                     // print("[SendspinKit] ✅ Audio engine started successfully")
                 } catch {
                     // print("[SendspinKit] ❌ Failed to auto-start: \(error)")

@@ -1119,7 +1119,6 @@ struct ContentView_Previews: PreviewProvider {
             .environmentObject(LibraryViewModel())
     }
 }
-import SwiftUI
 
 struct MiniPlayerView: View {
     @ObservedObject private var playerManager = PlayerManager.shared
