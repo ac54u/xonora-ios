@@ -88,7 +88,9 @@ actor ImageCache {
     }
 
     func fetchImageData(from url: URL) async throws -> Data {
-        let request = XonoraClient.shared.authenticatedRequest(for: url)
+        let request = await MainActor.run {
+            XonoraClient.shared.authenticatedRequest(for: url)
+        }
         let (data, response) = try await urlSession.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw URLError(.badServerResponse)

@@ -111,7 +111,8 @@ class PlayerViewModel: ObservableObject {
         discoveryTask?.cancel()
         discoveryTask = Task { [weak self] in
             await self?.discovery.startDiscovery()
-            for await servers in await self?.discovery.servers ?? AsyncStream<[DiscoveredServer]>([]) {
+            guard let stream = await self?.discovery.servers else { return }
+            for await servers in stream {
                 self?.discoveredServers = servers
             }
         }
