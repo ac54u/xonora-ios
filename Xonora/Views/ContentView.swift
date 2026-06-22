@@ -1081,7 +1081,7 @@ struct LogView: View {
 
                     Text(Self.timeFormatter.string(from: entry.date))
                         .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(.tertiary)
+                        .foregroundColor(.secondary.opacity(0.5))
                 }
 
                 Text(entry.message)
