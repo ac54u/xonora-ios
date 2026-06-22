@@ -416,11 +416,12 @@ class PlayerManager: ObservableObject {
             } catch {
                 appLog("Failed to send play command: \(error)", level: .error, category: "PlayerManager")
                 
-                // Suppress "Request timeout" error if it happens, as it often means the server 
-                // processed the command but the acknowledgement was lost/delayed, while music plays fine.
+                // Suppress timeout errors — the server often processes the command fine
+                // but the acknowledgement is lost/delayed (music still plays).
                 let nsError = error as NSError
-                if nsError.code == -1 && nsError.userInfo[NSLocalizedDescriptionKey] as? String == "Request timeout" {
-                    appLog("Suppressing Request timeout error.", level: .warning, category: "PlayerManager")
+                let desc = nsError.userInfo[NSLocalizedDescriptionKey] as? String ?? ""
+                if nsError.code == -1 && (desc.contains("timeout") || desc.contains("超时")) {
+                    appLog("Suppressing timeout error: \(desc)", level: .warning, category: "PlayerManager")
                     return
                 }
                 
