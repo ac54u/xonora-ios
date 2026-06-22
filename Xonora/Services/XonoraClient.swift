@@ -298,7 +298,7 @@ class XonoraClient: NSObject, ObservableObject {
         }
     }
 
-    private func sendCommand(_ command: String, args: [String: Any] = [:]) async throws -> Data {
+    private func sendCommand(_ command: String, args: [String: Any] = [:], timeout: TimeInterval = 30) async throws -> Data {
         guard connectionState == .connected else {
             throw NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Not connected", comment: "Connection error")])
         }
@@ -320,7 +320,7 @@ class XonoraClient: NSObject, ObservableObject {
                     continuation.resume(throwing: error)
                 }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { [weak self] in
                 if let callback = self?.pendingCallbacks.removeValue(forKey: messageId) {
                     callback(.failure(NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("Timeout", comment: "Connection error")])))
                 }
@@ -565,7 +565,7 @@ class XonoraClient: NSObject, ObservableObject {
 
     func playMedia(uris: [String], queueOption: String = "replace") async throws {
         guard let player = currentPlayer else { throw NSError(domain: "MusicAssistant", code: -1, userInfo: [NSLocalizedDescriptionKey: NSLocalizedString("No player", comment: "Playback error")]) }
-        _ = try await sendCommand("player_queues/play_media", args: ["queue_id": player.playerId, "media": uris, "option": queueOption])
+        _ = try await sendCommand("player_queues/play_media", args: ["queue_id": player.playerId, "media": uris, "option": queueOption], timeout: 120)
     }
 
     func playPause() async throws {

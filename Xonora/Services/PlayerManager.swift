@@ -415,18 +415,26 @@ class PlayerManager: ObservableObject {
                 try await XonoraClient.shared.playMedia(uris: uris)
             } catch {
                 appLog("Failed to send play command: \(error)", level: .error, category: "PlayerManager")
-                
-                // Suppress timeout errors — the server often processes the command fine
-                // but the acknowledgement is lost/delayed (music still plays).
+
                 let nsError = error as NSError
                 let desc = nsError.userInfo[NSLocalizedDescriptionKey] as? String ?? ""
-                if nsError.code == -1 && (desc.contains("timeout") || desc.contains("超时")) {
-                    appLog("Suppressing timeout error: \(desc)", level: .warning, category: "PlayerManager")
-                    return
-                }
-                
-                await MainActor.run {
-                    self.playbackState = .error(String.localizedStringWithFormat(NSLocalizedString("Failed to play: %@", comment: "Playback error"), error.localizedDescription))
+                let isTimeout = nsError.code == -1 && (desc.contains("timeout") || desc.contains("超时"))
+
+                if isTimeout {
+                    appLog("playMedia timed out — waiting for Sendspin to confirm playback", level: .warning, category: "PlayerManager")
+                    // Give Sendspin a chance to start streaming. If it starts, the
+                    // isBuffering sink above will transition to .playing for us.
+                    try? await Task.sleep(nanoseconds: 10_000_000_000)
+                    if await MainActor.run(body: { self.playbackState == .loading }) {
+                        appLog("Sendspin did not start within 10s after timeout", level: .error, category: "PlayerManager")
+                        await MainActor.run {
+                            self.playbackState = .error(NSLocalizedString("Failed to start playback: server timeout", comment: "Playback error"))
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        self.playbackState = .error(String.localizedStringWithFormat(NSLocalizedString("Failed to play: %@", comment: "Playback error"), error.localizedDescription))
+                    }
                 }
             }
         }
