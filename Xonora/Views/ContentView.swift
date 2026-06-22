@@ -1189,7 +1189,7 @@ struct MiniPlayerView: View {
         .background(
             ZStack(alignment: .leading) {
                 Rectangle()
-                    .fill(.regularMaterial)
+                    .fill(.ultraThinMaterial)
 
                 TimelineView(.animation(minimumInterval: 0.1, paused: !playerManager.isPlaying)) { timeline in
                     GeometryReader { geometry in
@@ -1203,9 +1203,8 @@ struct MiniPlayerView: View {
         )
         .frame(height: 72)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
+        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
         .padding(.horizontal, 12)
-        .colorScheme(.dark)
         .onTapGesture {
             expandAction()
         }

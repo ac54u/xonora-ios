@@ -10,8 +10,8 @@ struct XonoraApp: App {
     init() {
         let appearance = UITabBarAppearance()
         appearance.configureWithTransparentBackground()
-        appearance.backgroundEffect = UIBlurEffect(style: .dark)
-        appearance.backgroundColor = UIColor(red: 0.06, green: 0.06, blue: 0.13, alpha: 0.7)
+        appearance.backgroundEffect = UIBlurEffect(style: .systemChromeMaterial)
+        appearance.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.75)
         appearance.stackedLayoutAppearance.selected.iconColor = UIColor(named: "AccentColor")
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor(named: "AccentColor") ?? .systemBlue]
 
