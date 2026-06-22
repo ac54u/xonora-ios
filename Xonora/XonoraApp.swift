@@ -8,17 +8,16 @@ struct XonoraApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        // Configure tab bar to be transparent and floating
         let appearance = UITabBarAppearance()
         appearance.configureWithTransparentBackground()
-        appearance.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.85)
-
-        // Add blur effect
-        let blurEffect = UIBlurEffect(style: .systemMaterial)
-        appearance.backgroundEffect = blurEffect
+        appearance.backgroundEffect = UIBlurEffect(style: .systemDarkMaterial)
+        appearance.backgroundColor = UIColor(red: 0.06, green: 0.06, blue: 0.13, alpha: 0.7)
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(named: "AccentColor")
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor(named: "AccentColor") ?? .systemBlue]
 
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
+        UITabBar.appearance().tintColor = UIColor(named: "AccentColor")
     }
 
     var body: some Scene {

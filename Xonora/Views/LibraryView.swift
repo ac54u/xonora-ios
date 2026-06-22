@@ -4,13 +4,13 @@ struct LibraryView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var playerViewModel: PlayerViewModel
 
-    @State private var selectedCategory: LibraryCategory = .albums
+    @State private var selectedCategory: LibraryCategory = .playlists
     @State private var isInitialLoad = true
 
     enum LibraryCategory: String, CaseIterable, Identifiable {
-        case albums = "Albums"
-        case songs = "Songs"
         case playlists = "Playlists"
+        case songs = "Songs"
+        case albums = "Albums"
         case artists = "Artists"
         case podcasts = "Podcasts"
         case radio = "Radio"
@@ -23,9 +23,9 @@ struct LibraryView: View {
 
         var icon: String {
             switch self {
-            case .albums: return "square.stack.fill"
-            case .songs: return "music.note"
             case .playlists: return "music.note.list"
+            case .songs: return "music.note"
+            case .albums: return "square.stack.fill"
             case .artists: return "person.2.fill"
             case .podcasts: return "antenna.radiowaves.left.and.right"
             case .radio: return "dot.radiowaves.left.and.right"
@@ -68,9 +68,9 @@ struct LibraryView: View {
                     }
                 } else {
                     TabView(selection: $selectedCategory) {
-                        categoryScrollView { albumsContent }.tag(LibraryCategory.albums)
-                        categoryScrollView { songsList }.tag(LibraryCategory.songs)
                         categoryScrollView { playlistsContent }.tag(LibraryCategory.playlists)
+                        categoryScrollView { songsList }.tag(LibraryCategory.songs)
+                        categoryScrollView { albumsContent }.tag(LibraryCategory.albums)
                         categoryScrollView { artistsList }.tag(LibraryCategory.artists)
                         categoryScrollView { podcastsContent }.tag(LibraryCategory.podcasts)
                         categoryScrollView { radioContent }.tag(LibraryCategory.radio)

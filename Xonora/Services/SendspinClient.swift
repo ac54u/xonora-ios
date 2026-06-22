@@ -242,10 +242,10 @@ class SendspinClient: ObservableObject {
         }
     }
 
-    private func safeLog(_ message: String) {
+    private func safeLog(_ message: String, level: LogLevel = .info) {
         let logMessage = message.count > 1000 ? String(message.prefix(1000)) + "... (truncated)" : message
-        print(logMessage)
-        AppLogger.shared.log(logMessage)
+        print("[\(level.rawValue)] [SendspinClient] \(logMessage)")
+        AppLogger.shared.log(logMessage, level: level, category: "SendspinClient")
     }
     
     // Playback controls (proxied to client if supported, or handled via server commands)

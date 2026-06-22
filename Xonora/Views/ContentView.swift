@@ -905,6 +905,10 @@ struct SettingsView: View {
 
 struct LogView: View {
     @ObservedObject private var logger = AppLogger.shared
+    @State private var minLevel: LogLevel = .debug
+    @State private var searchText = ""
+    @State private var autoScroll = true
+    @State private var showingShare = false
 
     private static let timeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -912,50 +916,200 @@ struct LogView: View {
         return f
     }()
 
+    private var filteredEntries: [AppLogEntry] {
+        logger.filteredEntries(minLevel: minLevel, searchText: searchText)
+    }
+
     var body: some View {
-        List {
-            if logger.entries.isEmpty {
-                Text("No logs yet")
-                    .foregroundColor(.secondary)
+        VStack(spacing: 0) {
+            filterBar
+
+            if filteredEntries.isEmpty {
+                Spacer()
+                ContentUnavailableView(
+                    searchText.isEmpty ? "No Logs" : "No Results",
+                    systemImage: searchText.isEmpty ? "doc.text" : "magnifyingglass",
+                    description: Text(searchText.isEmpty ? "No log entries recorded yet." : "Try a different search term or lower the minimum level.")
+                )
+                Spacer()
             } else {
-                // Newest first.
-                ForEach(logger.entries.reversed()) { entry in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.message)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundColor(.primary)
-                        Text(Self.timeFormatter.string(from: entry.date))
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundColor(.secondary)
+                ScrollViewReader { proxy in
+                    List {
+                        ForEach(filteredEntries) { entry in
+                            logRow(entry)
+                                .id(entry.id)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
+                        }
                     }
-                    .textSelection(.enabled)
-                    .listRowSeparator(.hidden)
+                    .listStyle(.plain)
+                    .onChange(of: filteredEntries.count) { _, _ in
+                        if autoScroll, let last = filteredEntries.first {
+                            withAnimation { proxy.scrollTo(last.id, anchor: .top) }
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        autoScrollButton
+                    }
                 }
             }
         }
-        .listStyle(.plain)
         .navigationTitle("Logs")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
+                HStack(spacing: 12) {
                     Button {
-                        UIPasteboard.general.string = logger.exportText()
+                        showingShare = true
                     } label: {
-                        Label("Copy All", systemImage: "doc.on.doc")
+                        Image(systemName: "square.and.arrow.up")
                     }
-                    Button(role: .destructive) {
-                        logger.clear()
+                    .disabled(filteredEntries.isEmpty)
+
+                    Menu {
+                        Button(role: .destructive) {
+                            logger.clear()
+                        } label: {
+                            Label("Clear All", systemImage: "trash")
+                        }
                     } label: {
-                        Label("Clear", systemImage: "trash")
+                        Image(systemName: "ellipsis.circle")
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
+                    .disabled(logger.entries.isEmpty)
                 }
-                .disabled(logger.entries.isEmpty)
+            }
+        }
+        .sheet(isPresented: $showingShare) {
+            ShareSheet(text: logger.exportText(minLevel: minLevel, searchText: searchText))
+        }
+    }
+
+    private var filterBar: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                    TextField("Search logs...", text: $searchText)
+                        .font(.caption)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                levelPicker
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+
+            Divider()
+        }
+        .background(.ultraThinMaterial)
+    }
+
+    private var levelPicker: some View {
+        Menu {
+            ForEach(LogLevel.allCases.reversed(), id: \.self) { level in
+                Button {
+                    minLevel = level
+                } label: {
+                    HStack {
+                        Text(level.rawValue.capitalized)
+                        if minLevel == level {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(levelColor(minLevel))
+                    .frame(width: 8, height: 8)
+                Text(minLevel.rawValue.capitalized)
+                    .font(.caption.weight(.medium))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(levelColor(minLevel).opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    private var autoScrollButton: some View {
+        Button {
+            autoScroll.toggle()
+        } label: {
+            Image(systemName: autoScroll ? "arrow.down.to.line" : "arrow.up.to.line")
+                .font(.caption)
+                .foregroundColor(autoScroll ? .accentColor : .secondary)
+                .padding(8)
+                .background(.regularMaterial)
+                .clipShape(Circle())
+        }
+        .padding(12)
+    }
+
+    private func logRow(_ entry: AppLogEntry) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Circle()
+                .fill(levelColor(entry.level))
+                .frame(width: 6, height: 6)
+                .padding(.top, 5)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(entry.level.rawValue)
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(levelColor(entry.level))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(levelColor(entry.level).opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+
+                    if !entry.category.isEmpty {
+                        Text(entry.category)
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+
+                    Text(Self.timeFormatter.string(from: entry.date))
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(.tertiary)
+                }
+
+                Text(entry.message)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(.primary)
+                    .textSelection(.enabled)
             }
         }
     }
+
+    private func levelColor(_ level: LogLevel) -> Color {
+        switch level {
+        case .debug: return .secondary
+        case .info: return .accentColor
+        case .warning: return .orange
+        case .error: return .red
+        }
+    }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let text: String
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [text], applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 struct ContentView_Previews: PreviewProvider {
@@ -1034,11 +1188,9 @@ struct MiniPlayerView: View {
         .padding(.vertical, 12)
         .background(
             ZStack(alignment: .leading) {
-                // Background
                 Rectangle()
-                    .fill(.ultraThinMaterial)
+                    .fill(.regularMaterial)
 
-                // Progress indicator with TimelineView for smooth animation
                 TimelineView(.animation(minimumInterval: 0.1, paused: !playerManager.isPlaying)) { timeline in
                     GeometryReader { geometry in
                         let animatedProgress = calculateAnimatedProgress(at: timeline.date)
@@ -1051,8 +1203,9 @@ struct MiniPlayerView: View {
         )
         .frame(height: 72)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+        .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
         .padding(.horizontal, 12)
+        .colorScheme(.dark)
         .onTapGesture {
             expandAction()
         }

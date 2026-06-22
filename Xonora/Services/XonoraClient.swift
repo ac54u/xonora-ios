@@ -92,7 +92,7 @@ class XonoraClient: NSObject, ObservableObject {
         stopPingTimer()
         cancelConnectionTimeout()
 
-        appLog("[XonoraClient] Connecting to \(wsURL.absoluteString)")
+        appLog("Connecting to \(wsURL.absoluteString)", level: .info, category: "XonoraClient")
 
         webSocketTask = urlSession.webSocketTask(with: request)
         webSocketTask?.resume()
@@ -188,7 +188,7 @@ class XonoraClient: NSObject, ObservableObject {
                 self.receiveMessage()
             case .failure(let error):
                 Task { @MainActor in
-                    appLog("[XonoraClient] WebSocket failure: \(error.localizedDescription)")
+                    appLog("WebSocket failure: \(error.localizedDescription)", level: .error, category: "XonoraClient")
                     self.connectionState = .error(error.localizedDescription)
                     self.reconnect()
                 }
@@ -203,7 +203,7 @@ class XonoraClient: NSObject, ObservableObject {
         Task { @MainActor in
             if let messageId = json["message_id"] as? String, messageId == authMessageId {
                 if let result = json["result"] as? [String: Any], let authenticated = result["authenticated"] as? Bool, authenticated {
-                    appLog("[XonoraClient] Authenticated successfully")
+                    appLog("Authenticated successfully", level: .info, category: "XonoraClient")
                     connectionState = .connected
                     reconnectAttempts = 0
                     if let token = result["token"] as? String {
@@ -861,16 +861,44 @@ extension Notification.Name {
 
 // MARK: - In-app diagnostics log
 
+enum LogLevel: String, CaseIterable, Comparable {
+    case debug = "DEBUG"
+    case info = "INFO"
+    case warning = "WARNING"
+    case error = "ERROR"
+
+    var icon: String {
+        switch self {
+        case .debug: return "gear"
+        case .info: return "info.circle"
+        case .warning: return "exclamationmark.triangle"
+        case .error: return "xmark.octagon"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .debug: return "secondary"
+        case .info: return "accentColor"
+        case .warning: return "orange"
+        case .error: return "red"
+        }
+    }
+
+    static func < (lhs: LogLevel, rhs: LogLevel) -> Bool {
+        let order: [LogLevel] = [.debug, .info, .warning, .error]
+        return (order.firstIndex(of: lhs) ?? 0) < (order.firstIndex(of: rhs) ?? 0)
+    }
+}
+
 struct AppLogEntry: Identifiable, Equatable {
     let id = UUID()
     let date: Date
+    let level: LogLevel
     let message: String
+    let category: String
 }
 
-/// Captures the diagnostic log lines that previously only went to the Xcode
-/// console, so they can be viewed on-device from Settings → Logs. Backed by a
-/// bounded ring buffer. Mutations are funneled onto the main queue so it is safe
-/// to call `log(_:)` from any thread.
 final class AppLogger: ObservableObject {
     static let shared = AppLogger()
     @Published private(set) var entries: [AppLogEntry] = []
@@ -878,11 +906,11 @@ final class AppLogger: ObservableObject {
 
     private init() {}
 
-    func log(_ message: String) {
+    func log(_ message: String, level: LogLevel = .info, category: String = "") {
         let truncated = message.count > 2000 ? String(message.prefix(2000)) + "…" : message
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.entries.append(AppLogEntry(date: Date(), message: truncated))
+            self.entries.append(AppLogEntry(date: Date(), level: level, message: truncated, category: category))
             if self.entries.count > self.maxEntries {
                 self.entries.removeFirst(self.entries.count - self.maxEntries)
             }
@@ -895,16 +923,28 @@ final class AppLogger: ObservableObject {
         }
     }
 
-    func exportText() -> String {
+    func exportText(minLevel: LogLevel = .debug, searchText: String = "") -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-        return entries.map { "[\(fmt.string(from: $0.date))] \($0.message)" }.joined(separator: "\n")
+        return filteredEntries(minLevel: minLevel, searchText: searchText)
+            .map { "[\(fmt.string(from: $0.date))] [\($0.level.rawValue)]\($0.category.isEmpty ? "" : " [\($0.category)]") \($0.message)" }
+            .joined(separator: "\n")
+    }
+
+    func filteredEntries(minLevel: LogLevel = .debug, searchText: String = "") -> [AppLogEntry] {
+        var result = entries
+        if minLevel > .debug {
+            result = result.filter { $0.level >= minLevel }
+        }
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            result = result.filter { $0.message.lowercased().contains(query) || $0.category.lowercased().contains(query) }
+        }
+        return result.reversed()
     }
 }
 
-/// Global helper used across the app so important events surface both in the
-/// Xcode console and in the in-app log viewer.
-func appLog(_ message: String) {
-    print(message)
-    AppLogger.shared.log(message)
+func appLog(_ message: String, level: LogLevel = .info, category: String = "") {
+    print("[\(level.rawValue)]\(category.isEmpty ? "" : " [\(category)]") \(message)")
+    AppLogger.shared.log(message, level: level, category: category)
 }

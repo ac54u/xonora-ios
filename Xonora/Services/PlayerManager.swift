@@ -75,7 +75,7 @@ class PlayerManager: ObservableObject {
                 if !isBuffering && self.playbackState == .loading {
                     self.playbackState = .playing
                     self.startProgressTimer()
-                    appLog("[PlayerManager] Playback started, progress timer enabled")
+                    appLog("Playback started, progress timer enabled", level: .info, category: "PlayerManager")
                 }
             }
             .store(in: &cancellables)
@@ -249,7 +249,7 @@ class PlayerManager: ObservableObject {
                             let serverTrack = try JSONDecoder().decode(Track.self, from: data)
                             let oldTrack = self.currentTrack
                             if oldTrack?.uri != serverTrack.uri {
-                                appLog("[PlayerManager] Server advanced to next track: \(serverTrack.name)")
+                                appLog("Server advanced to next track: \(serverTrack.name)", level: .info, category: "PlayerManager")
                                 // The server's queue_updated media_item is often stripped of
                                 // image metadata, which left the artwork blank after auto-advance.
                                 // Prefer the full Track from our local queue (it carries the
@@ -278,7 +278,7 @@ class PlayerManager: ObservableObject {
                                 }
                             }
                         } catch {
-                            appLog("[PlayerManager] Failed to decode track from server: \(error)")
+                            appLog("Failed to decode track from server: \(error)", level: .error, category: "PlayerManager")
                         }
                     }
                 }
@@ -293,7 +293,7 @@ class PlayerManager: ObservableObject {
         // We only update UI state here
         playbackState = .stopped
         stopProgressTimer()
-        appLog("[PlayerManager] Track ended")
+        appLog("Track ended", level: .debug, category: "PlayerManager")
 
         if sleepTimerActive && sleepTimerEndDate == nil {
             pause()
@@ -346,7 +346,7 @@ class PlayerManager: ObservableObject {
             return
         }
 
-        appLog("[PlayerManager] Playing: \(track.name)")
+        appLog("Playing: \(track.name)", level: .info, category: "PlayerManager")
 
         // Sync shuffle to the server.
         self.shuffleEnabled = shuffle
@@ -414,13 +414,13 @@ class PlayerManager: ObservableObject {
             do {
                 try await XonoraClient.shared.playMedia(uris: uris)
             } catch {
-                appLog("[PlayerManager] Failed to send play command: \(error)")
+                appLog("Failed to send play command: \(error)", level: .error, category: "PlayerManager")
                 
                 // Suppress "Request timeout" error if it happens, as it often means the server 
                 // processed the command but the acknowledgement was lost/delayed, while music plays fine.
                 let nsError = error as NSError
                 if nsError.code == -1 && nsError.userInfo[NSLocalizedDescriptionKey] as? String == "Request timeout" {
-                    appLog("[PlayerManager] Suppressing Request timeout error.")
+                    appLog("Suppressing Request timeout error.", level: .warning, category: "PlayerManager")
                     return
                 }
                 
@@ -550,7 +550,7 @@ class PlayerManager: ObservableObject {
         default:
             playbackState = .paused
         }
-        appLog("[PlayerManager] Restored now playing: \(track.name) [\(snapshot.state ?? "?")] @ \(Int(snapshot.elapsed))s")
+        appLog("Restored now playing: \(track.name) [\(snapshot.state ?? "?")] @ \(Int(snapshot.elapsed))s", level: .info, category: "PlayerManager")
         updateNowPlayingInfo()
         postPlaybackStateChange()
     }
@@ -859,7 +859,7 @@ class PlayerManager: ObservableObject {
             }
             return artwork
         } catch {
-            appLog("[PlayerManager] Failed to load artwork: \(error)")
+            appLog("Failed to load artwork: \(error)", level: .warning, category: "PlayerManager")
             return nil
         }
     }
