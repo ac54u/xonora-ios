@@ -569,6 +569,7 @@ public final class SendspinClient {
             // print("[SendspinKit] Auto-starting because chunks received but not playing.")
 
             // Use highest priority format if we haven't received stream/start yet
+            defer { isAutoStarting = false }
             if let defaultFormat = playerConfig?.supportedFormats.first {
                 do {
                     // print("[SendspinKit] 🚀 Auto-starting audio engine with format: \(defaultFormat)")
@@ -576,11 +577,9 @@ public final class SendspinClient {
                     playerState = .synchronized
                     eventsContinuation.yield(.streamStarted(defaultFormat))
                     try? await sendClientState()
-                    isAutoStarting = false
                     // print("[SendspinKit] ✅ Audio engine started successfully")
                 } catch {
                     // print("[SendspinKit] ❌ Failed to auto-start: \(error)")
-                    isAutoStarting = false
                 }
             } else {
                  // print("[SendspinKit] ❌ No default format available to auto-start")

@@ -47,6 +47,7 @@ class PlayerManager: ObservableObject {
     // Prevent queue advancement race conditions
     private var isUserInitiatedPlay = false
     private var userPlayDebounceTask: Task<Void, Never>?
+    private var isChangingTrack = false
     private var lastFiveSecondBoundary: Int = -1
 
     // Drift correction: use server-reported time as authoritative source
@@ -209,7 +210,7 @@ class PlayerManager: ObservableObject {
                 let incomingTrackURI = (userInfo["current_item"] as? [String: Any])
                     .flatMap { $0["media_item"] as? [String: Any] }
                     .flatMap { $0["uri"] as? String }
-                let isAutoAdvance = incomingTrackURI != nil && self.currentTrack != nil && incomingTrackURI != self.currentTrack?.uri
+                let isAutoAdvance = self.currentTrack != nil && incomingTrackURI != nil && incomingTrackURI != self.currentTrack?.uri
 
                 if let stateStr = userInfo["state"] as? String {
                     if stateStr == "playing" {
@@ -316,6 +317,14 @@ class PlayerManager: ObservableObject {
     }
 
     func playTrack(_ track: Track, fromQueue tracks: [Track]? = nil, sourceName: String? = nil, shuffle: Bool = false) {
+        // Prevent duplicate playTrack calls (e.g. double-tap play button)
+        if isChangingTrack { return }
+        isChangingTrack = true
+        // Reset the guard after a short delay so subsequent play commands work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.isChangingTrack = false
+        }
+
         if let tracks = tracks {
             queue = tracks
             currentIndex = tracks.firstIndex(where: { $0.id == track.id }) ?? 0

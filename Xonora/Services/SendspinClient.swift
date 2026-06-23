@@ -150,7 +150,10 @@ class SendspinClient: ObservableObject {
                 self.safeLog("[SendspinClient] Connection error: \(error)")
                 self.connectionError = String.localizedStringWithFormat(NSLocalizedString("Connection failed: %@", comment: "Connection error"), error.localizedDescription)
                 self.isConnected = false
-                self.attemptReconnect()
+                // Don't reconnect if we were already disconnected intentionally
+                if self.client != nil {
+                    self.attemptReconnect()
+                }
             }
         }
     }
@@ -164,35 +167,41 @@ class SendspinClient: ObservableObject {
         if !keepConfig {
             reconnectAttempts = maxReconnectAttempts
         }
-        
+
+        isConnected = false
+        isBuffering = false
         eventTask?.cancel()
+        eventTask = nil
+        // Take ownership of the old client before clearing self.client
+        // so a concurrent connect() doesn't have its new client overwritten.
         let oldClient = client
         client = nil
         Task { [weak oldClient] in
             await oldClient?.disconnect()
         }
-        isConnected = false
-        isBuffering = false
     }
     
     private func attemptReconnect() {
+        reconnectTask?.cancel()
+
         guard let host = lastHost, let port = lastPort, let scheme = lastScheme else { return }
-        
         guard reconnectAttempts < maxReconnectAttempts else {
             self.safeLog("[SendspinClient] Max reconnection attempts reached")
             self.connectionError = NSLocalizedString("Failed to reconnect after multiple attempts", comment: "Connection error")
             return
         }
-        
+
         reconnectAttempts += 1
         let delay = Double(reconnectAttempts) * 2.0
         self.safeLog("[SendspinClient] Will attempt reconnect #\(reconnectAttempts) in \(delay) seconds...")
-        
-        reconnectTask?.cancel()
-        reconnectTask = Task {
+
+        reconnectTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            guard !Task.isCancelled else { return }
-            
+            guard let self = self, !Task.isCancelled else { return }
+            guard self.reconnectAttempts < self.maxReconnectAttempts else { return }
+            // Don't reconnect if already connected
+            guard !self.isConnected else { return }
+
             self.safeLog("[SendspinClient] Attempting reconnection...")
             self.connect(to: host, port: port, scheme: scheme, accessToken: self.lastAccessToken)
         }

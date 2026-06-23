@@ -33,6 +33,8 @@ class XonoraClient: NSObject, ObservableObject {
     private let hiddenPlayerIdsKey = "hiddenPlayerIds"
     private var pingTimer: Timer?
     private var connectionTimeoutTask: Task<Void, Never>?
+    private var authTimeoutTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
     private let connectionTimeout: TimeInterval = 5.0
 
     static let shared = XonoraClient()
@@ -89,9 +91,12 @@ class XonoraClient: NSObject, ObservableObject {
             request.addValue(origin, forHTTPHeaderField: "Origin")
         }
 
+        reconnectTask?.cancel()
+        reconnectTask = nil
         webSocketTask?.cancel(with: .goingAway, reason: nil)
         stopPingTimer()
         cancelConnectionTimeout()
+        cancelAuthTimeout()
 
         appLog("Connecting to \(wsURL.absoluteString)", level: .info, category: "XonoraClient")
 
@@ -120,10 +125,18 @@ class XonoraClient: NSObject, ObservableObject {
         connectionTimeoutTask = nil
     }
 
+    private func cancelAuthTimeout() {
+        authTimeoutTask?.cancel()
+        authTimeoutTask = nil
+    }
+
     func disconnect() {
         stopReconnecting()
         stopPingTimer()
         cancelConnectionTimeout()
+        cancelAuthTimeout()
+        reconnectTask?.cancel()
+        reconnectTask = nil
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
         webSocketTask = nil
         connectionState = .disconnected
@@ -139,6 +152,8 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     private func reconnect() {
+        reconnectTask?.cancel()
+
         guard reconnectAttempts < maxReconnectAttempts, let serverURL = serverURL else {
             stopPingTimer()
             connectionState = .error(NSLocalizedString("Failed to reconnect.", comment: "Connection error"))
@@ -146,10 +161,14 @@ class XonoraClient: NSObject, ObservableObject {
         }
 
         reconnectAttempts += 1
+        let delay = Double(reconnectAttempts) * 2.0
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(reconnectAttempts) * 2) { [weak self] in
-            guard let self = self, self.reconnectAttempts < self.maxReconnectAttempts else { return }
-            // connect() will set connectionState = .connecting itself
+        reconnectTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard let self = self, !Task.isCancelled else { return }
+            guard self.reconnectAttempts < self.maxReconnectAttempts else { return }
+            // Don't reconnect if already connected (e.g. a concurrent reconnect already succeeded)
+            guard self.connectionState != .connected else { return }
             if self.usePasswordAuth {
                 self.connect(to: serverURL.absoluteString, accessToken: self.accessToken, username: self.username, password: self.password)
             } else {
@@ -207,6 +226,7 @@ class XonoraClient: NSObject, ObservableObject {
         Task { @MainActor in
             if let messageId = json["message_id"] as? String, messageId == authMessageId {
                 if let result = json["result"] as? [String: Any], let authenticated = result["authenticated"] as? Bool, authenticated {
+                    cancelAuthTimeout()
                     appLog("Authenticated successfully", level: .info, category: "XonoraClient")
                     connectionState = .connected
                     reconnectAttempts = 0
@@ -217,6 +237,7 @@ class XonoraClient: NSObject, ObservableObject {
                     }
                     await fetchPlayers()
                 } else {
+                    cancelAuthTimeout()
                     connectionState = .error(NSLocalizedString("Authentication failed.", comment: "Auth error"))
                 }
                 return
@@ -234,8 +255,10 @@ class XonoraClient: NSObject, ObservableObject {
                 if (serverInfo?.schemaVersion ?? 0) >= 28 {
                     if accessToken != nil {
                         connectionState = .authenticating
-                        Task { [weak self] in
+                        authTimeoutTask?.cancel()
+                        authTimeoutTask = Task { [weak self] in
                             try? await Task.sleep(nanoseconds: UInt64(connectionTimeout * 1_000_000_000))
+                            guard !Task.isCancelled else { return }
                             await MainActor.run {
                                 if self?.connectionState == .authenticating {
                                     self?.connectionState = .error(NSLocalizedString("Authentication timed out.", comment: "Auth error"))
@@ -247,6 +270,7 @@ class XonoraClient: NSObject, ObservableObject {
                         connectionState = .error(NSLocalizedString("Authentication required.", comment: "Auth error"))
                     }
                 } else {
+                    cancelAuthTimeout()
                     connectionState = .connected
                     reconnectAttempts = 0
                     await fetchPlayers()
@@ -268,6 +292,7 @@ class XonoraClient: NSObject, ObservableObject {
             }
 
             if let errorCode = json["error_code"] as? Int, errorCode == 20 {
+                cancelAuthTimeout()
                 requiresAuth = true
                 if accessToken == nil {
                     connectionState = .error(NSLocalizedString("Authentication required.", comment: "Auth error"))
