@@ -1,5 +1,44 @@
 import SwiftUI
 
+fileprivate let configLabelZH: [String: String] = [
+    "Log level": "日志级别",
+    "API URL": "接口地址",
+    "Username": "用户名",
+    "Password": "密码",
+    "Email": "邮箱",
+    "Host": "主机地址",
+    "Port": "端口",
+    "Quality": "音质",
+    "Language": "语言",
+    "Country code": "国家代码",
+    "Region": "地区",
+    "Path": "路径",
+    "Token": "令牌",
+    "Client ID": "客户端 ID",
+    "Client Secret": "客户端密钥",
+    "Access token": "访问令牌",
+    "Server": "服务器地址",
+    "Rate limit": "请求频率",
+    "Update interval": "更新间隔",
+    "Base URL": "基础地址",
+    "Database path": "数据库路径",
+    "Audio format": "音频格式",
+    "Sample rate": "采样率",
+    "Device name": "设备名称",
+    "Device ID": "设备 ID",
+    "HTTP port": "HTTP 端口",
+    "Sync interval": "同步间隔",
+    "Max retries": "最大重试",
+    "Timeout": "超时",
+    "global": "全局",
+]
+
+fileprivate func localizedConfigLabel(_ text: String) -> String {
+    if let zh = configLabelZH[text] { return zh }
+    if let zh = configLabelZH[text.trimmingCharacters(in: .whitespaces).capitalized] { return zh }
+    return text
+}
+
 struct ProviderConfigView: View {
     @ObservedObject var viewModel: ProviderManagementViewModel
     var config: ProviderConfig?
@@ -157,26 +196,30 @@ struct ProviderConfigView: View {
         }
     }
 
+    private func zzLabel(_ text: String) -> String { localizedConfigLabel(text) }
+    private func zzDesc(_ text: String?) -> String? { text.flatMap { localizedConfigLabel($0) } ?? text }
+
     @ViewBuilder
     private func configField(for entry: ConfigEntry) -> some View {
+        let label = zzLabel(entry.label)
         switch entry.type {
         case "boolean":
-            Toggle(entry.label, isOn: Binding(
+            Toggle(label, isOn: Binding(
                 get: { (viewModel.editingValues[entry.key] as? Bool) ?? (entry.defaultValue?.boolValue ?? false) },
                 set: { viewModel.editingValues[entry.key] = $0 }
             ))
 
         case "string", "secure_string":
             VStack(alignment: .leading, spacing: 4) {
-                Text(entry.label)
+                Text(label)
                     .font(.subheadline.weight(.medium))
                 if entry.isSecure {
-                    SecureField(entry.label, text: Binding(
+                    SecureField(label, text: Binding(
                         get: { viewModel.editingValues[entry.key] as? String ?? "" },
                         set: { viewModel.editingValues[entry.key] = $0 }
                     ))
                 } else if let options = entry.options, !options.isEmpty {
-                    Picker(entry.label, selection: Binding(
+                    Picker(label, selection: Binding(
                         get: { viewModel.editingValues[entry.key] as? String ?? (entry.defaultValue?.stringValue ?? "") },
                         set: { viewModel.editingValues[entry.key] = $0 }
                     )) {
@@ -185,14 +228,14 @@ struct ProviderConfigView: View {
                         }
                     }
                 } else {
-                    TextField(entry.label, text: Binding(
+                    TextField(label, text: Binding(
                         get: { viewModel.editingValues[entry.key] as? String ?? "" },
                         set: { viewModel.editingValues[entry.key] = $0 }
                     ))
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                 }
-                if let desc = entry.description {
+                if let desc = zzDesc(entry.description) {
                     Text(desc)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -201,7 +244,7 @@ struct ProviderConfigView: View {
 
         case "integer":
             VStack(alignment: .leading, spacing: 4) {
-                Text(entry.label)
+                Text(label)
                     .font(.subheadline.weight(.medium))
                 let binding = Binding(
                     get: { viewModel.editingValues[entry.key] as? Int ?? (entry.defaultValue?.intValue ?? 0) },
@@ -216,10 +259,10 @@ struct ProviderConfigView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else {
-                    TextField(entry.label, value: binding, format: .number)
+                    TextField(label, value: binding, format: .number)
                         .keyboardType(.numberPad)
                 }
-                if let desc = entry.description {
+                if let desc = zzDesc(entry.description) {
                     Text(desc)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -228,15 +271,15 @@ struct ProviderConfigView: View {
 
         case "float":
             VStack(alignment: .leading, spacing: 4) {
-                Text(entry.label)
+                Text(label)
                     .font(.subheadline.weight(.medium))
                 let binding = Binding(
                     get: { viewModel.editingValues[entry.key] as? Double ?? (entry.defaultValue?.doubleValue ?? 0.0) },
                     set: { viewModel.editingValues[entry.key] = $0 }
                 )
-                TextField(entry.label, value: binding, format: .number)
+                TextField(label, value: binding, format: .number)
                     .keyboardType(.decimalPad)
-                if let desc = entry.description {
+                if let desc = zzDesc(entry.description) {
                     Text(desc)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -245,9 +288,9 @@ struct ProviderConfigView: View {
 
         case "label":
             Section {
-                Text(entry.label)
+                Text(label)
                     .font(.body)
-                if let desc = entry.description {
+                if let desc = zzDesc(entry.description) {
                     Text(desc)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -261,12 +304,12 @@ struct ProviderConfigView: View {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(.orange)
-                Text(entry.label)
+                Text(label)
                     .font(.subheadline)
             }
 
         case "action":
-            Button(entry.actionLabel ?? entry.label) {
+            Button(entry.actionLabel ?? label) {
                 Task {
                     if let config = config {
                         let entries = try? await XonoraClient.shared.getProviderConfigEntries(
@@ -288,7 +331,7 @@ struct ProviderConfigView: View {
             }
 
         default:
-            Text(entry.label)
+            Text(label)
         }
     }
 
