@@ -945,10 +945,6 @@ class PlayerManager: ObservableObject {
             }
         }
 
-        if #available(iOS 17.1, *) {
-            let likeState = track.favorite.flatMap { $0 ? NSNumber(value: 1) : NSNumber(value: 0) }
-            nowPlayingInfo[MPMediaItemPropertyLikeState] = likeState
-        }
 
         await MainActor.run {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
