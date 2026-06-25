@@ -1140,18 +1140,21 @@ struct MiniPlayerView: View {
                 })
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .clipped()
+                .gesture(
+                    DragGesture(minimumDistance: 20)
+                        .onEnded { value in
+                            if value.translation.width < -30 {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                playerManager.next()
+                            } else if value.translation.width > 30 {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                playerManager.previous()
+                            }
+                        }
+                )
 
             HStack(spacing: 6) {
-                Button {
-                    playerManager.togglePlayPause()
-                } label: {
-                    Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().fill(.ultraThinMaterial))
-                }
-                .buttonStyle(.plain)
+                progressButton
 
                 Button {
                     showingQueue = true
@@ -1181,6 +1184,32 @@ struct MiniPlayerView: View {
         .onChange(of: displayText) { _ in updateMarquee() }
         .sheet(isPresented: $showingQueue) {
             queueSheet
+        }
+    }
+
+    private var progressButton: some View {
+        let progress = playerManager.duration > 0 ? min(max(playerManager.currentTime / playerManager.duration, 0), 1) : 0
+
+        return ZStack {
+            Circle()
+                .stroke(Color.separator.opacity(0.3), lineWidth: 2.5)
+                .frame(width: 32, height: 32)
+
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                .frame(width: 32, height: 32)
+                .rotationEffect(.degrees(-90))
+
+            Button {
+                playerManager.togglePlayPause()
+            } label: {
+                Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .offset(x: playerManager.isPlaying ? 0 : 1)
+            }
+            .buttonStyle(.plain)
         }
     }
 
