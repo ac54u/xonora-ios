@@ -1192,7 +1192,7 @@ struct MiniPlayerView: View {
 
         return ZStack {
             Circle()
-                .stroke(Color.separator.opacity(0.3), lineWidth: 2.5)
+                .stroke(Color.gray.opacity(0.25), lineWidth: 2.5)
                 .frame(width: 32, height: 32)
 
             Circle()
