@@ -31,12 +31,7 @@ struct RadioStationListView: View {
                         } label: {
                             HStack(spacing: 12) {
                                 CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: station.imageUrl, size: .thumbnail)) {
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay {
-                                            Image(systemName: "dot.radiowaves.left.and.right")
-                                                .foregroundColor(.gray)
-                                        }
+                                    Color.clear
                                 }
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: 44, height: 44)

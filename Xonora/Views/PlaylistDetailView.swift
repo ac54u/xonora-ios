@@ -109,7 +109,7 @@ struct PlaylistDetailView: View {
         VStack(spacing: 16) {
             // Playlist artwork
             CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: playlist.imageUrl, size: .medium)) {
-                playlistArtPlaceholder
+                Color.clear
             }
             .aspectRatio(contentMode: .fill)
             .frame(width: 240, height: 240)
@@ -139,16 +139,6 @@ struct PlaylistDetailView: View {
             .padding(.horizontal)
         }
         .padding(.top)
-    }
-
-    private var playlistArtPlaceholder: some View {
-        Rectangle()
-            .fill(Color.xonoraGradient)
-            .overlay {
-                Image(systemName: playlist.icon)
-                    .font(.system(size: 60))
-                    .foregroundColor(.white.opacity(0.85))
-            }
     }
 
     private var trackList: some View {

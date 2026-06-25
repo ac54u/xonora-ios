@@ -71,13 +71,7 @@ struct ArtistDetailView: View {
     private var headerView: some View {
         HStack(spacing: 20) {
             CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: artist.imageUrl, size: .medium)) {
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .overlay {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                    }
+                Color.clear
             }
             .aspectRatio(contentMode: .fill)
             .frame(width: 120, height: 120)
@@ -161,8 +155,7 @@ struct ArtistDetailView: View {
                         NavigationLink(destination: AlbumDetailView(album: album)) {
                             VStack(alignment: .leading) {
                                 CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl)) {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
+                                    Color.clear
                                 }
                                 .aspectRatio(1, contentMode: .fill)
                                 .frame(width: 140, height: 140)

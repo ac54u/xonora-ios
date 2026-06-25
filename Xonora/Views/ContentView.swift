@@ -606,12 +606,7 @@ struct SearchView: View {
                         NavigationLink(destination: AlbumDetailView(album: album)) {
                             HStack(spacing: 12) {
                                 CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl, size: .thumbnail)) {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay {
-                                            Image(systemName: "music.note")
-                                                .foregroundColor(.gray)
-                                        }
+                                    Color.clear
                                 }
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: 50, height: 50)
@@ -1229,11 +1224,7 @@ struct MiniPlayerView: View {
         )
 
         return CachedAsyncImage(url: url) {
-            Color.gray.opacity(0.3)
-                .overlay {
-                    Image(systemName: "music.note")
-                        .foregroundColor(.gray)
-                }
+            Color.clear
         }
         .frame(width: 52, height: 52)
         .clipShape(RoundedRectangle(cornerRadius: 8))

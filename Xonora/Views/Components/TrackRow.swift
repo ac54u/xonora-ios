@@ -32,12 +32,7 @@ struct TrackRow: View {
 
                     if showArtwork {
                         CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: track.imageUrl ?? track.album?.imageUrl, size: .thumbnail)) {
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.gray.opacity(0.3))
-                                .overlay {
-                                    Image(systemName: "music.note")
-                                        .foregroundColor(.gray)
-                                }
+                            Color.clear
                         }
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 44, height: 44)

@@ -68,7 +68,7 @@ struct PodcastDetailView: View {
     private var podcastHeader: some View {
         VStack(spacing: 16) {
             CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: podcast.imageUrl, size: .medium)) {
-                podcastArtPlaceholder
+                Color.clear
             }
             .aspectRatio(contentMode: .fill)
             .frame(width: 240, height: 240)
@@ -90,22 +90,6 @@ struct PodcastDetailView: View {
             .padding(.horizontal)
         }
         .padding(.top)
-    }
-
-    private var podcastArtPlaceholder: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay {
-                Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(.system(size: 60))
-                    .foregroundColor(.gray)
-            }
     }
 
     private var episodeList: some View {

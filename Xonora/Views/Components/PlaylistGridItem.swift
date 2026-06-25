@@ -6,7 +6,7 @@ struct PlaylistGridItem: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: playlist.imageUrl, size: .small)) {
-                playlistPlaceholder
+                Color.clear
             }
             .aspectRatio(contentMode: .fill)
             .frame(maxWidth: .infinity)
@@ -27,15 +27,5 @@ struct PlaylistGridItem: View {
                     .lineLimit(1)
             }
         }
-    }
-
-    private var playlistPlaceholder: some View {
-        Rectangle()
-            .fill(Color.xonoraGradient)
-            .overlay {
-                Image(systemName: playlist.icon)
-                    .font(.largeTitle)
-                    .foregroundColor(.white.opacity(0.85))
-            }
     }
 }

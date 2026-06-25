@@ -299,12 +299,7 @@ struct LibraryView: View {
                 NavigationLink(destination: AlbumDetailView(album: album)) {
                     HStack(spacing: 12) {
                         CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl, size: .thumbnail)) {
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.gray.opacity(0.3))
-                                .overlay {
-                                    Image(systemName: "music.note")
-                                        .foregroundColor(.gray)
-                                }
+                            Color.clear
                         }
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 44, height: 44)
@@ -441,12 +436,7 @@ struct LibraryView: View {
                 NavigationLink(destination: PlaylistDetailView(playlist: playlist)) {
                     HStack(spacing: 12) {
                         CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: playlist.imageUrl, size: .thumbnail)) {
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.xonoraGradient)
-                                .overlay {
-                                    Image(systemName: playlist.icon)
-                                        .foregroundColor(.white.opacity(0.85))
-                                }
+                            Color.clear
                         }
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 44, height: 44)
@@ -513,8 +503,7 @@ struct LibraryView: View {
                             NavigationLink(destination: ArtistDetailView(artist: artist)) {
                                 HStack(spacing: 12) {
                                     CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: artist.imageUrl, size: .thumbnail)) {
-                                        Circle().fill(Color.gray.opacity(0.3))
-                                            .overlay { Image(systemName: "person.fill").foregroundColor(.gray) }
+                                        Color.clear
                                     }
                                     .aspectRatio(contentMode: .fill)
                                     .frame(width: 44, height: 44)
@@ -583,12 +572,7 @@ struct LibraryView: View {
                 ForEach(libraryViewModel.radioStations) { station in
                     HStack(spacing: 12) {
                         CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: station.imageUrl, size: .thumbnail)) {
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.gray.opacity(0.3))
-                                .overlay {
-                                    Image(systemName: "radio")
-                                        .foregroundColor(.gray)
-                                }
+                            Color.clear
                         }
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 44, height: 44)

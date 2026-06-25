@@ -6,7 +6,7 @@ struct AlbumGridItem: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl, size: .small)) {
-                albumPlaceholder
+                Color.clear
             }
             .aspectRatio(contentMode: .fill)
             .frame(maxWidth: .infinity)
@@ -27,22 +27,6 @@ struct AlbumGridItem: View {
                     .lineLimit(1)
             }
         }
-    }
-
-    private var albumPlaceholder: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay {
-                Image(systemName: "music.note")
-                    .font(.largeTitle)
-                    .foregroundColor(.gray)
-            }
     }
 }
 

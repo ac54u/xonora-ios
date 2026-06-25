@@ -109,7 +109,7 @@ struct AlbumDetailView: View {
         VStack(spacing: 16) {
             // Album artwork
             CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: album.imageUrl, size: .medium)) {
-                albumArtPlaceholder
+                Color.clear
             }
             .aspectRatio(contentMode: .fill)
             .frame(width: 240, height: 240)
@@ -148,22 +148,6 @@ struct AlbumDetailView: View {
             .padding(.horizontal)
         }
         .padding(.top)
-    }
-
-    private var albumArtPlaceholder: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.5)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay {
-                Image(systemName: "music.note")
-                    .font(.system(size: 60))
-                    .foregroundColor(.gray)
-            }
     }
 
     private var trackList: some View {

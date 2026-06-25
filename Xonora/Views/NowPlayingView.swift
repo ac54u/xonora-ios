@@ -86,7 +86,7 @@ struct NowPlayingView: View {
             // rest of the app — plain AsyncImage uses URLSession.shared and hangs when
             // a system proxy is configured, leaving the artwork spinning forever.
             CachedAsyncImage(url: trackImageURL) {
-                Color.xonoraGradient
+                Color.clear
             }
             .aspectRatio(contentMode: .fill)
             .blur(radius: 30) // Reduced from 60 to improve rendering performance
@@ -178,29 +178,12 @@ struct NowPlayingView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
             } else {
-                artworkPlaceholder
+                Color.clear
             }
         }
         .aspectRatio(1, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 20)
-    }
-
-    private var artworkPlaceholder: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(
-                LinearGradient(
-                    colors: [.gray.opacity(0.4), .gray.opacity(0.6)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .aspectRatio(1, contentMode: .fit)
-            .overlay {
-                Image(systemName: "music.note")
-                    .font(.system(size: 80))
-                    .foregroundColor(.white.opacity(0.5))
-            }
     }
 
     private var trackInfo: some View {
@@ -395,8 +378,7 @@ struct QueueView: View {
         let imageURL = XonoraClient.shared.getImageURL(for: track.imageUrl ?? track.album?.imageUrl, size: .thumbnail)
 
         return CachedAsyncImage(url: imageURL) {
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
+            Color.clear
         }
         .aspectRatio(contentMode: .fill)
         .frame(width: 44, height: 44)

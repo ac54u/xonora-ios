@@ -6,12 +6,7 @@ struct PodcastGridItem: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: podcast.imageUrl, size: .small)) {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .overlay {
-                        Image(systemName: "antenna.radiowaves.left.and.right")
-                            .foregroundColor(.gray)
-                    }
+                Color.clear
             }
             .aspectRatio(1, contentMode: .fill)
             .clipShape(RoundedRectangle(cornerRadius: 8))
