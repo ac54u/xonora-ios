@@ -29,17 +29,23 @@ struct ContentView: View {
                     }
                     .tag(2)
 
+                RemotePlayerView()
+                    .tabItem {
+                        Label("Player", systemImage: "hifispeaker.fill")
+                    }
+                    .tag(3)
+
                 SettingsView()
                     .tabItem {
                         Label("Settings", systemImage: "gear")
                     }
-                    .tag(3)
+                    .tag(4)
             }
 
             // Mini Player Overlay - positioned above system tab bar.
-            // Hidden on the Now Playing tab (2) and Settings tab (3) so it doesn't
+            // Hidden on the Now Playing tab (2) and Settings tab (4) so it doesn't
             // overlap the full player controls.
-            if playerViewModel.hasTrack && !isPlayerExpanded && selectedTab != 2 && selectedTab != 3 {
+            if playerViewModel.hasTrack && !isPlayerExpanded && selectedTab != 2 && selectedTab != 4 {
                 MiniPlayerView {
                     withAnimation {
                         isPlayerExpanded = true
@@ -719,17 +725,6 @@ struct SettingsView: View {
                         Label("Change Server", systemImage: "pencil")
                     }
 
-                    Button {
-                        if playerViewModel.isConnected {
-                            playerViewModel.disconnect()
-                        } else {
-                            playerViewModel.connectToServer()
-                        }
-                    } label: {
-                        Label(playerViewModel.isConnected ? LocalizedStringKey("Disconnect") : LocalizedStringKey("Reconnect"),
-                              systemImage: playerViewModel.isConnected ? "wifi.slash" : "wifi")
-                    }
-
                     Button(role: .destructive) {
                         playerViewModel.disconnect()
                         KeychainHelper.shared.clearAll()
@@ -786,70 +781,6 @@ struct SettingsView: View {
                 }
                 .onAppear {
                     localPlayerName = sendspinClient.playerName
-                }
-
-                Section {
-                    if client.players.isEmpty {
-                        if playerViewModel.isConnected {
-                            HStack {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .padding(.trailing, 8)
-                                Text("Loading players...")
-                                    .foregroundColor(.secondary)
-                            }
-                        } else {
-                            Text("No players found (not connected)")
-                                .foregroundColor(.secondary)
-                        }
-                    } else {
-                        ForEach(client.visiblePlayers) { player in
-                            Button {
-                                client.currentPlayer = player
-                                Task { await client.switchPlayer(playerId: player.playerId) }
-                            } label: {
-                                HStack {
-                                    Image(systemName: ProviderBrand(provider: player.provider, type: player.type, name: player.name).icon)
-                                        .foregroundColor(ProviderBrand(provider: player.provider, type: player.type, name: player.name).color)
-                                        .frame(width: 24)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(player.name)
-                                            .foregroundColor(.primary)
-                                        Text(ProviderBrand(provider: player.provider, type: player.type, name: player.name).displayName)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    Spacer()
-                                    if player.playerId == client.currentPlayer?.playerId {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(.accentColor)
-                                    }
-                                    if !player.available {
-                                        Text("Offline")
-                                            .font(.caption)
-                                            .foregroundColor(.red)
-                                    }
-                                }
-                            }
-                            .disabled(!player.available)
-                            .swipeActions(edge: .trailing) {
-                                Button("Delete", role: .destructive) {
-                                    Task { await client.removePlayer(player.playerId) }
-                                }
-                            }
-                        }
-                    }
-                    if !client.hiddenPlayerIds.isEmpty {
-                        Button("Show Hidden Players") {
-                            client.unhideAllPlayers()
-                        }
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    }
-                } header: {
-                    Text("Remote Player")
-                } footer: {
-                    Text("Select a player to send playback commands to.")
                 }
 
                 Section {
