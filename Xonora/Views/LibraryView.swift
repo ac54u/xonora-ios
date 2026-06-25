@@ -482,28 +482,27 @@ struct LibraryView: View {
                 emptyView("No Artists", icon: "person.2.circle.fill", message: "Your library is empty.")
             } else {
                 ForEach(sorted) { artist in
-                            NavigationLink(destination: ArtistDetailView(artist: artist)) {
-                                HStack(spacing: 12) {
-                                    CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: artist.imageUrl, size: .thumbnail)) {
-                                        Color.clear
-                                    }
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 44, height: 44)
-                                    .clipShape(Circle())
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(artist.name).font(.body).foregroundColor(.primary).lineLimit(1)
-                                    }
-                                    Spacer()
-                                    Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundColor(.secondary.opacity(0.5))
-                                }
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 12)
-                                .contentShape(Rectangle())
+                    NavigationLink(destination: ArtistDetailView(artist: artist)) {
+                        HStack(spacing: 12) {
+                            CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: artist.imageUrl, size: .thumbnail)) {
+                                Color.clear
                             }
-                            .buttonStyle(.plain)
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 44, height: 44)
+                            .clipShape(Circle())
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(artist.name).font(.body).foregroundColor(.primary).lineLimit(1)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundColor(.secondary.opacity(0.5))
                         }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                }
                 if libraryViewModel.artists.count < libraryViewModel.artistTotal {
                     ProgressView()
                         .frame(maxWidth: .infinity).padding()
