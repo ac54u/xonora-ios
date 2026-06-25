@@ -4,12 +4,12 @@ struct LibraryView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var playerViewModel: PlayerViewModel
 
-    @State private var selectedCategory: LibraryCategory = .playlists
+    @State private var selectedCategory: LibraryCategory = .songs
     @State private var isInitialLoad = true
 
     enum LibraryCategory: String, CaseIterable, Identifiable {
-        case playlists = "Playlists"
         case songs = "Songs"
+        case playlists = "Playlists"
         case albums = "Albums"
         case artists = "Artists"
         case podcasts = "Podcasts"
@@ -68,8 +68,8 @@ struct LibraryView: View {
                     }
                 } else {
                     TabView(selection: $selectedCategory) {
-                        categoryScrollView { playlistsContent }.tag(LibraryCategory.playlists)
                         categoryScrollView { songsList }.tag(LibraryCategory.songs)
+                        categoryScrollView { playlistsContent }.tag(LibraryCategory.playlists)
                         categoryScrollView { albumsContent }.tag(LibraryCategory.albums)
                         categoryScrollView { artistsList }.tag(LibraryCategory.artists)
                         categoryScrollView { podcastsContent }.tag(LibraryCategory.podcasts)
