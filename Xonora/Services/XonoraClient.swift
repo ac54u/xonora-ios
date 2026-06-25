@@ -256,6 +256,7 @@ class XonoraClient: NSObject, ObservableObject {
                         KeychainHelper.shared.saveToken(token)
                         NotificationCenter.default.post(name: .tokenRefreshed, object: nil, userInfo: ["token": token])
                     }
+                    Task { await self.setUILocale() }
                     await fetchPlayers()
                 } else {
                     cancelAuthTimeout()
@@ -295,6 +296,7 @@ class XonoraClient: NSObject, ObservableObject {
                     connectionState = .connected
                     reconnectAttempts = 0
                     startPlayerPolling()
+                    Task { await self.setUILocale() }
                     await fetchPlayers()
                 }
                 return
@@ -742,6 +744,16 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     // MARK: - Provider Management
+
+    private func setUILocale() async {
+        let pref = Bundle.main.preferredLocalizations.first ?? "en"
+        let maLocale: String
+        if pref.starts(with: "zh") { maLocale = "zh_CN" }
+        else if pref.starts(with: "ja") { maLocale = "ja" }
+        else if pref.starts(with: "ko") { maLocale = "ko" }
+        else { maLocale = pref.replacingOccurrences(of: "-", with: "_") }
+        _ = try? await sendCommand("translations/set_locale", args: ["locale": maLocale])
+    }
 
     func getProviderManifests() async throws -> [ProviderManifest] {
         let data = try await sendCommand("providers/manifests")
