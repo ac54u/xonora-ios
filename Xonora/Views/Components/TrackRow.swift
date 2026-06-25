@@ -41,10 +41,15 @@ struct TrackRow: View {
                             .foregroundColor(isPlaying ? .accentColor : .primary)
                             .lineLimit(1)
 
-                        Text(track.artistNames)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
+                        HStack(spacing: 6) {
+                            if let badge = track.qualityBadge {
+                                qualityBadgeView(badge)
+                            }
+                            Text(track.artistNames)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
                     }
 
                     Spacer()
@@ -140,6 +145,18 @@ struct TrackRow: View {
             }
         }
         .frame(width: 24)
+    }
+
+    private func qualityBadgeView(_ badge: Track.QualityBadge) -> some View {
+        Text(badge.label)
+            .font(.system(size: 9, weight: .semibold, design: .rounded))
+            .foregroundColor(badge.color)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
+            .background(
+                RoundedRectangle(cornerRadius: 3)
+                    .stroke(badge.color, lineWidth: 1)
+            )
     }
 }
 
