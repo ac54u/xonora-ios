@@ -39,7 +39,7 @@ struct ProviderConfigView: View {
 
                         if !isNew {
                             Section {
-                                Button("Reload Provider", role: .none) {
+                                Button("Reload Provider") {
                                     if let config = config {
                                         Task { await viewModel.reloadProvider(instanceId: config.instanceId) }
                                         toastMessage = "Reloading..."

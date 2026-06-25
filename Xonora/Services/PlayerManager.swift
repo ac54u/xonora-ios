@@ -681,13 +681,13 @@ class PlayerManager: ObservableObject {
     }
 
     func skipForward() {
-        Task {
+        Task { @MainActor in
             try? await XonoraClient.shared.skip(seconds: 15)
         }
     }
 
     func skipBackward() {
-        Task {
+        Task { @MainActor in
             try? await XonoraClient.shared.skip(seconds: -15)
         }
     }
