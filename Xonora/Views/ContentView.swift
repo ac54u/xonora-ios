@@ -1366,9 +1366,8 @@ struct MiniPlayerView: View {
         stopMarqueeTimer()
         marqueeOffset = 0
         guard textWidth > containerWidth, textWidth > 0 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            guard let self else { return }
-            startMarqueeTimer()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            self.startMarqueeTimer()
         }
     }
 }
