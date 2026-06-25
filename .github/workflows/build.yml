@@ -28,7 +28,9 @@ jobs:
             -scheme Xonora
 
       - name: Build
+        id: build
         run: |
+          set -o pipefail
           xcodebuild -project Xonora.xcodeproj \
             -scheme Xonora \
             -configuration Debug \
@@ -37,7 +39,21 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            build
+            build 2>&1 | tee build.log
+        continue-on-error: true
+
+      - name: Upload Build Log
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-log
+          path: build.log
+
+      - name: Check Build Result
+        run: |
+          if [ "${{ steps.build.outcome }}" != "success" ]; then
+            echo "Build failed, see build-log artifact for details"
+            exit 1
+          fi
 
       - name: Package IPA
         run: |
