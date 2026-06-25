@@ -87,8 +87,8 @@ struct ProviderManifest: Codable, Identifiable {
     let icon: String?
     let documentation: String?
     let dependsOn: String?
-    let requirements: [String]
-    let credits: [String]
+    let requirements: [String]?
+    let credits: [String]?
 
     var id: String { domain }
     var isStable: Bool { stage == "stable" }

@@ -745,17 +745,26 @@ class XonoraClient: NSObject, ObservableObject {
 
     func getProviderManifests() async throws -> [ProviderManifest] {
         let data = try await sendCommand("providers/manifests")
-        return (try? JSONDecoder().decode([ProviderManifest].self, from: data)) ?? []
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [[String: Any]] else { return [] }
+        let resultData = try JSONSerialization.data(withJSONObject: result)
+        return (try? JSONDecoder().decode([ProviderManifest].self, from: resultData)) ?? []
     }
 
     func getProviderConfigs() async throws -> [ProviderConfig] {
         let data = try await sendCommand("config/providers", args: ["include_values": false])
-        return (try? JSONDecoder().decode([ProviderConfig].self, from: data)) ?? []
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [[String: Any]] else { return [] }
+        let resultData = try JSONSerialization.data(withJSONObject: result)
+        return (try? JSONDecoder().decode([ProviderConfig].self, from: resultData)) ?? []
     }
 
     func getProviderInstances() async throws -> [ProviderInstance] {
         let data = try await sendCommand("providers")
-        return (try? JSONDecoder().decode([ProviderInstance].self, from: data)) ?? []
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [[String: Any]] else { return [] }
+        let resultData = try JSONSerialization.data(withJSONObject: result)
+        return (try? JSONDecoder().decode([ProviderInstance].self, from: resultData)) ?? []
     }
 
     func getProviderConfigEntries(domain: String, instanceId: String? = nil, action: String? = nil, values: [String: Any]? = nil) async throws -> [ConfigEntry] {
@@ -764,7 +773,10 @@ class XonoraClient: NSObject, ObservableObject {
         if let action = action { args["action"] = action }
         if let values = values { args["values"] = values }
         let data = try await sendCommand("config/providers/get_entries", args: args)
-        return (try? JSONDecoder().decode([ConfigEntry].self, from: data)) ?? []
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let result = json["result"] as? [[String: Any]] else { return [] }
+        let resultData = try JSONSerialization.data(withJSONObject: result)
+        return (try? JSONDecoder().decode([ConfigEntry].self, from: resultData)) ?? []
     }
 
     func saveProviderConfig(domain: String, values: [String: Any], instanceId: String? = nil) async throws {
