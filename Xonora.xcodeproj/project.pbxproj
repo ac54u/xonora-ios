@@ -47,7 +47,6 @@
 		AAA00039 /* PodcastDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00039 /* PodcastDetailView.swift */; };
 		AAA00040 /* RadioStationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00040 /* RadioStationListView.swift */; };
 		AAA00041 /* LyricsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00041 /* LyricsView.swift */; };
-		1D861D352F110D01007D0C6C /* RemotePlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D861D342F110D01007D0C6B /* RemotePlayerView.swift */; };
 		AAA00042 /* PodcastGridItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00042 /* PodcastGridItem.swift */; };
 /* End PBXBuildFile section */
 
@@ -158,7 +157,6 @@
 		BBB00039 /* PodcastDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastDetailView.swift; sourceTree = "<group>"; };
 		BBB00040 /* RadioStationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioStationListView.swift; sourceTree = "<group>"; };
 		BBB00041 /* LyricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsView.swift; sourceTree = "<group>"; };
-		1D861D342F110D01007D0C6B /* RemotePlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemotePlayerView.swift; sourceTree = "<group>"; };
 		BBB00042 /* PodcastGridItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastGridItem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -520,7 +518,6 @@
 				BBB00039 /* PodcastDetailView.swift */,
 				BBB00040 /* RadioStationListView.swift */,
 				BBB00041 /* LyricsView.swift */,
-				1D861D342F110D01007D0C6B /* RemotePlayerView.swift */,
 				EEE00007 /* Components */,
 			);
 			path = Views;
@@ -658,7 +655,6 @@
 				AAA00040 /* RadioStationListView.swift in Sources */,
 				AAA00041 /* LyricsView.swift in Sources */,
 				AAA00042 /* PodcastGridItem.swift in Sources */,
-				1D861D352F110D01007D0C6C /* RemotePlayerView.swift in Sources */,
 
 			);
 			runOnlyForDeploymentPostprocessing = 0;
