@@ -146,14 +146,18 @@ class PlayerViewModel: ObservableObject {
         }
     }
 
-    func connectToServer() {
+    func connectToServer(force: Bool = false) {
         guard !serverURL.isEmpty else {
             showingServerSetup = true
             return
         }
 
-        if isConnected || isConnecting || isAuthenticating {
+        if !force, isConnected || isConnecting || isAuthenticating {
             return
+        }
+
+        if force {
+            client.disconnect()
         }
 
         let url = normalizeServerURL(serverURL)

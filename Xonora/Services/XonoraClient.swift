@@ -32,6 +32,7 @@ class XonoraClient: NSObject, ObservableObject {
     private let authMessageId = "auth-handshake"
     private let hiddenPlayerIdsKey = "hiddenPlayerIds"
     private var pingTimer: Timer?
+    private var playerPollingTask: Task<Void, Never>?
     private var connectionTimeoutTask: Task<Void, Never>?
     private var authTimeoutTask: Task<Void, Never>?
     private var reconnectTask: Task<Void, Never>?
@@ -133,6 +134,7 @@ class XonoraClient: NSObject, ObservableObject {
     func disconnect() {
         stopReconnecting()
         stopPingTimer()
+        stopPlayerPolling()
         cancelConnectionTimeout()
         cancelAuthTimeout()
         reconnectTask?.cancel()
@@ -191,6 +193,24 @@ class XonoraClient: NSObject, ObservableObject {
         pingTimer = nil
     }
 
+    private func startPlayerPolling() {
+        stopPlayerPolling()
+        playerPollingTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                guard let self = self, !Task.isCancelled else { break }
+                if self.connectionState == .connected {
+                    await self.fetchPlayers()
+                }
+            }
+        }
+    }
+
+    private func stopPlayerPolling() {
+        playerPollingTask?.cancel()
+        playerPollingTask = nil
+    }
+
     private func sendPing() {
         webSocketTask?.sendPing { _ in }
     }
@@ -230,6 +250,7 @@ class XonoraClient: NSObject, ObservableObject {
                     appLog("Authenticated successfully", level: .info, category: "XonoraClient")
                     connectionState = .connected
                     reconnectAttempts = 0
+                    startPlayerPolling()
                     if let token = result["token"] as? String {
                         self.accessToken = token
                         KeychainHelper.shared.saveToken(token)
@@ -273,6 +294,7 @@ class XonoraClient: NSObject, ObservableObject {
                     cancelAuthTimeout()
                     connectionState = .connected
                     reconnectAttempts = 0
+                    startPlayerPolling()
                     await fetchPlayers()
                 }
                 return
