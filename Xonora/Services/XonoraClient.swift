@@ -256,7 +256,6 @@ class XonoraClient: NSObject, ObservableObject {
                         KeychainHelper.shared.saveToken(token)
                         NotificationCenter.default.post(name: .tokenRefreshed, object: nil, userInfo: ["token": token])
                     }
-                    Task { await self.setUILocale() }
                     await fetchPlayers()
                 } else {
                     cancelAuthTimeout()
@@ -296,7 +295,6 @@ class XonoraClient: NSObject, ObservableObject {
                     connectionState = .connected
                     reconnectAttempts = 0
                     startPlayerPolling()
-                    Task { await self.setUILocale() }
                     await fetchPlayers()
                 }
                 return
@@ -325,13 +323,13 @@ class XonoraClient: NSObject, ObservableObject {
         }
     }
 
-    private func authenticate() async {
+     private func authenticate() async {
         let authArgs: [String: Any]
         if usePasswordAuth, let user = username?.trimmingCharacters(in: .whitespacesAndNewlines), !user.isEmpty,
            let pass = password?.trimmingCharacters(in: .whitespacesAndNewlines), !pass.isEmpty {
-            authArgs = ["username": user, "password": pass]
+            authArgs = ["username": user, "password": pass, "locale": preferredLocale()]
         } else if let token = accessToken?.trimmingCharacters(in: .whitespacesAndNewlines), !token.isEmpty {
-            authArgs = ["token": token]
+            authArgs = ["token": token, "locale": preferredLocale()]
         } else {
             return
         }
@@ -745,14 +743,12 @@ class XonoraClient: NSObject, ObservableObject {
 
     // MARK: - Provider Management
 
-    private func setUILocale() async {
+    private func preferredLocale() -> String {
         let pref = Bundle.main.preferredLocalizations.first ?? "en"
-        let maLocale: String
-        if pref.starts(with: "zh") { maLocale = "zh_CN" }
-        else if pref.starts(with: "ja") { maLocale = "ja" }
-        else if pref.starts(with: "ko") { maLocale = "ko" }
-        else { maLocale = pref.replacingOccurrences(of: "-", with: "_") }
-        _ = try? await sendCommand("translations/set_locale", args: ["locale": maLocale])
+        if pref.starts(with: "zh") { return "zh_CN" }
+        if pref.starts(with: "ja") { return "ja" }
+        if pref.starts(with: "ko") { return "ko" }
+        return pref.replacingOccurrences(of: "-", with: "_")
     }
 
     func getProviderManifests() async throws -> [ProviderManifest] {
