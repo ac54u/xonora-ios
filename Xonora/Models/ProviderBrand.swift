@@ -8,6 +8,15 @@ enum ProviderBrand: String, CaseIterable {
     case sendspin, builtin, test, unknown
     case web, universalPlayer
     case neteasecloudmusic = "netease"
+    case loudnessAnalysis = "loudness_analysis"
+    case localAudioOut = "local_audio_out"
+    case itunesArtwork = "itunes_artwork"
+    case coverArtArchive = "cover_art_archive"
+    case fanartTV, syncGroupPlayer = "sync_group_player"
+    case theAudioDB = "theaudiodb"
+    case wikipedia, musicbrainz, lrclib
+    case party_mode = "party"
+    case lastfm
 
     init(provider: String, type: String = "", name: String = "") {
         let lower = provider.lowercased()
@@ -21,8 +30,11 @@ enum ProviderBrand: String, CaseIterable {
         else if lower == "slimproto" { self = .slimproto }
         else if lower == "sonos_s1" || lower == "sonos_s2" { self = .sonos }
         else if lower == "squeezebox" { self = .squeezebox }
-        else if lower == "universal_player" { self = .universalPlayer }
+        else if lower == "universal_player" || lower == "music_assistant" { self = .universalPlayer }
         else if lower == "neteasecloudmusic" || lower == "netease" { self = .neteasecloudmusic }
+        else if lower == "fanart.tv" || lower == "fanart_tv" { self = .fanartTV }
+        else if lower == "last.fm" || lower == "lastfm" { self = .lastfm }
+        else if lower == "theaudiodb" { self = .theAudioDB }
         else { self = ProviderBrand(rawValue: lower) ?? .unknown }
     }
 
@@ -56,6 +68,18 @@ enum ProviderBrand: String, CaseIterable {
         case .web: return "Web"
         case .universalPlayer: return "Music Assistant"
         case .neteasecloudmusic: return "NetEase Cloud Music"
+        case .loudnessAnalysis: return "Loudness Analysis"
+        case .localAudioOut: return "Local Audio"
+        case .itunesArtwork: return "iTunes Artwork"
+        case .coverArtArchive: return "Cover Art Archive"
+        case .fanartTV: return "fanart.tv"
+        case .syncGroupPlayer: return "Sync Group"
+        case .theAudioDB: return "TheAudioDB"
+        case .wikipedia: return "Wikipedia"
+        case .musicbrainz: return "MusicBrainz"
+        case .lrclib: return "LRCLIB"
+        case .party_mode: return "Party Mode"
+        case .lastfm: return "Last.fm"
         }
     }
 
@@ -87,6 +111,18 @@ enum ProviderBrand: String, CaseIterable {
         case .web: return "globe"
         case .universalPlayer: return "hifispeaker"
         case .neteasecloudmusic: return "music.note.list"
+        case .loudnessAnalysis: return "waveform.path.ecg"
+        case .localAudioOut: return "cable.connector"
+        case .itunesArtwork: return "photo.artframe"
+        case .coverArtArchive: return "photo.on.rectangle"
+        case .fanartTV: return "photo.tv"
+        case .syncGroupPlayer: return "speaker.wave.2.fill"
+        case .theAudioDB: return "music.note.list"
+        case .wikipedia: return "book.pages"
+        case .musicbrainz: return "brain.head.profile"
+        case .lrclib: return "text.quote"
+        case .party_mode: return "music.note.house"
+        case .lastfm: return "dot.radiowaves.left.and.right"
         }
     }
 
@@ -119,6 +155,12 @@ enum ProviderBrand: String, CaseIterable {
         case .universalPlayer: return .accentColor
         case .unknown: return .gray
         case .neteasecloudmusic: return Color(red: 0.86, green: 0.08, blue: 0.08)
+        case .loudnessAnalysis, .localAudioOut, .syncGroupPlayer: return .accentColor
+        case .itunesArtwork, .coverArtArchive, .fanartTV: return Color(red: 0.2, green: 0.5, blue: 0.9)
+        case .theAudioDB, .wikipedia, .musicbrainz: return Color(red: 0.4, green: 0.4, blue: 0.8)
+        case .lrclib: return Color(red: 0.5, green: 0.3, blue: 0.8)
+        case .party_mode: return .orange
+        case .lastfm: return Color(red: 0.82, green: 0.1, blue: 0.1)
         }
 }
 }
