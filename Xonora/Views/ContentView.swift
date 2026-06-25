@@ -1122,6 +1122,7 @@ struct MiniPlayerView: View {
     @State private var rotationTimer: Timer?
     @State private var marqueeOffset: CGFloat = 0
     @State private var textWidth: CGFloat = 0
+    @State private var showingQueue = false
     private let marqueeSpeed: CGFloat = 50
 
     var body: some View {
@@ -1140,19 +1141,31 @@ struct MiniPlayerView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .clipped()
 
-            Button {
-                playerManager.togglePlayPause()
-            } label: {
-                Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .frame(width: 32, height: 32)
-                    .background(Circle().fill(.ultraThinMaterial))
+            HStack(spacing: 6) {
+                Button {
+                    playerManager.togglePlayPause()
+                } label: {
+                    Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(.ultraThinMaterial))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showingQueue = true
+                } label: {
+                    Image(systemName: "music.note.list")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.leading, 6)
-        .padding(.trailing, 10)
+        .padding(.trailing, 8)
         .frame(height: 54)
         .background(.regularMaterial)
         .clipShape(Capsule())
@@ -1166,6 +1179,55 @@ struct MiniPlayerView: View {
             if playing { startRotation() } else { stopRotation() }
         }
         .onChange(of: displayText) { _ in updateMarquee() }
+        .sheet(isPresented: $showingQueue) {
+            queueSheet
+        }
+    }
+
+    private var queueSheet: some View {
+        NavigationStack {
+            if playerManager.queue.isEmpty {
+                ContentUnavailableView(
+                    "No Queue",
+                    systemImage: "music.note.list",
+                    description: Text("Add some songs from your library to start the queue.")
+                )
+            } else {
+                List {
+                    ForEach(Array(playerManager.queue.enumerated()), id: \.element.id) { index, item in
+                        HStack(spacing: 12) {
+                            CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: item.imageUrl, size: .thumbnail)) {
+                                Color.clear
+                            }
+                            .frame(width: 40, height: 40)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.name)
+                                    .font(.body)
+                                    .lineLimit(1)
+                                Text(item.artist ?? "")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .onDelete { offsets in
+                        for index in offsets { playerManager.removeFromQueue(at: index) }
+                    }
+                }
+                .navigationTitle("Queue")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") { showingQueue = false }
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 
     private var displayText: String {
