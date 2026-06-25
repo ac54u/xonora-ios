@@ -1153,7 +1153,7 @@ struct MiniPlayerView: View {
                         .fixedSize()
                 }
                 .offset(x: marqueeOffset)
-                .frame(maxWidth: .infinity, alignment: containerWidth > 0 && textWidth <= containerWidth ? .center : .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: containerWidth > 0 && textWidth <= containerWidth ? .center : .leading)
             }
             .mask(
                 LinearGradient(
