@@ -48,6 +48,11 @@
 		AAA00040 /* RadioStationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00040 /* RadioStationListView.swift */; };
 		AAA00041 /* LyricsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00041 /* LyricsView.swift */; };
 		AAA00042 /* PodcastGridItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00042 /* PodcastGridItem.swift */; };
+		AAA00043 /* ProviderModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00043 /* ProviderModels.swift */; };
+		AAA00044 /* ProviderManagementViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00044 /* ProviderManagementViewModel.swift */; };
+		AAA00045 /* ProviderManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00045 /* ProviderManagementView.swift */; };
+		AAA00046 /* AddProviderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00046 /* AddProviderView.swift */; };
+		AAA00047 /* ProviderConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB00047 /* ProviderConfigView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -158,6 +163,11 @@
 		BBB00040 /* RadioStationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioStationListView.swift; sourceTree = "<group>"; };
 		BBB00041 /* LyricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsView.swift; sourceTree = "<group>"; };
 		BBB00042 /* PodcastGridItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastGridItem.swift; sourceTree = "<group>"; };
+		BBB00043 /* ProviderModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderModels.swift; sourceTree = "<group>"; };
+		BBB00044 /* ProviderManagementViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderManagementViewModel.swift; sourceTree = "<group>"; };
+		BBB00045 /* ProviderManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderManagementView.swift; sourceTree = "<group>"; };
+		BBB00046 /* AddProviderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddProviderView.swift; sourceTree = "<group>"; };
+		BBB00047 /* ProviderConfigView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderConfigView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -487,6 +497,7 @@
 				BBB00035 /* Podcast.swift */,
 				BBB00036 /* RadioStation.swift */,
 				BBB00037 /* Lyric.swift */,
+				BBB00043 /* ProviderModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -518,6 +529,9 @@
 				BBB00039 /* PodcastDetailView.swift */,
 				BBB00040 /* RadioStationListView.swift */,
 				BBB00041 /* LyricsView.swift */,
+				BBB00045 /* ProviderManagementView.swift */,
+				BBB00046 /* AddProviderView.swift */,
+				BBB00047 /* ProviderConfigView.swift */,
 				EEE00007 /* Components */,
 			);
 			path = Views;
@@ -540,6 +554,7 @@
 			children = (
 				BBB00016 /* LibraryViewModel.swift */,
 				BBB00017 /* PlayerViewModel.swift */,
+				BBB00044 /* ProviderManagementViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -654,6 +669,11 @@
 				AAA00039 /* PodcastDetailView.swift in Sources */,
 				AAA00040 /* RadioStationListView.swift in Sources */,
 				AAA00041 /* LyricsView.swift in Sources */,
+				AAA00043 /* ProviderModels.swift in Sources */,
+				AAA00044 /* ProviderManagementViewModel.swift in Sources */,
+				AAA00045 /* ProviderManagementView.swift in Sources */,
+				AAA00046 /* AddProviderView.swift in Sources */,
+				AAA00047 /* ProviderConfigView.swift in Sources */,
 				AAA00042 /* PodcastGridItem.swift in Sources */,
 
 			);
