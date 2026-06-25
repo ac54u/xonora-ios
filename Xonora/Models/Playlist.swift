@@ -22,7 +22,7 @@ struct Playlist: Identifiable, Codable, Hashable {
         case "Random Album (from library)":
             return "shuffle"
         case "Random Artist (from library)":
-            return "person.2.shuffle"
+            return "person.2.circle"
         case "Recently added tracks":
             return "clock.badge.plus"
         case "Recently played tracks":
