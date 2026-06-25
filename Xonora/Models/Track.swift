@@ -127,6 +127,7 @@ struct AudioFormat: Codable, Hashable {
 
 struct MediaItemMetadata: Codable, Hashable {
     let images: [MediaItemImage]?
+    let genres: [String]?
 }
 
 struct MediaItemImage: Codable, Hashable {
@@ -145,6 +146,10 @@ extension MediaItemMetadata {
     var thumbnailImageUrl: String? {
         let img = images?.first(where: { $0.type == "thumb" }) ?? images?.first
         return img?.proxyId ?? img?.path
+    }
+
+    var genre: String? {
+        genres?.first
     }
 }
 

@@ -678,6 +678,11 @@ class XonoraClient: NSObject, ObservableObject {
         _ = try await sendCommand("player_queues/seek", args: ["queue_id": playerId, "position": Int(position)])
     }
 
+    func skip(seconds: Int) async throws {
+        guard let playerId = currentPlayer?.playerId else { return }
+        _ = try await sendCommand("player_queues/skip", args: ["queue_id": playerId, "seconds": seconds])
+    }
+
     func switchPlayer(playerId: String) async {
         if let player = players.first(where: { $0.playerId == playerId }) {
             currentPlayer = player
@@ -734,6 +739,46 @@ class XonoraClient: NSObject, ObservableObject {
     func toggleItemFavorite(uri: String, favorite: Bool) async throws {
         let command = favorite ? "music/favorites/add_item" : "music/favorites/remove_item"
         _ = try await sendCommand(command, args: ["item": uri])
+    }
+
+    // MARK: - Provider Management
+
+    func getProviderManifests() async throws -> [ProviderManifest] {
+        let data = try await sendCommand("providers/manifests")
+        return (try? JSONDecoder().decode([ProviderManifest].self, from: data)) ?? []
+    }
+
+    func getProviderConfigs() async throws -> [ProviderConfig] {
+        let data = try await sendCommand("config/providers", args: ["include_values": false])
+        return (try? JSONDecoder().decode([ProviderConfig].self, from: data)) ?? []
+    }
+
+    func getProviderInstances() async throws -> [ProviderInstance] {
+        let data = try await sendCommand("providers")
+        return (try? JSONDecoder().decode([ProviderInstance].self, from: data)) ?? []
+    }
+
+    func getProviderConfigEntries(domain: String, instanceId: String? = nil, action: String? = nil, values: [String: Any]? = nil) async throws -> [ConfigEntry] {
+        var args: [String: Any] = ["provider_domain": domain]
+        if let instanceId = instanceId { args["instance_id"] = instanceId }
+        if let action = action { args["action"] = action }
+        if let values = values { args["values"] = values }
+        let data = try await sendCommand("config/providers/get_entries", args: args)
+        return (try? JSONDecoder().decode([ConfigEntry].self, from: data)) ?? []
+    }
+
+    func saveProviderConfig(domain: String, values: [String: Any], instanceId: String? = nil) async throws {
+        var args: [String: Any] = ["provider_domain": domain, "values": values]
+        if let instanceId = instanceId { args["instance_id"] = instanceId }
+        _ = try await sendCommand("config/providers/save", args: args)
+    }
+
+    func removeProviderConfig(instanceId: String) async throws {
+        _ = try await sendCommand("config/providers/remove", args: ["instance_id": instanceId])
+    }
+
+    func reloadProvider(instanceId: String) async throws {
+        _ = try await sendCommand("config/providers/reload", args: ["instance_id": instanceId])
     }
 
     struct PlayableMediaItem {

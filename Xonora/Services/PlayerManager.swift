@@ -175,6 +175,36 @@ class PlayerManager: ObservableObject {
             }
             return .success
         }
+
+        commandCenter.skipForwardCommand.preferredIntervals = [15]
+        commandCenter.skipForwardCommand.addTarget { [weak self] _ in
+            Task { @MainActor in
+                self?.skipForward()
+            }
+            return .success
+        }
+
+        commandCenter.skipBackwardCommand.preferredIntervals = [15]
+        commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
+            Task { @MainActor in
+                self?.skipBackward()
+            }
+            return .success
+        }
+
+        commandCenter.likeCommand.addTarget { [weak self] _ in
+            Task { @MainActor in
+                await self?.setFavorite(true)
+            }
+            return .success
+        }
+
+        commandCenter.dislikeCommand.addTarget { [weak self] _ in
+            Task { @MainActor in
+                await self?.setFavorite(false)
+            }
+            return .success
+        }
     }
 
     // MARK: - Notifications
@@ -646,6 +676,33 @@ class PlayerManager: ObservableObject {
         }
     }
 
+    func skipForward() {
+        Task {
+            try? await XonoraClient.shared.skip(seconds: 15)
+        }
+    }
+
+    func skipBackward() {
+        Task {
+            try? await XonoraClient.shared.skip(seconds: -15)
+        }
+    }
+
+    func setFavorite(_ favorite: Bool) async {
+        guard let track = currentTrack else { return }
+        do {
+            try await XonoraClient.shared.toggleItemFavorite(uri: track.uri, favorite: favorite)
+            await MainActor.run {
+                var updated = track
+                updated.favorite = favorite
+                self.currentTrack = updated
+                self.updateNowPlayingInfo()
+            }
+        } catch {
+            appLog("Failed to set favorite: \(error)", level: .warning, category: "PlayerManager")
+        }
+    }
+
     func setVolume(_ newVolume: Float) {
         volume = newVolume
         if SendspinClient.shared.isConnected {
@@ -846,6 +903,16 @@ class PlayerManager: ObservableObject {
         nowPlayingInfo[MPMediaItemPropertyTitle] = track.name
         nowPlayingInfo[MPMediaItemPropertyArtist] = track.artistNames
         nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = track.album?.name ?? ""
+        nowPlayingInfo[MPMediaItemPropertyAlbumTrackNumber] = track.trackNumber.flatMap { NSNumber(value: $0) }
+        nowPlayingInfo[MPMediaItemPropertyDiscNumber] = track.discNumber.flatMap { NSNumber(value: $0) }
+
+        if let genre = track.metadata?.genre {
+            nowPlayingInfo[MPMediaItemPropertyGenre] = genre
+        }
+
+        if let source = currentSource?.lowercased(), source.contains("radio") {
+            nowPlayingInfo[MPNowPlayingInfoPropertyIsLiveStream] = true
+        }
 
         await MainActor.run {
             nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = self.duration
@@ -853,7 +920,8 @@ class PlayerManager: ObservableObject {
             nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = self.playbackState == .playing ? 1.0 : 0.0
         }
 
-        if track.id != lastTrackId {
+        let trackChanged = track.id != lastTrackId
+        if trackChanged {
             await MainActor.run {
                 self.lastTrackId = track.id
                 self.cachedArtwork = nil
@@ -872,6 +940,9 @@ class PlayerManager: ObservableObject {
                 nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
             }
         }
+
+        let likeState = track.favorite.flatMap { $0 ? NSNumber(value: 1) : NSNumber(value: 0) }
+        nowPlayingInfo[MPMediaItemPropertyLikeState] = likeState
 
         await MainActor.run {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo

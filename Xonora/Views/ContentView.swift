@@ -840,6 +840,18 @@ struct SettingsView: View {
 
                 Section {
                     NavigationLink {
+                        ProviderManagementView()
+                    } label: {
+                        Label("Providers", systemImage: "square.3.layers.3d")
+                    }
+                } header: {
+                    Text("Music Sources")
+                } footer: {
+                    Text("Add, configure, or remove music providers and players.")
+                }
+
+                Section {
+                    NavigationLink {
                         LogView()
                     } label: {
                         Label("Logs", systemImage: "doc.text.magnifyingglass")
