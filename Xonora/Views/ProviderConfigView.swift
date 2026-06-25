@@ -1,59 +1,59 @@
 import SwiftUI
 
-fileprivate let configLabelZH: [String: String] = [
-    "Log level": "日志级别",
-    "API URL": "接口地址",
-    "Username": "用户名",
-    "Password": "密码",
-    "Email": "邮箱",
-    "Host": "主机地址",
-    "Port": "端口",
-    "Quality": "音质",
-    "Language": "语言",
-    "Country code": "国家代码",
-    "Region": "地区",
-    "Path": "路径",
-    "Token": "令牌",
-    "Client ID": "客户端 ID",
-    "Client Secret": "客户端密钥",
-    "Access token": "访问令牌",
-    "Server": "服务器地址",
-    "Rate limit": "请求频率",
-    "Update interval": "更新间隔",
-    "Base URL": "基础地址",
-    "Database path": "数据库路径",
-    "Audio format": "音频格式",
-    "Sample rate": "采样率",
-    "Device name": "设备名称",
-    "Device ID": "设备 ID",
-    "HTTP port": "HTTP 端口",
-    "Sync interval": "同步间隔",
-    "Max retries": "最大重试",
-    "Timeout": "超时",
+fileprivate let configKeyZH: [String: String] = [
+    "log_level": "日志级别",
+    "api_url": "接口地址",
+    "username": "用户名",
+    "password": "密码",
+    "email": "邮箱",
+    "host": "主机地址",
+    "port": "端口",
+    "quality": "音质",
+    "language": "语言",
+    "country_code": "国家代码",
+    "region": "地区",
+    "path": "路径",
+    "token": "令牌",
+    "client_id": "客户端 ID",
+    "client_secret": "客户端密钥",
+    "access_token": "访问令牌",
+    "server": "服务器地址",
+    "rate_limit": "请求频率",
+    "update_interval": "更新间隔",
+    "base_url": "基础地址",
+    "database_path": "数据库路径",
+    "audio_format": "音频格式",
+    "sample_rate": "采样率",
+    "device_name": "设备名称",
+    "device_id": "设备 ID",
+    "http_port": "HTTP 端口",
+    "sync_interval": "同步间隔",
+    "max_retries": "最大重试",
+    "timeout": "超时",
+    "login_cookie": "登录 Cookie",
+    "po_token_url": "PO Token 服务器地址",
+    "sync_artists": "将来源的艺人同步到 Music Assistant",
+    "sync_albums": "将来源的专辑同步到 Music Assistant",
+    "sync_tracks": "将来源的歌曲同步到 Music Assistant",
+    "sync_playlists": "将来源的播放列表同步到 Music Assistant",
+    "sync_podcasts": "将来源的播客同步到 Music Assistant",
+    "sync_back_additions_removals": "同步音乐库的增删",
+    "two_way_sync": "双向同步",
+    "authenticate": "认证",
+    "qq_login": "QQ 登录",
+    "wechat_login": "微信登录",
     "global": "全局",
-    "Login Cookie": "登录 Cookie",
-    "QQ Login": "QQ 登录",
-    "WeChat Login": "微信登录",
-    "Choose QQ or WeChat QR login to start authentication.": "选择 QQ 或微信扫码登录以开始认证。",
-    "Login flow: 1) Click QQ Login or WeChat Login. 2) In the newly opened page, scan with the matching app and confirm. 3) Close the QR page. 4) Click Save.": "登录流程：1) 点击 QQ 登录或微信登录。2) 在新页面中用对应 App 扫码确认。3) 关闭二维码页面。4) 点击保存。",
-    "PO Token Server URL": "PO Token 服务器地址",
-    "Sync Library Artists from this source to Music Assistant": "将来源的艺人同步到 Music Assistant",
-    "Sync Library Albums from this source to Music Assistant": "将来源的专辑同步到 Music Assistant",
-    "Sync Library Tracks from this source to Music Assistant": "将来源的歌曲同步到 Music Assistant",
-    "Sync Library Playlists from this source to Music Assistant": "将来源的播放列表同步到 Music Assistant",
-    "Sync Library Podcasts from this source to Music Assistant": "将来源的播客同步到 Music Assistant",
-    "Sync back library additions/removals": "同步音乐库的增删",
-    "(2-way sync)": "（双向同步）",
-    "Authenticate with Spotify": "通过 Spotify 认证",
-    "This is an unofficial integration that is not affiliated with, supported by, or endorsed by the music service.": "这是一个非官方集成，与音乐服务无关，未获其支持或认可。",
-    "It relies on interfaces that are not officially supported and may stop working at any time. Use of this provider may also be subject to the service's terms of use.": "依赖非官方接口，可能随时停止工作。使用此来源可能需遵守该服务的使用条款。",
-    "You need to authenticate to Spotify. Click the authenticate button below to start the authentication process which will open in a new (popup) window, so make sure to disable any popup blockers.": "你需要认证 Spotify。点击下方认证按钮启动认证流程，该流程将在新窗口打开，请确保禁用弹出窗口拦截。",
-    "Also make sure to perform this action from your local network.": "请确保在本地网络中执行此操作。",
+    "enabled": "启用",
+    "debug": "调试",
+    "verbose": "详细",
+    "warning": "警告",
+    "info": "信息",
+    "error": "错误",
 ]
 
-fileprivate func localizedConfigLabel(_ text: String) -> String {
-    if let zh = configLabelZH[text] { return zh }
-    if let zh = configLabelZH[text.trimmingCharacters(in: .whitespaces).capitalized] { return zh }
+fileprivate func localizedConfigText(_ key: String, _ text: String) -> String {
+    if let zh = configKeyZH[key] { return zh }
+    if let zh = configKeyZH[key.lowercased()] { return zh }
     return text
 }
 
@@ -214,12 +214,12 @@ struct ProviderConfigView: View {
         }
     }
 
-    private func zzLabel(_ text: String) -> String { localizedConfigLabel(text) }
-    private func zzDesc(_ text: String?) -> String? { text.flatMap { localizedConfigLabel($0) } ?? text }
+    private func zzLabel(_ key: String, _ text: String) -> String { localizedConfigText(key, text) }
+    private func zzDesc(_ key: String, _ text: String?) -> String? { text.flatMap { localizedConfigText(key, $0) } ?? text }
 
     @ViewBuilder
     private func configField(for entry: ConfigEntry) -> some View {
-        let label = zzLabel(entry.label)
+        let label = zzLabel(entry.key, entry.label)
         switch entry.type {
         case "boolean":
             Toggle(label, isOn: Binding(
@@ -253,7 +253,7 @@ struct ProviderConfigView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                 }
-                if let desc = zzDesc(entry.description) {
+                if let desc = zzDesc(entry.key, entry.description) {
                     Text(desc)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -280,7 +280,7 @@ struct ProviderConfigView: View {
                     TextField(label, value: binding, format: .number)
                         .keyboardType(.numberPad)
                 }
-                if let desc = zzDesc(entry.description) {
+                if let desc = zzDesc(entry.key, entry.description) {
                     Text(desc)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -297,7 +297,7 @@ struct ProviderConfigView: View {
                 )
                 TextField(label, value: binding, format: .number)
                     .keyboardType(.decimalPad)
-                if let desc = zzDesc(entry.description) {
+                if let desc = zzDesc(entry.key, entry.description) {
                     Text(desc)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -308,7 +308,7 @@ struct ProviderConfigView: View {
             Section {
                 Text(label)
                     .font(.body)
-                if let desc = zzDesc(entry.description) {
+                if let desc = zzDesc(entry.key, entry.description) {
                     Text(desc)
                         .font(.caption)
                         .foregroundColor(.secondary)
