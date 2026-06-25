@@ -47,6 +47,10 @@ class SendspinClient: ObservableObject {
         Task { @MainActor in
             NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [weak self] _ in
                 guard let self = self else { return }
+                // Always resume audio from local ring buffer first — before any
+                // network operations — so playback is instant and gapless.
+                self.resumePlayback()
+                
                 if !self.isConnected && self.lastHost != nil {
                     self.safeLog("[SendspinClient] App foregrounded, checking connection...")
                     // Reset attempts to give it a fresh try
@@ -104,6 +108,8 @@ class SendspinClient: ObservableObject {
             return
         }
 
+        // Preserve the AudioPlayer (with its ring buffer) across reconnect
+        let savedPlayer = client?.detachAudioPlayer()
         disconnectInternal(keepConfig: true)
 
         // Create configuration for the client
@@ -134,6 +140,12 @@ class SendspinClient: ObservableObject {
         )
 
         self.client = client
+
+        // Re-attach the preserved AudioPlayer so its ring buffer survives
+        if let savedPlayer = savedPlayer {
+            client.attachAudioPlayer(savedPlayer)
+            self.safeLog("[SendspinClient] Re-attached existing AudioPlayer with ring buffer")
+        }
 
         // Start listening to events
         eventTask = Task {
