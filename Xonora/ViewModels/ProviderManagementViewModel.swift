@@ -20,13 +20,9 @@ class ProviderManagementViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         do {
-            async let manifestsTask = XonoraClient.shared.getProviderManifests()
-            async let configsTask = XonoraClient.shared.getProviderConfigs()
-            async let instancesTask = XonoraClient.shared.getProviderInstances()
-            let (m, c, i) = try await (manifestsTask, configsTask, instancesTask)
-            manifests = m
-            configs = c
-            instances = i
+            manifests = try await XonoraClient.shared.getProviderManifests()
+            configs = try await XonoraClient.shared.getProviderConfigs()
+            instances = try await XonoraClient.shared.getProviderInstances()
         } catch {
             errorMessage = error.localizedDescription
         }
