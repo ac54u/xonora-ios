@@ -44,26 +44,20 @@ struct ProviderManagementView: View {
                         }
                     }
                 }
-
-                if !viewModel.manifests.isEmpty {
-                    Section {
-                        Button {
-                            showingAddProvider = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundColor(.accentColor)
-                                Text("Add Provider")
-                                Spacer()
-                            }
-                        }
-                    }
-                }
             }
         }
         .navigationTitle("Providers")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if !viewModel.manifests.isEmpty {
+                    Button {
+                        showingAddProvider = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     Task { await viewModel.loadAll() }
