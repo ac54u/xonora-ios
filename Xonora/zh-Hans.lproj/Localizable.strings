@@ -250,3 +250,7 @@
 "%@ removed" = "%@ 已移除";
 "Providers" = "音乐来源";
 "Provider" = "音乐来源";
+"Music Source" = "音乐来源";
+"Player" = "播放器";
+"Plugin" = "插件";
+"Stable" = "正式版";

@@ -60,6 +60,16 @@ struct AddProviderView: View {
         }
     }
 
+    private func typeLabel(_ type: String) -> String {
+        switch type {
+        case "music": return String(localized: "Music Source")
+        case "player": return String(localized: "Player")
+        case "metadata": return String(localized: "Metadata")
+        case "plugin": return String(localized: "Plugin")
+        default: return type
+        }
+    }
+
     private func filtered(_ type: ProviderTypeFilter) -> [ProviderManifest] {
         let list: [ProviderManifest]
         switch type {
@@ -84,10 +94,15 @@ struct AddProviderView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(manifest.name)
                         .font(.body)
-                    Text(manifest.description)
+                    HStack(spacing: 4) {
+                        Text(typeLabel(manifest.type))
+                        if manifest.isStable || manifest.isBeta {
+                            Text("·")
+                            Text(manifest.isStable ? "Stable" : "Beta")
+                        }
+                    }
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .lineLimit(2)
                 }
 
                 Spacer()
