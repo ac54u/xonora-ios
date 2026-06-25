@@ -1,5 +1,5 @@
-// ABOUTME: AVAudioEngine-based audio player with deep-buffer resilience
-// ABOUTME: Maintains 60s ring buffer for seamless background/foreground transitions
+// ABOUTME: AVAudioEngine-based audio player with simple buffer scheduling
+// ABOUTME: Replaces AudioQueue with modern AVAudioEngine for reliable playback
 
 import AVFoundation
 import Accelerate
@@ -27,30 +27,17 @@ public final class AudioPlayer: @unchecked Sendable {
     private let bufferLock = NSLock()
     
     private var chunksInNode = 0
-    
-    // ============================================================
-    // DEEP BUFFER — keeps 60 seconds of PCM in the playerNode so
-    // background/foreground transitions never cause an audible gap.
-    // ============================================================
-    private let maxChunksInNode = 400           // 400 × 150ms = 60 seconds (was 12)
+    private let maxChunksInNode = 12
     private var isPlaybackStarted = false
     private var didFireFirstAudioCallback = false
 
     // Scheduling
     private var scheduleTimer: DispatchSourceTimer?
 
-    // ============================================================
-    // RING BUFFER — preserves PCM data across AudioPlayer stop/start
-    // cycles. Never cleared, only overwritten FIFO when full.
-    // ============================================================
-    private var ringBuffer: [Data] = []
-    private var ringBufferBytes: Int = 0
-    private let ringBufferMaxSeconds: Double = 30.0 // 30 seconds of resilience
-
-    // Configuration
-    private let scheduleChunkSeconds: Double = 0.15  // 150ms chunks
-    private let initialBufferSeconds: Double = 3.0   // 3s initial buffer before first play (was 0.15s)
-    private let schedulerInterval: Double = 0.05     // 50ms check
+    // Configuration - Optimized for low-latency start
+    private let scheduleChunkSeconds: Double = 0.15  // 150ms chunks (was 400ms)
+    private let initialBufferSeconds: Double = 0.15  // 150ms initial buffer before start (was 1.0s)
+    private let schedulerInterval: Double = 0.05     // 50ms check (was 100ms)
 
     // Callback fired once (on audioThread) when the first audio buffer is scheduled to the engine.
     public var onFirstAudioScheduled: (() -> Void)?
@@ -203,7 +190,6 @@ public final class AudioPlayer: @unchecked Sendable {
 
             stopInternal()
 
-            savedCodecHeader = codecHeader
             decoder = try AudioDecoderFactory.create(
                 codec: format.codec,
                 sampleRate: format.sampleRate,
@@ -217,9 +203,7 @@ public final class AudioPlayer: @unchecked Sendable {
 
             setupAudioSession()
             setupEngine(format: format)
-            // Engine is NOT started here — it will be started by scheduleChunk()
-            // when the first audio buffer is actually scheduled to the playerNode.
-            // This avoids playing silence while the initial buffer accumulates.
+            startEngine()
             startScheduleTimer()
 
             _isPlaying = true
@@ -239,33 +223,7 @@ public final class AudioPlayer: @unchecked Sendable {
         bufferLock.lock()
         pcmChunks.append(pcmData)
         totalBufferedBytes += pcmData.count
-        
-        // Also append to the resilience ring buffer (FIFO overwrite when full)
-        ringBuffer.append(pcmData)
-        ringBufferBytes += pcmData.count
-        trimRingBuffer()
         bufferLock.unlock()
-    }
-    
-    /// Trim ring buffer to max duration, dropping oldest data first
-    private func trimRingBuffer() {
-        guard let format = currentFormat else { return }
-        let bytesPerSecond = format.sampleRate * format.channels * (effectiveBitDepth(for: format) / 8)
-        let maxBytes = Int(ringBufferMaxSeconds * Double(bytesPerSecond))
-        
-        while ringBufferBytes > maxBytes && !ringBuffer.isEmpty {
-            let oldest = ringBuffer.removeFirst()
-            ringBufferBytes -= oldest.count
-        }
-    }
-    
-    /// Drain ring buffer content as a single Data blob (thread-safe, called on audioThread)
-    private func drainRingBuffer() -> Data {
-        bufferLock.lock()
-        let allData = ringBuffer.reduce(into: Data()) { $0.append($1) }
-        // Don't clear the ring buffer — keep it for future foreground transitions
-        bufferLock.unlock()
-        return allData
     }
 
     public func stop() {
@@ -286,7 +244,6 @@ public final class AudioPlayer: @unchecked Sendable {
         chunksInNode = 0
         isPlaybackStarted = false
         didFireFirstAudioCallback = false
-        // ringBuffer is NOT cleared — it survives stop/start for seamless resume
         bufferLock.unlock()
 
         _isPlaying = false
@@ -319,64 +276,10 @@ public final class AudioPlayer: @unchecked Sendable {
     public func resume() {
         audioThread.async { [weak self] in
             guard let self = self else { return }
-            
-            // ============================================================
-            // Step 1: Reset scheduled-buffer counter.
-            // During app suspension the engine was stopped; completion
-            // callbacks for previously-scheduled buffers may not have fired.
-            // Resetting forces the scheduler to re-fill from scratch.
-            // ============================================================
-            bufferLock.lock()
-            chunksInNode = 0
-            let hasPendingData = totalBufferedBytes > 0
-            let hasRingData = ringBufferBytes > 0
-            bufferLock.unlock()
-            
-            // ============================================================
-            // Step 2: Immediately drain resilience ring buffer into the
-            // playerNode. This provides seamless audio while the WebSocket
-            // reconnects in the background.
-            // ============================================================
-            if hasRingData {
-                self.scheduleAllRingBufferData()
-            } else if hasPendingData {
-                self.scheduleBufferedAudio()
-            }
-            
-            // ============================================================
-            // Step 3: Restart engine and playback
-            // ============================================================
             if let engine = self.engine, !engine.isRunning {
                 self.startEngine()
             }
             self.playerNode?.play()
-        }
-    }
-    
-    /// Schedule ALL ring buffer data into the playerNode at once.
-    /// Called on audioThread during resume to fill the pipeline instantly.
-    private func scheduleAllRingBufferData() {
-        guard let format = currentFormat else { return }
-        
-        let effectiveBitDepth = self.effectiveBitDepth(for: format)
-        let bytesPerFrame = format.channels * (effectiveBitDepth / 8)
-        let bytesPerSecond = format.sampleRate * bytesPerFrame
-        let chunkBytes = Int(scheduleChunkSeconds * Double(bytesPerSecond))
-        
-        let data = drainRingBuffer()
-        var offset = 0
-        
-        bufferLock.lock()
-        chunksInNode = 0
-        bufferLock.unlock()
-        
-        while offset + chunkBytes <= data.count && chunksInNode < maxChunksInNode {
-            let chunk = data.subdata(in: offset..<offset + chunkBytes)
-            offset += chunkBytes
-            scheduleChunk(chunk, format: format)
-            bufferLock.lock()
-            chunksInNode += 1
-            bufferLock.unlock()
         }
     }
     
@@ -594,22 +497,14 @@ public final class AudioPlayer: @unchecked Sendable {
         case .began:
             playerNode?.pause()
         case .ended:
-            // Always try to resume — even without .shouldResume flag,
-            // because the app's audio session may have been interrupted
-            // by a transient interruption (e.g., Siri, alarm).
-            do {
-                try AVAudioSession.sharedInstance().setActive(true)
-                if engine?.isRunning == false {
-                    try engine?.start()
-                }
-                playerNode?.play()
-            } catch {
-                // If engine failed to restart, rebuild it from ring buffer
-                if let format = currentFormat {
-                    teardownEngine()
-                    setupAudioSession()
-                    setupEngine(format: format)
-                    resume()
+            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+                if options.contains(.shouldResume) {
+                    do {
+                        try AVAudioSession.sharedInstance().setActive(true)
+                        if engine?.isRunning == false { try engine?.start() }
+                        playerNode?.play()
+                    } catch {}
                 }
             }
         @unknown default: break
@@ -624,25 +519,10 @@ public final class AudioPlayer: @unchecked Sendable {
               let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
             return
         }
-        switch reason {
-        case .oldDeviceUnavailable:
-            // Headphones unplugged — pause to avoid speaker blast
+        if reason == .oldDeviceUnavailable {
             playerNode?.pause()
-        case .newDeviceAvailable:
-            // New output available (e.g., Bluetooth connected) — resume if was playing
-            if _isPlaying {
-                playerNode?.play()
-            }
-        default:
-            break
         }
         #endif
-    }
-
-    private var savedCodecHeader: Data?
-
-    internal func setCodecHeader(_ header: Data?) {
-        savedCodecHeader = header
     }
 
     private func handleMediaServicesReset() {
@@ -657,13 +537,13 @@ public final class AudioPlayer: @unchecked Sendable {
                 sampleRate: format.sampleRate,
                 channels: format.channels,
                 bitDepth: format.bitDepth,
-                header: savedCodecHeader
+                header: nil
             )
             currentFormat = savedFormat
-            setupAudioSession()
             setupEngine(format: format)
-            resume()
+            startEngine()
             startScheduleTimer()
+            _isPlaying = true
         }
     }
 }

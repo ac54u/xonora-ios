@@ -114,16 +114,13 @@ public final class SendspinClient {
         self.transport = transport
         self.clockSync = clockSync
 
-        // Create audio player if player role — REUSE existing if available
-        // so the PCM ring buffer survives reconnect cycles
+        // Create audio player if player role
         if roles.contains(.playerV1) {
-            if audioPlayer == nil {
-                let audioPlayer = AudioPlayer()
-                self.audioPlayer = audioPlayer
-                // print("[SendspinKit] Player role initialized")
-            }
-            currentVolume = audioPlayer?.volume ?? 1.0
-            currentMuted = audioPlayer?.muted ?? false
+            let audioPlayer = AudioPlayer()
+            self.audioPlayer = audioPlayer
+            currentVolume = audioPlayer.volume
+            currentMuted = audioPlayer.muted
+            // print("[SendspinKit] Player role initialized")
         }
 
         // Connect WebSocket
@@ -195,22 +192,21 @@ public final class SendspinClient {
         messageLoopTask = nil
         clockSyncTask = nil
 
-        // Pause audio but DO NOT stop or nil out audioPlayer.
-        // This preserves the PCM ring buffer for seamless resume
-        // when the app returns to foreground.
-        audioPlayer?.pause()
+        // Stop audio
+        audioPlayer?.stop()
 
         // Disconnect transport
         await transport?.disconnect()
 
-        // Clean up transport layer only
+        // Clean up
         transport = nil
         clockSync = nil
+        audioPlayer = nil
 
         // Reset player state
         playerState = .synchronized
-        currentVolume = audioPlayer?.volume ?? 1.0
-        currentMuted = audioPlayer?.muted ?? false
+        currentVolume = 1.0
+        currentMuted = false
 
         connectionState = .disconnected
     }
@@ -291,17 +287,6 @@ public final class SendspinClient {
                 for await data in binaryStream {
                     await self.handleBinaryMessage(data)
                 }
-            }
-        }
-        
-        // Both streams finished — the WebSocket was closed (e.g., by system
-        // during app suspension). Update connectionState so the app layer
-        // can detect the dead connection and reconnect on foreground.
-        await MainActor.run { [weak self] in
-            guard let self = self else { return }
-            if self.connectionState == .connected || self.connectionState == .connecting {
-                self.connectionState = .disconnected
-                self.eventsContinuation.yield(.error("Transport disconnected"))
             }
         }
     }
@@ -671,22 +656,6 @@ public final class SendspinClient {
     @MainActor
     public func getPlaybackTime() -> TimeInterval {
         return audioPlayer?.getCurrentTime() ?? 0
-    }
-    
-    /// Detach and return the AudioPlayer so it can be preserved across
-    /// client reconnect cycles (ring buffer survives).
-    @MainActor
-    public func detachAudioPlayer() -> AudioPlayer? {
-        let player = audioPlayer
-        audioPlayer = nil
-        return player
-    }
-    
-    /// Re-attach a previously-detached AudioPlayer so its ring buffer
-    /// and playback state are preserved through a reconnect cycle.
-    @MainActor
-    public func attachAudioPlayer(_ player: AudioPlayer?) {
-        audioPlayer = player
     }
 }
 
