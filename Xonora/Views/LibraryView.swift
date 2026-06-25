@@ -24,11 +24,11 @@ struct LibraryView: View {
         var icon: String {
             switch self {
             case .playlists: return "music.note.list"
-            case .songs: return "music.note"
-            case .albums: return "square.stack.fill"
-            case .artists: return "person.2.fill"
-            case .podcasts: return "antenna.radiowaves.left.and.right"
-            case .radio: return "dot.radiowaves.left.and.right"
+            case .songs: return "music.quarternote.3"
+            case .albums: return "rectangle.stack.fill"
+            case .artists: return "person.2.circle.fill"
+            case .podcasts: return "mic.fill"
+            case .radio: return "radio"
             }
         }
     }
@@ -261,7 +261,7 @@ struct LibraryView: View {
     @ViewBuilder
     private var albumsContent: some View {
         if libraryViewModel.sortedAlbums.isEmpty && !libraryViewModel.isLoading {
-            emptyView("No Albums", icon: "square.stack", message: "Your library is empty. Add some music to get started.")
+            emptyView("No Albums", icon: "rectangle.stack.fill", message: "Your library is empty. Add some music to get started.")
         } else if libraryViewModel.albumViewMode == .grid {
             albumsGrid
         } else {
@@ -369,7 +369,7 @@ struct LibraryView: View {
 
         return LazyVStack(spacing: 0) {
             if sorted.isEmpty && !libraryViewModel.isLoading {
-                emptyView("No Songs", icon: "music.note", message: "Your library has no songs.")
+                emptyView("No Songs", icon: "music.quarternote.3", message: "Your library has no songs.")
             } else {
                 ForEach(keys, id: \.self) { key in
                     Section(header: sectionHeader(key)) {
@@ -505,7 +505,7 @@ struct LibraryView: View {
 
         return LazyVStack(spacing: 0) {
             if sorted.isEmpty && !libraryViewModel.isLoading {
-                emptyView("No Artists", icon: "person.2", message: "Your library is empty.")
+                emptyView("No Artists", icon: "person.2.circle.fill", message: "Your library is empty.")
             } else {
                 ForEach(keys, id: \.self) { key in
                     Section(header: sectionHeader(key)) {
@@ -549,7 +549,7 @@ struct LibraryView: View {
     @ViewBuilder
     private var podcastsContent: some View {
         if libraryViewModel.podcasts.isEmpty && !libraryViewModel.isLoading {
-            emptyView("No Podcasts", icon: "antenna.radiowaves.left.and.right", message: "Your library has no podcasts.")
+            emptyView("No Podcasts", icon: "mic.fill", message: "Your library has no podcasts.")
         } else {
             LazyVStack(spacing: 0) {
                 LazyVGrid(columns: columns, spacing: 20) {
@@ -577,7 +577,7 @@ struct LibraryView: View {
     @ViewBuilder
     private var radioContent: some View {
         if libraryViewModel.radioStations.isEmpty && !libraryViewModel.isLoading {
-            emptyView("No Radio Stations", icon: "dot.radiowaves.left.and.right", message: "Your library has no radio stations.")
+            emptyView("No Radio Stations", icon: "radio", message: "Your library has no radio stations.")
         } else {
             LazyVStack(spacing: 0) {
                 ForEach(libraryViewModel.radioStations) { station in
@@ -586,7 +586,7 @@ struct LibraryView: View {
                             RoundedRectangle(cornerRadius: 6)
                                 .fill(Color.gray.opacity(0.3))
                                 .overlay {
-                                    Image(systemName: "dot.radiowaves.left.and.right")
+                                    Image(systemName: "radio")
                                         .foregroundColor(.gray)
                                 }
                         }
