@@ -357,16 +357,17 @@ struct QueueView: View {
     }
     
     private var playingIndicator: some View {
-        if #available(iOS 17.0, *) {
-            Image(systemName: "waveform")
-                .foregroundColor(.accentColor)
-                .symbolEffect(.variableColor.iterative)
-                .frame(width: 20)
-        } else {
-            Image(systemName: "waveform")
-                .foregroundColor(.accentColor)
-                .frame(width: 20)
+        Group {
+            if #available(iOS 17.0, *) {
+                Image(systemName: "waveform")
+                    .foregroundColor(.accentColor)
+                    .symbolEffect(.variableColor.iterative)
+            } else {
+                Image(systemName: "waveform")
+                    .foregroundColor(.accentColor)
+            }
         }
+        .frame(width: 20)
     }
     
     private func trackThumbnail(for track: Track) -> some View {

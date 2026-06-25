@@ -127,18 +127,19 @@ struct TrackRow: View {
     }
 
     private var playingIndicator: some View {
-        if #available(iOS 17.0, *) {
-            Image(systemName: "waveform")
-                .font(.caption)
-                .foregroundColor(.accentColor)
-                .frame(width: 24)
-                .symbolEffect(.variableColor.iterative)
-        } else {
-            Image(systemName: "waveform")
-                .font(.caption)
-                .foregroundColor(.accentColor)
-                .frame(width: 24)
+        Group {
+            if #available(iOS 17.0, *) {
+                Image(systemName: "waveform")
+                    .font(.caption)
+                    .foregroundColor(.accentColor)
+                    .symbolEffect(.variableColor.iterative)
+            } else {
+                Image(systemName: "waveform")
+                    .font(.caption)
+                    .foregroundColor(.accentColor)
+            }
         }
+        .frame(width: 24)
     }
 }
 
