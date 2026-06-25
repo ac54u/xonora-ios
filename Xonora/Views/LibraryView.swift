@@ -46,7 +46,7 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                if (libraryViewModel.isLoading || isInitialLoad) && libraryViewModel.albums.isEmpty {
+                if libraryViewModel.isLoading && libraryViewModel.albums.isEmpty && libraryViewModel.tracks.isEmpty && libraryViewModel.playlists.isEmpty {
                     VStack {
                         Spacer()
                         ProgressView("Loading Library...")

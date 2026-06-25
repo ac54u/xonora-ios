@@ -1206,7 +1206,7 @@ struct MiniPlayerView: View {
                                 Text(item.name)
                                     .font(.body)
                                     .lineLimit(1)
-                                Text(item.artist ?? "")
+                                Text(item.artistNames)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                     .lineLimit(1)
