@@ -13,6 +13,28 @@ struct Playlist: Identifiable, Codable, Hashable {
 
     var imageUrl: String? { metadata?.thumbnailImageUrl }
 
+    var icon: String {
+        switch name {
+        case "All favorited tracks":
+            return "heart.fill"
+        case "Infinite Mix (favorites)", "Infinite Mix (library)":
+            return "infinity"
+        case "Random Album (from library)":
+            return "shuffle"
+        case "Random Artist (from library)":
+            return "person.2.shuffle"
+        case "Recently added tracks":
+            return "clock.badge.plus"
+        case "Recently played tracks":
+            return "clock.arrow.circlepath"
+        default:
+            if name.range(of: #"^\d+ Random tracks \(from library\)$"#, options: .regularExpression) != nil {
+                return "dice"
+            }
+            return "music.note.list"
+        }
+    }
+
     /// The Music Assistant "builtin" provider generates these system playlists with
     /// hardcoded English names regardless of the app's locale. Map the known ones to
     /// localized strings; everything else (user playlists) is shown verbatim.

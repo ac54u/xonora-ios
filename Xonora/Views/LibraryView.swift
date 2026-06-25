@@ -444,7 +444,7 @@ struct LibraryView: View {
                             RoundedRectangle(cornerRadius: 6)
                                 .fill(Color.xonoraGradient)
                                 .overlay {
-                                    Image(systemName: "music.note.list")
+                                    Image(systemName: playlist.icon)
                                         .foregroundColor(.white.opacity(0.85))
                                 }
                         }

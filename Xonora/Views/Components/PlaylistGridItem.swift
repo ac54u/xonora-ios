@@ -33,7 +33,7 @@ struct PlaylistGridItem: View {
         Rectangle()
             .fill(Color.xonoraGradient)
             .overlay {
-                Image(systemName: "music.note.list")
+                Image(systemName: playlist.icon)
                     .font(.largeTitle)
                     .foregroundColor(.white.opacity(0.85))
             }
