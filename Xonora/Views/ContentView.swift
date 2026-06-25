@@ -1153,14 +1153,14 @@ struct MiniPlayerView: View {
                         .fixedSize()
                 }
                 .offset(x: marqueeOffset)
+                .frame(maxWidth: .infinity, alignment: containerWidth > 0 && textWidth <= containerWidth ? .center : .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .center)
             .mask(
                 LinearGradient(
                     gradient: Gradient(stops: [
                         .init(color: .clear, location: 0),
-                        .init(color: .black, location: 0.04),
-                        .init(color: .black, location: 0.96),
+                        .init(color: .black, location: 0.06),
+                        .init(color: .black, location: 0.94),
                         .init(color: .clear, location: 1)
                     ]),
                     startPoint: .leading,
