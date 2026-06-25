@@ -236,6 +236,7 @@
 "Loading configuration..." = "正在加载配置...";
 "Reload Provider" = "重新加载来源";
 "Search providers..." = "搜索来源...";
+"Connect to a server to browse available providers." = "请先连接服务器以浏览可用的来源。";
 "Players" = "播放器";
 "Metadata" = "元数据";
 "Plugins" = "插件";

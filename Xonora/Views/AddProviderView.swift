@@ -49,6 +49,15 @@ struct AddProviderView: View {
                 }
             }
         }
+        .overlay {
+            if viewModel.manifests.isEmpty {
+                ContentUnavailableView(
+                    "No Providers",
+                    systemImage: "square.3.layers.3d",
+                    description: Text("Connect to a server to browse available providers.")
+                )
+            }
+        }
     }
 
     private func filtered(_ type: ProviderTypeFilter) -> [ProviderManifest] {
@@ -95,6 +104,7 @@ struct AddProviderView: View {
             }
         }
     }
+
 }
 
 private enum ProviderTypeFilter {

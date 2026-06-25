@@ -50,12 +50,10 @@ struct ProviderManagementView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                if !viewModel.manifests.isEmpty {
-                    Button {
-                        showingAddProvider = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
+                Button {
+                    showingAddProvider = true
+                } label: {
+                    Image(systemName: "plus")
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
