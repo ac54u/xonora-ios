@@ -146,7 +146,6 @@ struct PlaylistDetailView: View {
             ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
                 TrackRow(
                     track: track,
-                    index: index + 1,
                     isPlaying: playerViewModel.playerManager.currentTrack?.id == track.id,
                     onTap: {
                         playerViewModel.playAlbum(tracks, startingAt: index)

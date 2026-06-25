@@ -340,7 +340,9 @@ struct QueueView: View {
     @ViewBuilder
     private func queueRow(for track: Track, at index: Int) -> some View {
         HStack(spacing: 12) {
-            indexOrPlayingIndicator(for: index)
+            if index == playerManager.currentIndex {
+                playingIndicator
+            }
             
             trackThumbnail(for: track)
             
@@ -354,22 +356,15 @@ struct QueueView: View {
         }
     }
     
-    @ViewBuilder
-    private func indexOrPlayingIndicator(for index: Int) -> some View {
-        if index == playerManager.currentIndex {
-            if #available(iOS 17.0, *) {
-                Image(systemName: "waveform")
-                    .foregroundColor(.accentColor)
-                    .symbolEffect(.variableColor.iterative)
-                    .frame(width: 20)
-            } else {
-                Image(systemName: "waveform")
-                    .foregroundColor(.accentColor)
-                    .frame(width: 20)
-            }
+    private var playingIndicator: some View {
+        if #available(iOS 17.0, *) {
+            Image(systemName: "waveform")
+                .foregroundColor(.accentColor)
+                .symbolEffect(.variableColor.iterative)
+                .frame(width: 20)
         } else {
-            Text("\(index + 1)")
-                .foregroundColor(.secondary)
+            Image(systemName: "waveform")
+                .foregroundColor(.accentColor)
                 .frame(width: 20)
         }
     }

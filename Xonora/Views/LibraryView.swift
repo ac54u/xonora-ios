@@ -356,31 +356,20 @@ struct LibraryView: View {
 
     private var songsList: some View {
         let sorted = libraryViewModel.sortedTracks
-        let grouped = Dictionary(grouping: sorted) { track -> String in
-            guard let first = track.name.first else { return "#" }
-            return first.isLetter ? String(first.uppercased()) : "#"
-        }
-        let keys = grouped.keys.sorted()
 
         return LazyVStack(spacing: 0) {
             if sorted.isEmpty && !libraryViewModel.isLoading {
                 emptyView("No Songs", icon: "music.quarternote.3", message: "Your library has no songs.")
             } else {
-                ForEach(keys, id: \.self) { key in
-                    Section(header: sectionHeader(key)) {
-                        ForEach(Array(grouped[key]?.enumerated() ?? [].enumerated()), id: \.element.id) { index, track in
-                            TrackRow(
-                                track: track,
-                                index: index + 1,
-                                showArtwork: true,
-                                isPlaying: playerViewModel.currentTrack?.itemId == track.itemId,
-                                numberFirst: true
-                            ) {
-                                playerViewModel.playTrack(track, fromQueue: libraryViewModel.sortedTracks, sourceName: "Songs")
-                            }
-                            .padding(.horizontal, 12)
-                        }
+                ForEach(sorted) { track in
+                    TrackRow(
+                        track: track,
+                        showArtwork: true,
+                        isPlaying: playerViewModel.currentTrack?.itemId == track.itemId
+                    ) {
+                        playerViewModel.playTrack(track, fromQueue: libraryViewModel.sortedTracks, sourceName: "Songs")
                     }
+                    .padding(.horizontal, 12)
                 }
                 if libraryViewModel.tracks.count < libraryViewModel.songTotal {
                     ProgressView()
@@ -487,19 +476,12 @@ struct LibraryView: View {
 
     private var artistsList: some View {
         let sorted = libraryViewModel.sortedArtists
-        let grouped = Dictionary(grouping: sorted) { artist -> String in
-            guard let first = artist.name.first else { return "#" }
-            return first.isLetter ? String(first.uppercased()) : "#"
-        }
-        let keys = grouped.keys.sorted()
 
         return LazyVStack(spacing: 0) {
             if sorted.isEmpty && !libraryViewModel.isLoading {
                 emptyView("No Artists", icon: "person.2.circle.fill", message: "Your library is empty.")
             } else {
-                ForEach(keys, id: \.self) { key in
-                    Section(header: sectionHeader(key)) {
-                        ForEach(grouped[key] ?? []) { artist in
+                ForEach(sorted) { artist in
                             NavigationLink(destination: ArtistDetailView(artist: artist)) {
                                 HStack(spacing: 12) {
                                     CachedAsyncImage(url: XonoraClient.shared.getImageURL(for: artist.imageUrl, size: .thumbnail)) {
@@ -522,7 +504,6 @@ struct LibraryView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                }
                 if libraryViewModel.artists.count < libraryViewModel.artistTotal {
                     ProgressView()
                         .frame(maxWidth: .infinity).padding()
@@ -635,17 +616,6 @@ struct LibraryView: View {
             favorite: station.favorite
         )
         playerViewModel.playTrack(track, sourceName: "Radio")
-    }
-
-    private func sectionHeader(_ key: String) -> some View {
-        Text(key)
-            .font(.caption)
-            .fontWeight(.bold)
-            .foregroundColor(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 4)
-            .background(Color(UIColor.systemGroupedBackground))
     }
 
     private func emptyView(_ title: LocalizedStringKey, icon: String, message: LocalizedStringKey) -> some View {

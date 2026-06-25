@@ -3,18 +3,14 @@ import SwiftUI
 struct TrackRow: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     let track: Track
-    let index: Int?
     let showArtwork: Bool
     let isPlaying: Bool
-    let numberFirst: Bool
     let onTap: () -> Void
 
-    init(track: Track, index: Int? = nil, showArtwork: Bool = false, isPlaying: Bool = false, numberFirst: Bool = false, onTap: @escaping () -> Void) {
+    init(track: Track, showArtwork: Bool = false, isPlaying: Bool = false, onTap: @escaping () -> Void) {
         self.track = track
-        self.index = index
         self.showArtwork = showArtwork
         self.isPlaying = isPlaying
-        self.numberFirst = numberFirst
         self.onTap = onTap
     }
 
@@ -26,8 +22,8 @@ struct TrackRow: View {
             // Tappable content area: number / artwork / info / duration → onTap (play).
             Button(action: onTap) {
                 HStack(spacing: 12) {
-                    if numberFirst, let index = index {
-                        trackIndicator(index: index)
+                    if isPlaying {
+                        playingIndicator
                     }
 
                     if showArtwork {
@@ -37,10 +33,6 @@ struct TrackRow: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 44, height: 44)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
-
-                    if !numberFirst, let index = index {
-                        trackIndicator(index: index)
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -134,25 +126,17 @@ struct TrackRow: View {
         .padding(.vertical, 8)
     }
 
-    @ViewBuilder
-    private func trackIndicator(index: Int) -> some View {
-        if isPlaying {
-            if #available(iOS 17.0, *) {
-                Image(systemName: "waveform")
-                    .font(.caption)
-                    .foregroundColor(.accentColor)
-                    .frame(width: 24)
-                    .symbolEffect(.variableColor.iterative)
-            } else {
-                Image(systemName: "waveform")
-                    .font(.caption)
-                    .foregroundColor(.accentColor)
-                    .frame(width: 24)
-            }
+    private var playingIndicator: some View {
+        if #available(iOS 17.0, *) {
+            Image(systemName: "waveform")
+                .font(.caption)
+                .foregroundColor(.accentColor)
+                .frame(width: 24)
+                .symbolEffect(.variableColor.iterative)
         } else {
-            Text("\(index)")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            Image(systemName: "waveform")
+                .font(.caption)
+                .foregroundColor(.accentColor)
                 .frame(width: 24)
         }
     }
@@ -176,7 +160,7 @@ struct TrackRow_Previews: PreviewProvider {
                     metadata: nil,
                     providerMappings: nil
                 ),
-                index: 1,
+                showArtwork: true,
                 isPlaying: false,
                 onTap: {}
             )
@@ -196,7 +180,7 @@ struct TrackRow_Previews: PreviewProvider {
                     metadata: nil,
                     providerMappings: nil
                 ),
-                index: 2,
+                showArtwork: true,
                 isPlaying: true,
                 onTap: {}
             )

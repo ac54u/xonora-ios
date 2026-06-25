@@ -101,13 +101,11 @@ struct ArtistDetailView: View {
                 .fontWeight(.bold)
                 .padding(.horizontal)
 
-            ForEach(Array(tracks.prefix(5).enumerated()), id: \.element.id) { index, track in
+            ForEach(tracks.prefix(5)) { track in
                 TrackRow(
                     track: track,
-                    index: index + 1,
                     showArtwork: true,
-                    isPlaying: playerViewModel.currentTrack?.id == track.id,
-                    numberFirst: true
+                    isPlaying: playerViewModel.currentTrack?.id == track.id
                 ) {
                     Task {
                         // Play artist tracks starting from this one
@@ -120,13 +118,11 @@ struct ArtistDetailView: View {
             if tracks.count > 5 {
                 NavigationLink("See all songs") {
                     List {
-                        ForEach(Array(tracks.enumerated()), id: \.element.id) { index, track in
+                        ForEach(tracks) { track in
                             TrackRow(
                                 track: track,
-                                index: index + 1,
                                 showArtwork: true,
-                                isPlaying: playerViewModel.currentTrack?.id == track.id,
-                                numberFirst: true
+                                isPlaying: playerViewModel.currentTrack?.id == track.id
                             ) {
                                 Task {
                                     playerViewModel.playTrack(track, fromQueue: tracks, sourceName: artist.name)
