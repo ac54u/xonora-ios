@@ -7,6 +7,7 @@ enum ProviderBrand: String, CaseIterable {
     case airplay, chromecast, dlna, sonos, squeezebox, snapcast, slimproto = "slimproto"
     case sendspin, builtin, test, unknown
     case web, universalPlayer
+    case neteasecloudmusic = "netease"
 
     init(provider: String, type: String = "", name: String = "") {
         let lower = provider.lowercased()
@@ -21,6 +22,7 @@ enum ProviderBrand: String, CaseIterable {
         else if lower == "sonos_s1" || lower == "sonos_s2" { self = .sonos }
         else if lower == "squeezebox" { self = .squeezebox }
         else if lower == "universal_player" { self = .universalPlayer }
+        else if lower == "neteasecloudmusic" || lower == "netease" { self = .neteasecloudmusic }
         else { self = ProviderBrand(rawValue: lower) ?? .unknown }
     }
 
@@ -53,6 +55,7 @@ enum ProviderBrand: String, CaseIterable {
         case .unknown: return "Unknown"
         case .web: return "Web"
         case .universalPlayer: return "Music Assistant"
+        case .neteasecloudmusic: return "NetEase Cloud Music"
         }
     }
 
@@ -83,6 +86,7 @@ enum ProviderBrand: String, CaseIterable {
         case .unknown: return "questionmark.circle"
         case .web: return "globe"
         case .universalPlayer: return "hifispeaker"
+        case .neteasecloudmusic: return "music.note.list"
         }
     }
 
@@ -114,6 +118,7 @@ enum ProviderBrand: String, CaseIterable {
         case .web: return Color(red: 0.0, green: 0.48, blue: 1.0)
         case .universalPlayer: return .accentColor
         case .unknown: return .gray
+        case .neteasecloudmusic: return Color(red: 0.86, green: 0.08, blue: 0.08)
         }
-    }
+}
 }
