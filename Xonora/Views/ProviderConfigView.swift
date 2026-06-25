@@ -38,6 +38,13 @@ fileprivate let configLabelZH: [String: String] = [
     "Sync Library Tracks from this source to Music Assistant": "将来源的歌曲同步到 Music Assistant",
     "Sync Library Playlists from this source to Music Assistant": "将来源的播放列表同步到 Music Assistant",
     "Sync Library Podcasts from this source to Music Assistant": "将来源的播客同步到 Music Assistant",
+    "Sync back library additions/removals": "同步音乐库的增删",
+    "(2-way sync)": "（双向同步）",
+    "Authenticate with Spotify": "通过 Spotify 认证",
+    "This is an unofficial integration that is not affiliated with, supported by, or endorsed by the music service.": "这是一个非官方集成，与音乐服务无关，未获其支持或认可。",
+    "It relies on interfaces that are not officially supported and may stop working at any time. Use of this provider may also be subject to the service's terms of use.": "依赖非官方接口，可能随时停止工作。使用此来源可能需遵守该服务的使用条款。",
+    "You need to authenticate to Spotify. Click the authenticate button below to start the authentication process which will open in a new (popup) window, so make sure to disable any popup blockers.": "你需要认证 Spotify。点击下方认证按钮启动认证流程，该流程将在新窗口打开，请确保禁用弹出窗口拦截。",
+    "Also make sure to perform this action from your local network.": "请确保在本地网络中执行此操作。",
 ]
 
 fileprivate func localizedConfigLabel(_ text: String) -> String {
