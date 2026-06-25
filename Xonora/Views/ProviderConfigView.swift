@@ -31,6 +31,13 @@ fileprivate let configLabelZH: [String: String] = [
     "Max retries": "最大重试",
     "Timeout": "超时",
     "global": "全局",
+    "Login Cookie": "登录 Cookie",
+    "PO Token Server URL": "PO Token 服务器地址",
+    "Sync Library Artists from this source to Music Assistant": "将来源的艺人同步到 Music Assistant",
+    "Sync Library Albums from this source to Music Assistant": "将来源的专辑同步到 Music Assistant",
+    "Sync Library Tracks from this source to Music Assistant": "将来源的歌曲同步到 Music Assistant",
+    "Sync Library Playlists from this source to Music Assistant": "将来源的播放列表同步到 Music Assistant",
+    "Sync Library Podcasts from this source to Music Assistant": "将来源的播客同步到 Music Assistant",
 ]
 
 fileprivate func localizedConfigLabel(_ text: String) -> String {
