@@ -1121,6 +1121,7 @@ struct MiniPlayerView: View {
     @State private var rotation: Double = 0
     @State private var rotationTimer: Timer?
     @State private var marqueeOffset: CGFloat = 0
+    @State private var marqueeTimer: Timer?
     @State private var textWidth: CGFloat = 0
     @State private var containerWidth: CGFloat = 0
     @State private var showingQueue = false
@@ -1131,27 +1132,41 @@ struct MiniPlayerView: View {
             artworkView
 
             GeometryReader { container in
-                Text(displayText)
-                    .font(.body.weight(.semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .offset(x: marqueeOffset)
-                    .background(GeometryReader { text in
-                        Color.clear
-                            .onAppear {
-                                textWidth = text.size.width
+                HStack(spacing: 20) {
+                    Text(displayText)
+                        .font(.body.weight(.semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .background(GeometryReader { t1 in
+                            Color.clear.onAppear {
+                                textWidth = t1.size.width
                                 containerWidth = container.size.width
-                                updateMarquee()
+                                scheduleMarquee()
                             }
-                            .onChange(of: displayText) { _, _ in
-                                textWidth = text.size.width
-                                containerWidth = container.size.width
-                                updateMarquee()
-                            }
-                    })
+                        })
+
+                    Text(displayText)
+                        .font(.body.weight(.semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+                .offset(x: marqueeOffset)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .mask(
+                LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black, location: 0.04),
+                        .init(color: .black, location: 0.96),
+                        .init(color: .clear, location: 1)
+                    ]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
             .clipped()
             .gesture(
                 DragGesture(minimumDistance: 20)
@@ -1191,10 +1206,16 @@ struct MiniPlayerView: View {
         .onAppear {
             if playerManager.isPlaying { startRotation() }
         }
+        .onDisappear {
+            stopMarqueeTimer()
+        }
         .onChange(of: playerManager.isPlaying) { playing in
             if playing { startRotation() } else { stopRotation() }
         }
-        .onChange(of: displayText) { _ in updateMarquee() }
+        .onChange(of: displayText) { _, _ in
+            stopMarqueeTimer()
+            marqueeOffset = 0
+        }
         .sheet(isPresented: $showingQueue) {
             queueSheet
         }
@@ -1322,13 +1343,32 @@ struct MiniPlayerView: View {
 
     // MARK: - Marquee
 
-    private func updateMarquee() {
+    private func startMarqueeTimer() {
+        guard textWidth > containerWidth else { return }
+        stopMarqueeTimer()
+        marqueeTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in
+            Task { @MainActor in
+                marqueeOffset -= marqueeSpeed / 60
+                let wrapDistance = textWidth + 20
+                if marqueeOffset <= -wrapDistance {
+                    marqueeOffset += wrapDistance
+                }
+            }
+        }
+    }
+
+    private func stopMarqueeTimer() {
+        marqueeTimer?.invalidate()
+        marqueeTimer = nil
+    }
+
+    private func scheduleMarquee() {
+        stopMarqueeTimer()
         marqueeOffset = 0
-        guard textWidth > 0, containerWidth > 0, textWidth > containerWidth else { return }
-        let distance = textWidth - containerWidth + 20
-        let duration = Double(distance / marqueeSpeed)
-        withAnimation(.linear(duration: max(duration, 2)).delay(1.5).repeatForever(autoreverses: false)) {
-            marqueeOffset = -distance
+        guard textWidth > containerWidth, textWidth > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self else { return }
+            startMarqueeTimer()
         }
     }
 }
