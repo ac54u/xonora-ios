@@ -215,3 +215,37 @@
 "Random Artist (from library)" = "随机艺人（资料库）";
 "Recently added tracks" = "最近添加的歌曲";
 "Recently played tracks" = "最近播放的歌曲";
+
+// Provider Management
+"Music Sources" = "音乐来源";
+"Add, configure, or remove music providers and players." = "添加、配置或移除音乐来源和播放器。";
+"Loading providers..." = "正在加载音乐来源...";
+"Failed to Load" = "加载失败";
+"No Providers" = "无音乐来源";
+"Tap + to add a music source." = "点按 + 添加音乐来源。";
+"Active Providers" = "已启用的来源";
+"Disabled" = "已禁用";
+"Add Provider" = "添加来源";
+"Remove Provider" = "移除来源";
+"Remove" = "移除";
+"Reload" = "重新加载";
+"Reloading..." = "重新加载中...";
+"New Provider" = "新来源";
+"Save" = "保存";
+"Saving..." = "保存中...";
+"Loading configuration..." = "正在加载配置...";
+"Reload Provider" = "重新加载来源";
+"Search providers..." = "搜索来源...";
+"Players" = "播放器";
+"Metadata" = "元数据";
+"Plugins" = "插件";
+"Beta" = "测试版";
+"On" = "已启用";
+"..." = "…";
+"Off" = "已关闭";
+"Auth" = "需验证";
+"Error" = "错误";
+"Remove \"%@\"? This cannot be undone." = "确认移除 \"%@\"？此操作不可撤销。";
+"%@ removed" = "%@ 已移除";
+"Providers" = "音乐来源";
+"Provider" = "音乐来源";

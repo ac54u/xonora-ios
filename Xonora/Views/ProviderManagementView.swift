@@ -89,12 +89,12 @@ struct ProviderManagementView: View {
                 Task {
                     let success = await viewModel.removeProvider(instanceId: config.instanceId)
                     if success {
-                        toastMessage = "\(config.displayName) removed"
+                        toastMessage = String(format: NSLocalizedString("%@ removed", comment: ""), config.displayName)
                     }
                 }
             }
         } message: { config in
-            Text("Remove \"\(config.displayName)\"? This cannot be undone.")
+            Text(String(format: NSLocalizedString("Remove \"%@\"? This cannot be undone.", comment: ""), config.displayName))
         }
         .task { await viewModel.loadAll() }
         .overlay(alignment: .bottom) {
@@ -153,7 +153,7 @@ struct ProviderManagementView: View {
     }
 
     private func statusBadge(_ status: String) -> some View {
-        let (text, color): (String, Color) = switch status {
+        let (key, color): (String, Color) = switch status {
         case "loaded": ("On", .green)
         case "loading": ("...", .orange)
         case "disabled": ("Off", .gray)
@@ -161,7 +161,7 @@ struct ProviderManagementView: View {
         case "error": ("Error", .red)
         default: (status, .secondary)
         }
-        return Text(text)
+        return Text(LocalizedStringKey(key))
             .font(.caption.weight(.medium))
             .foregroundColor(color)
             .padding(.horizontal, 8)
