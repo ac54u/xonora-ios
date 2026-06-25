@@ -428,8 +428,12 @@ class PlayerManager: ObservableObject {
             uris = [track.uri]
         }
 
-        // Tell server to play this track
+        // Wait for previous stream to fully stop before telling server to play,
+        // so the local engine is parked and ready for the new stream.
         Task {
+            // Let stopPlayback settle (pause engine, send state to server)
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+
             do {
                 try await XonoraClient.shared.playMedia(uris: uris)
             } catch {
@@ -443,9 +447,9 @@ class PlayerManager: ObservableObject {
                     appLog("playMedia timed out — waiting for Sendspin to confirm playback", level: .warning, category: "PlayerManager")
                     // Give Sendspin a chance to start streaming. If it starts, the
                     // isBuffering sink above will transition to .playing for us.
-                    try? await Task.sleep(nanoseconds: 10_000_000_000)
+                    try? await Task.sleep(nanoseconds: 5_000_000_000)
                     if await MainActor.run(body: { self.playbackState == .loading }) {
-                        appLog("Sendspin did not start within 10s after timeout", level: .error, category: "PlayerManager")
+                        appLog("Sendspin did not start within 5s after timeout", level: .error, category: "PlayerManager")
                         await MainActor.run {
                             self.playbackState = .error(NSLocalizedString("Failed to start playback: server timeout", comment: "Playback error"))
                         }

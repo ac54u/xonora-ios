@@ -539,6 +539,10 @@ public final class SendspinClient {
 
         do {
             // print("[SendspinKit] 🚀 Starting audio player...")
+            let eventsCont = eventsContinuation
+            audioPlayer.onFirstAudioScheduled = {
+                eventsCont.yield(.playbackActive)
+            }
             try audioPlayer.start(format: format, codecHeader: codecHeader)
             playerState = .synchronized
 
@@ -573,6 +577,10 @@ public final class SendspinClient {
             if let defaultFormat = playerConfig?.supportedFormats.first {
                 do {
                     // print("[SendspinKit] 🚀 Auto-starting audio engine with format: \(defaultFormat)")
+                    let eventsCont = eventsContinuation
+                    audioPlayer.onFirstAudioScheduled = {
+                        eventsCont.yield(.playbackActive)
+                    }
                     try audioPlayer.start(format: defaultFormat, codecHeader: nil)
                     playerState = .synchronized
                     eventsContinuation.yield(.streamStarted(defaultFormat))
@@ -655,6 +663,7 @@ public enum ClientEvent: Sendable {
     case serverConnected(ServerInfo)
     case streamStarted(AudioFormatSpec)
     case streamEnded
+    case playbackActive
     case groupUpdated(GroupInfo)
     case metadataReceived(TrackMetadata)
     case artworkReceived(channel: Int, data: Data)

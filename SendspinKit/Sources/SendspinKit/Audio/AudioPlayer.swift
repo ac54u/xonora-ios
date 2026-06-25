@@ -29,14 +29,18 @@ public final class AudioPlayer: @unchecked Sendable {
     private var chunksInNode = 0
     private let maxChunksInNode = 12
     private var isPlaybackStarted = false
+    private var didFireFirstAudioCallback = false
 
     // Scheduling
     private var scheduleTimer: DispatchSourceTimer?
 
-    // Configuration - Optimized for stability and throughput
-    private let scheduleChunkSeconds: Double = 0.4  // 400ms chunks
-    private let initialBufferSeconds: Double = 1.0  // 1s initial buffer before start
-    private let schedulerInterval: Double = 0.1     // 100ms check
+    // Configuration - Optimized for low-latency start
+    private let scheduleChunkSeconds: Double = 0.15  // 150ms chunks (was 400ms)
+    private let initialBufferSeconds: Double = 0.15  // 150ms initial buffer before start (was 1.0s)
+    private let schedulerInterval: Double = 0.05     // 50ms check (was 100ms)
+
+    // Callback fired once (on audioThread) when the first audio buffer is scheduled to the engine.
+    public var onFirstAudioScheduled: (() -> Void)?
 
     // Dedicated threads
     private let audioThread: DispatchQueue
@@ -195,6 +199,8 @@ public final class AudioPlayer: @unchecked Sendable {
             )
             currentFormat = format
 
+            didFireFirstAudioCallback = false
+
             setupAudioSession()
             setupEngine(format: format)
             startEngine()
@@ -237,6 +243,7 @@ public final class AudioPlayer: @unchecked Sendable {
         totalBufferedBytes = 0
         chunksInNode = 0
         isPlaybackStarted = false
+        didFireFirstAudioCallback = false
         bufferLock.unlock()
 
         _isPlaying = false
@@ -393,6 +400,13 @@ public final class AudioPlayer: @unchecked Sendable {
             self.bufferLock.lock()
             self.chunksInNode = max(0, self.chunksInNode - 1)
             self.bufferLock.unlock()
+        }
+
+        if !didFireFirstAudioCallback {
+            didFireFirstAudioCallback = true
+            DispatchQueue.global().async { [weak self] in
+                self?.onFirstAudioScheduled?()
+            }
         }
     }
 

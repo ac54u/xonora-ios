@@ -20,6 +20,7 @@ class SendspinClient: ObservableObject {
     private var lastPort: UInt16?
     private var lastScheme: String?
     private var lastAccessToken: String?
+    private var playbackActiveTimeoutTask: Task<Void, Never>?
     
     // Reconnection logic
     private var reconnectAttempts = 0
@@ -164,6 +165,7 @@ class SendspinClient: ObservableObject {
     
     private func disconnectInternal(keepConfig: Bool) {
         reconnectTask?.cancel()
+        playbackActiveTimeoutTask?.cancel()
         if !keepConfig {
             reconnectAttempts = maxReconnectAttempts
         }
@@ -219,17 +221,25 @@ class SendspinClient: ObservableObject {
         case .streamStarted(let format):
             // safeLog("[SendspinClient] Stream started: \(format)")
             self.isBuffering = true
-            // Simulate buffering progress for UI
-            Task {
-                for i in 1...10 {
-                    try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
-                    self.bufferProgress = Double(i) / 10.0
-                }
+            self.bufferProgress = 0.0
+            // Safety: if playbackActive never fires, fall back after 3 seconds
+            playbackActiveTimeoutTask?.cancel()
+            playbackActiveTimeoutTask = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard let self, self.isBuffering else { return }
                 self.isBuffering = false
+                self.bufferProgress = 1.0
             }
+
+        case .playbackActive:
+            // safeLog("[SendspinClient] Audio playback active")
+            playbackActiveTimeoutTask?.cancel()
+            self.isBuffering = false
+            self.bufferProgress = 1.0
 
         case .streamEnded:
             // safeLog("[SendspinClient] Stream ended")
+            playbackActiveTimeoutTask?.cancel()
             self.isBuffering = false
             self.bufferProgress = 0.0
 
