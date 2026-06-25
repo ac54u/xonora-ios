@@ -1118,103 +1118,77 @@ struct ContentView_Previews: PreviewProvider {
 struct MiniPlayerView: View {
     @ObservedObject private var playerManager = PlayerManager.shared
     var expandAction: () -> Void
-
-    private var progress: Double {
-        guard playerManager.duration > 0 else { return 0 }
-        let value = min(max(playerManager.currentTime / playerManager.duration, 0), 1)
-        return value
-    }
+    @State private var rotation: Double = 0
+    @State private var rotationTimer: Timer?
+    @State private var marqueeOffset: CGFloat = 0
+    @State private var textWidth: CGFloat = 0
+    private let marqueeSpeed: CGFloat = 50
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Content
-            HStack(spacing: 12) {
-                // Artwork
-                artworkView
+        HStack(spacing: 10) {
+            artworkView
 
-                // Track Info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(playerManager.currentTrack?.name ?? NSLocalizedString("Not Playing", comment: ""))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .lineLimit(1)
+            Text(displayText)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .fixedSize()
+                .offset(x: marqueeOffset)
+                .background(GeometryReader { g in
+                    Color.clear.onAppear { textWidth = g.size.width }
+                })
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .clipped()
 
-                    Text(playerManager.currentTrack?.artistNames ?? "")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                // Controls
-                HStack(spacing: 20) {
-                    Button {
-                        playerManager.previous()
-                    } label: {
-                        Image(systemName: "backward.fill")
-                            .font(.title3)
-                            .foregroundColor(.primary)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        playerManager.togglePlayPause()
-                    } label: {
-                        Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.title3)
-                            .foregroundColor(.primary)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        playerManager.next()
-                    } label: {
-                        Image(systemName: "forward.fill")
-                            .font(.title3)
-                            .foregroundColor(.primary)
-                    }
-                    .buttonStyle(.plain)
-                }
+            Button {
+                playerManager.togglePlayPause()
+            } label: {
+                Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(.ultraThinMaterial))
             }
+            .buttonStyle(.plain)
         }
+        .padding(.leading, 6)
+        .padding(.trailing, 10)
+        .frame(height: 54)
+        .background(.regularMaterial)
+        .clipShape(Capsule())
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
+        .onTapGesture { expandAction() }
+        .onAppear {
+            if playerManager.isPlaying { startRotation() }
+        }
+        .onChange(of: playerManager.isPlaying) { playing in
+            if playing { startRotation() } else { stopRotation() }
+        }
+        .onChange(of: displayText) { _ in updateMarquee() }
+    }
 
-                TimelineView(.animation(minimumInterval: 0.1, paused: !playerManager.isPlaying)) { timeline in
-                    GeometryReader { geometry in
-                        let animatedProgress = calculateAnimatedProgress(at: timeline.date)
-                        Rectangle()
-                            .fill(Color.accentColor.opacity(0.15))
-                            .frame(width: geometry.size.width * animatedProgress)
-                    }
-                }
+    private var displayText: String {
+        guard let track = playerManager.currentTrack else { return NSLocalizedString("Not Playing", comment: "") }
+        if track.artistNames.isEmpty { return track.name }
+        return "\(track.name) - \(track.artistNames)"
+    }
+
+    // MARK: - Rotating Artwork
+
+    private func startRotation() {
+        rotationTimer?.invalidate()
+        rotationTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { _ in
+            Task { @MainActor in
+                rotation += 0.75
+                if rotation >= 360 { rotation -= 360 }
             }
-        )
-        .frame(height: 72)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-        .padding(.horizontal, 12)
-        .onTapGesture {
-            expandAction()
         }
     }
 
-    private func calculateAnimatedProgress(at date: Date) -> Double {
-        guard playerManager.duration > 0 else { return 0 }
-        
-        var current = playerManager.currentTime
-        
-        if playerManager.isPlaying {
-            let elapsedSinceLastUpdate = date.timeIntervalSince(playerManager.lastUpdateTime)
-            current += max(0, elapsedSinceLastUpdate)
-        }
-        
-        return min(max(current / playerManager.duration, 0), 1)
+    private func stopRotation() {
+        rotationTimer?.invalidate()
+        rotationTimer = nil
     }
 
     private var artworkView: some View {
@@ -1223,11 +1197,35 @@ struct MiniPlayerView: View {
             size: .thumbnail
         )
 
-        return CachedAsyncImage(url: url) {
-            Color.clear
+        return ZStack {
+            CachedAsyncImage(url: url) {
+                Color.clear
+            }
+            .aspectRatio(contentMode: .fill)
+            .frame(width: 38, height: 38)
+            .clipShape(Circle())
+            .rotationEffect(.degrees(rotation))
         }
-        .frame(width: 52, height: 52)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .frame(width: 38, height: 38)
+        .overlay(
+            Circle()
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                .frame(width: 12, height: 12)
+        )
+    }
+
+    // MARK: - Marquee
+
+    private func updateMarquee() {
+        marqueeOffset = 0
+        guard textWidth > 0 else { return }
+        let containerW = UIScreen.main.bounds.width - 16 * 2 - 6 - 38 - 10 - 32 - 10
+        guard textWidth > containerW else { return }
+        let distance = textWidth - containerW + 20
+        let duration = Double(distance / marqueeSpeed)
+        withAnimation(.linear(duration: max(duration, 2)).delay(1.5).repeatForever(autoreverses: false)) {
+            marqueeOffset = -distance
+        }
     }
 }
 
