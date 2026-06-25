@@ -1124,7 +1124,7 @@ struct MiniPlayerView: View {
     @State private var textWidth: CGFloat = 0
     @State private var containerWidth: CGFloat = 0
     @State private var showingQueue = false
-    private let marqueeSpeed: CGFloat = 50
+    private let marqueeSpeed: CGFloat = 25
 
     var body: some View {
         HStack(spacing: 10) {
@@ -1132,7 +1132,7 @@ struct MiniPlayerView: View {
 
             GeometryReader { container in
                 Text(displayText)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.body.weight(.semibold))
                     .foregroundColor(.primary)
                     .lineLimit(1)
                     .fixedSize()
