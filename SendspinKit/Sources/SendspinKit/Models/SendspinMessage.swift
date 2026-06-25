@@ -67,10 +67,10 @@ public struct ClientHelloPayload: Codable, Sendable {
         case deviceInfo = "device_info"
         case version
         case supportedRoles = "supported_roles"
-        case playerV1Support = "player_support"
-        case metadataV1Support = "metadata_support"
-        case artworkV1Support = "artwork_support"
-        case visualizerV1Support = "visualizer_support"
+        case playerV1Support = "player@v1_support"
+        case metadataV1Support = "metadata@v1_support"
+        case artworkV1Support = "artwork@v1_support"
+        case visualizerV1Support = "visualizer@v1_support"
     }
 
     public init(
