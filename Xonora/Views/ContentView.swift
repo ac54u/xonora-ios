@@ -1122,6 +1122,7 @@ struct MiniPlayerView: View {
     @State private var rotationTimer: Timer?
     @State private var marqueeOffset: CGFloat = 0
     @State private var textWidth: CGFloat = 0
+    @State private var containerWidth: CGFloat = 0
     @State private var showingQueue = false
     private let marqueeSpeed: CGFloat = 50
 
@@ -1129,29 +1130,41 @@ struct MiniPlayerView: View {
         HStack(spacing: 10) {
             artworkView
 
-            Text(displayText)
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(.primary)
-                .lineLimit(1)
-                .fixedSize()
-                .offset(x: marqueeOffset)
-                .background(GeometryReader { g in
-                    Color.clear.onAppear { textWidth = g.size.width }
-                })
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .clipped()
-                .gesture(
-                    DragGesture(minimumDistance: 20)
-                        .onEnded { value in
-                            if value.translation.width < -30 {
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                playerManager.next()
-                            } else if value.translation.width > 30 {
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                playerManager.previous()
+            GeometryReader { container in
+                Text(displayText)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .offset(x: marqueeOffset)
+                    .background(GeometryReader { text in
+                        Color.clear
+                            .onAppear {
+                                textWidth = text.size.width
+                                containerWidth = container.size.width
+                                updateMarquee()
                             }
+                            .onChange(of: displayText) { _, _ in
+                                textWidth = text.size.width
+                                containerWidth = container.size.width
+                                updateMarquee()
+                            }
+                    })
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .clipped()
+            .gesture(
+                DragGesture(minimumDistance: 20)
+                    .onEnded { value in
+                        if value.translation.width < -30 {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            playerManager.next()
+                        } else if value.translation.width > 30 {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            playerManager.previous()
                         }
-                )
+                    }
+            )
 
             HStack(spacing: 6) {
                 progressButton
@@ -1242,11 +1255,13 @@ struct MiniPlayerView: View {
                             }
                         }
                         .padding(.vertical, 4)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                     }
                     .onDelete { offsets in
                         for index in offsets { playerManager.removeFromQueue(at: index) }
                     }
                 }
+                .listStyle(.plain)
                 .navigationTitle("Queue")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -1256,7 +1271,7 @@ struct MiniPlayerView: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.fraction(0.85), .large])
     }
 
     private var displayText: String {
@@ -1309,10 +1324,8 @@ struct MiniPlayerView: View {
 
     private func updateMarquee() {
         marqueeOffset = 0
-        guard textWidth > 0 else { return }
-        let containerW = UIScreen.main.bounds.width - 16 * 2 - 6 - 38 - 10 - 32 - 10
-        guard textWidth > containerW else { return }
-        let distance = textWidth - containerW + 20
+        guard textWidth > 0, containerWidth > 0, textWidth > containerWidth else { return }
+        let distance = textWidth - containerWidth + 20
         let duration = Double(distance / marqueeSpeed)
         withAnimation(.linear(duration: max(duration, 2)).delay(1.5).repeatForever(autoreverses: false)) {
             marqueeOffset = -distance
