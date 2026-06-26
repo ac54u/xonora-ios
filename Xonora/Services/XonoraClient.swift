@@ -295,6 +295,7 @@ class XonoraClient: NSObject, ObservableObject {
                     connectionState = .connected
                     reconnectAttempts = 0
                     startPlayerPolling()
+                    Task { await self.sendLocale() }
                     await fetchPlayers()
                 }
                 return
@@ -749,6 +750,10 @@ class XonoraClient: NSObject, ObservableObject {
         if pref.starts(with: "ja") { return "ja" }
         if pref.starts(with: "ko") { return "ko" }
         return pref.replacingOccurrences(of: "-", with: "_")
+    }
+
+    private func sendLocale() async {
+        _ = try? await sendCommand("translations/set_locale", args: ["locale": preferredLocale()])
     }
 
     func getProviderManifests() async throws -> [ProviderManifest] {
