@@ -353,7 +353,17 @@ struct ProviderConfigView: View {
     }
 
     private func handleAction(_ entry: ConfigEntry) async {
-        guard let config = config else { return }
+        let domain: String
+        let instanceId: String?
+        if let config = config {
+            domain = config.domain
+            instanceId = config.instanceId
+        } else if let manifest = manifest {
+            domain = manifest.domain
+            instanceId = nil
+        } else {
+            return
+        }
         let sessionId = UUID().uuidString
         var values = viewModel.editingValues
         values["session_id"] = sessionId
@@ -372,10 +382,9 @@ struct ProviderConfigView: View {
             viewModel.isSaving = false
         }
 
-        // Call the action (blocks until auth completes or timeout)
         let entries = try? await XonoraClient.shared.getProviderConfigEntries(
-            domain: config.domain,
-            instanceId: config.instanceId,
+            domain: domain,
+            instanceId: instanceId,
             action: entry.action,
             values: values,
             timeout: 90
