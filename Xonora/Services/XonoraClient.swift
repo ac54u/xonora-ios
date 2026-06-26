@@ -361,8 +361,11 @@ class XonoraClient: NSObject, ObservableObject {
         case "auth_session":
             if let sessionId = data["object_id"] as? String,
                let authURL = data["data"] as? String {
+                appLog("AUTH_SESSION received: \(sessionId)", level: .info, category: "XonoraClient")
                 NotificationCenter.default.post(name: .authSession, object: nil,
                     userInfo: ["session_id": sessionId, "auth_url": authURL])
+            } else {
+                appLog("AUTH_SESSION parse failed: \(data)", level: .warning, category: "XonoraClient")
             }
         default: break
         }

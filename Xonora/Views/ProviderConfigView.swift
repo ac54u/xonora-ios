@@ -367,13 +367,18 @@ struct ProviderConfigView: View {
         let sessionId = UUID().uuidString
         var values = viewModel.editingValues
         values["session_id"] = sessionId
+        appLog("handleAction: action=\(entry.action ?? "nil") domain=\(domain) session=\(sessionId)", level: .info, category: "Provider")
 
         viewModel.isSaving = true
         var observer: NSObjectProtocol?
         observer = NotificationCenter.default.addObserver(forName: .authSession, object: nil, queue: .main) { n in
             guard let sid = n.userInfo?["session_id"] as? String, sid == sessionId,
                   let urlString = n.userInfo?["auth_url"] as? String,
-                  let url = URL(string: urlString) else { return }
+                  let url = URL(string: urlString) else {
+                appLog("authSession notification parse failed or wrong session", level: .warning, category: "Provider")
+                return
+            }
+            appLog("Opening auth URL: \(urlString)", level: .info, category: "Provider")
             UIApplication.shared.open(url)
         }
 
