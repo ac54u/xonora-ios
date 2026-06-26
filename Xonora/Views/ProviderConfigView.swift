@@ -258,7 +258,7 @@ struct ProviderConfigView: View {
                         set: { viewModel.editingValues[entry.key] = $0 }
                     )) {
                         ForEach(options, id: \.title) { option in
-                            Text(localizedConfigText(entry.key, option.title)).tag(option.value.stringValue ?? "")
+                            Text(localizedConfigText(option.title, option.title)).tag(option.value.stringValue ?? "")
                         }
                     }
                 } else {
