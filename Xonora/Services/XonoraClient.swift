@@ -359,8 +359,8 @@ class XonoraClient: NSObject, ObservableObject {
             // library reloads and newly scanned files appear.
             NotificationCenter.default.post(name: .libraryUpdated, object: nil)
         case "auth_session":
-            if let sessionId = data["session_id"] as? String,
-               let authURL = data["auth_url"] as? String {
+            if let sessionId = data["object_id"] as? String,
+               let authURL = data["data"] as? String {
                 NotificationCenter.default.post(name: .authSession, object: nil,
                     userInfo: ["session_id": sessionId, "auth_url": authURL])
             }
