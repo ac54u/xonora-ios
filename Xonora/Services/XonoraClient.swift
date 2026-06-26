@@ -358,6 +358,12 @@ class XonoraClient: NSObject, ObservableObject {
             // The server finished (or progressed) a library sync — notify so the
             // library reloads and newly scanned files appear.
             NotificationCenter.default.post(name: .libraryUpdated, object: nil)
+        case "auth_session":
+            if let sessionId = data["session_id"] as? String,
+               let authURL = data["auth_url"] as? String {
+                NotificationCenter.default.post(name: .authSession, object: nil,
+                    userInfo: ["session_id": sessionId, "auth_url": authURL])
+            }
         default: break
         }
     }
@@ -780,12 +786,12 @@ class XonoraClient: NSObject, ObservableObject {
         return (try? JSONDecoder().decode([ProviderInstance].self, from: resultData)) ?? []
     }
 
-    func getProviderConfigEntries(domain: String, instanceId: String? = nil, action: String? = nil, values: [String: Any]? = nil) async throws -> [ConfigEntry] {
+    func getProviderConfigEntries(domain: String, instanceId: String? = nil, action: String? = nil, values: [String: Any]? = nil, timeout: TimeInterval = 30) async throws -> [ConfigEntry] {
         var args: [String: Any] = ["provider_domain": domain]
         if let instanceId = instanceId { args["instance_id"] = instanceId }
         if let action = action { args["action"] = action }
         if let values = values { args["values"] = values }
-        let data = try await sendCommand("config/providers/get_entries", args: args)
+        let data = try await sendCommand("config/providers/get_entries", args: args, timeout: timeout)
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let result = json["result"] as? [[String: Any]] else { return [] }
         let resultData = try JSONSerialization.data(withJSONObject: result)
@@ -1004,6 +1010,7 @@ extension Notification.Name {
     static let queueUpdated = Notification.Name("queueUpdated")
     static let tokenRefreshed = Notification.Name("tokenRefreshed")
     static let libraryUpdated = Notification.Name("libraryUpdated")
+    static let authSession = Notification.Name("authSession")
 }
 
 // MARK: - In-app diagnostics log

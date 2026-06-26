@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 fileprivate let configKeyZH: [String: String] = [
     "log_level": "日志级别",
@@ -344,28 +345,51 @@ struct ProviderConfigView: View {
 
         case "action":
             Button(entry.actionLabel ?? label) {
-                Task {
-                    if let config = config {
-                        let entries = try? await XonoraClient.shared.getProviderConfigEntries(
-                            domain: config.domain,
-                            instanceId: config.instanceId,
-                            action: entry.action,
-                            values: viewModel.editingValues
-                        )
-                        if let entries = entries {
-                            await MainActor.run {
-                                viewModel.editingEntries = entries
-                                for e in entries {
-                                    if let v = e.value { viewModel.editingValues[e.key] = v.rawValueForSave }
-                                }
-                            }
-                        }
-                    }
-                }
+                Task { await handleAction(entry) }
             }
 
         default:
             Text(label)
+        }
+    }
+
+    private func handleAction(_ entry: ConfigEntry) async {
+        guard let config = config else { return }
+        let sessionId = UUID().uuidString
+        var values = viewModel.editingValues
+        values["session_id"] = sessionId
+
+        viewModel.isSaving = true
+        var observer: NSObjectProtocol?
+        observer = NotificationCenter.default.addObserver(forName: .authSession, object: nil, queue: .main) { n in
+            guard let sid = n.userInfo?["session_id"] as? String, sid == sessionId,
+                  let urlString = n.userInfo?["auth_url"] as? String,
+                  let url = URL(string: urlString) else { return }
+            let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "musicassistant") { _, _ in }
+            session.prefersEphemeralWebBrowserSession = true
+            session.start()
+        }
+
+        defer {
+            if let o = observer { NotificationCenter.default.removeObserver(o) }
+            viewModel.isSaving = false
+        }
+
+        // Call the action (blocks until auth completes or timeout)
+        let entries = try? await XonoraClient.shared.getProviderConfigEntries(
+            domain: config.domain,
+            instanceId: config.instanceId,
+            action: entry.action,
+            values: values,
+            timeout: 90
+        )
+        if let entries = entries {
+            await MainActor.run {
+                viewModel.editingEntries = entries
+                for e in entries {
+                    if let v = e.value { viewModel.editingValues[e.key] = v.rawValueForSave }
+                }
+            }
         }
     }
 
