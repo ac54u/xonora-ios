@@ -1,5 +1,4 @@
 import SwiftUI
-import AuthenticationServices
 
 fileprivate let configKeyZH: [String: String] = [
     "log_level": "日志级别",
@@ -365,9 +364,7 @@ struct ProviderConfigView: View {
             guard let sid = n.userInfo?["session_id"] as? String, sid == sessionId,
                   let urlString = n.userInfo?["auth_url"] as? String,
                   let url = URL(string: urlString) else { return }
-            let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "musicassistant") { _, _ in }
-            session.prefersEphemeralWebBrowserSession = true
-            session.start()
+            UIApplication.shared.open(url)
         }
 
         defer {
