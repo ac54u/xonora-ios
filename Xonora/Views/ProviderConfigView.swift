@@ -54,7 +54,10 @@ fileprivate let configKeyZH: [String: String] = [
     "sync_playlists": "将来源的播放列表同步到 Music Assistant",
     "library_sync_podcasts": "将来源的播客同步到 Music Assistant",
     "sync_podcasts": "将来源的播客同步到 Music Assistant",
-    "sync_adjust": "同步音乐库的增删",
+    "library_sync_back": "同步增删",
+    "sync_adjust": "同步增删",
+    "unofficial_provider_note": "此为第三方集成，非官方支持，可能随时失效。使用需遵守服务条款。",
+    "library_sync_deletions": "同步删除",
     "two_way_sync": "双向同步",
     "start_qr_auth": "开始认证",
     "qr_login": "二维码登录",
@@ -255,7 +258,7 @@ struct ProviderConfigView: View {
                         set: { viewModel.editingValues[entry.key] = $0 }
                     )) {
                         ForEach(options, id: \.title) { option in
-                            Text(option.title).tag(option.value.stringValue ?? "")
+                            Text(localizedConfigText(entry.key, option.title)).tag(option.value.stringValue ?? "")
                         }
                     }
                 } else {
