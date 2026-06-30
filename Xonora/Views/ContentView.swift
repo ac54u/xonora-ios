@@ -1291,7 +1291,7 @@ struct MiniPlayerView: View {
                                 Color.clear
                             }
                             .frame(width: 40, height: 40)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.name)

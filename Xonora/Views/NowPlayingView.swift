@@ -25,9 +25,6 @@ struct NowPlayingView: View {
             albumArtwork
                 .id(playerManager.currentTrack?.id ?? "no-track")
                 .padding(.horizontal, 40)
-                .padding(.vertical, 20)
-
-            Spacer()
 
             // Track info
             trackInfo
@@ -254,27 +251,11 @@ struct QueueView: View {
     
     @ViewBuilder
     private var emptyQueueView: some View {
-        if #available(iOS 17.0, *) {
-            ContentUnavailableView(
-                "Queue is Empty",
-                systemImage: "music.note.list",
-                description: Text("Add some songs to your queue")
-            )
-        } else {
-            VStack(spacing: 16) {
-                Image(systemName: "music.note.list")
-                    .font(.largeTitle)
-                    .foregroundColor(.secondary)
-                Text("Queue is Empty")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                Text("Add some songs to your queue")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .listRowBackground(Color.clear)
-        }
+        ContentUnavailableView(
+            "Queue is Empty",
+            systemImage: "music.note.list",
+            description: Text("Add some songs to your queue")
+        )
     }
     
     private var queueSection: some View {
