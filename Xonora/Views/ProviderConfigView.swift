@@ -344,7 +344,7 @@ struct ProviderConfigView: View {
             }
 
         case "divider":
-            EmptyView()
+            Divider()
 
         case "alert":
             HStack {
