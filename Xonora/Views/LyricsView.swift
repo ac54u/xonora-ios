@@ -28,6 +28,7 @@ struct LyricsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
+                        .accessibilityLabel(String(localized: "Close"))
                 }
             }
         }

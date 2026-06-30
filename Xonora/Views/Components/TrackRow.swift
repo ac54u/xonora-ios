@@ -75,6 +75,7 @@ struct TrackRow: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel((track.favorite ?? false) ? String(localized: "Remove from Favorites") : String(localized: "Add to Favorites"))
 
             // More options menu — independent control.
             Menu {
@@ -127,6 +128,7 @@ struct TrackRow: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "More Options"))
         }
         .padding(.vertical, 8)
     }

@@ -1213,6 +1213,7 @@ struct MiniPlayerView: View {
                         .frame(minWidth: 44, minHeight: 44)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Queue"))
             }
         }
         .padding(.leading, 6)
@@ -1270,6 +1271,7 @@ struct MiniPlayerView: View {
                     .offset(x: playerManager.isPlaying ? 0 : 1)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(playerManager.isPlaying ? String(localized: "Pause") : String(localized: "Play"))
         }
     }
 

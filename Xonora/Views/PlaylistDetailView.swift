@@ -58,6 +58,7 @@ struct PlaylistDetailView: View {
                         .background(Color.secondary.opacity(0.2))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
+                    .accessibilityLabel(String(localized: "Shuffle Play"))
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 24)
@@ -97,6 +98,7 @@ struct PlaylistDetailView: View {
                     Image(systemName: (libraryViewModel.playlists.first(where: { $0.id == playlist.id })?.favorite ?? playlist.favorite ?? false) ? "heart.fill" : "heart")
                         .foregroundColor((libraryViewModel.playlists.first(where: { $0.id == playlist.id })?.favorite ?? playlist.favorite ?? false) ? .pink : .primary)
                 }
+                .accessibilityLabel((libraryViewModel.playlists.first(where: { $0.id == playlist.id })?.favorite ?? playlist.favorite ?? false) ? String(localized: "Remove from Favorites") : String(localized: "Add to Favorites"))
             }
         }
         .background(Color(UIColor.systemBackground).ignoresSafeArea())

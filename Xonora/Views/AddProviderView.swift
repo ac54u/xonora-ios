@@ -46,6 +46,7 @@ struct AddProviderView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Cancel") { dismiss() }
+                        .accessibilityLabel(String(localized: "Close"))
                 }
             }
         }

@@ -57,6 +57,7 @@ struct PodcastDetailView: View {
                     Image(systemName: (libraryViewModel.podcasts.first(where: { $0.id == podcast.id })?.favorite ?? podcast.favorite ?? false) ? "heart.fill" : "heart")
                         .foregroundColor((libraryViewModel.podcasts.first(where: { $0.id == podcast.id })?.favorite ?? podcast.favorite ?? false) ? .pink : .primary)
                 }
+                .accessibilityLabel((libraryViewModel.podcasts.first(where: { $0.id == podcast.id })?.favorite ?? podcast.favorite ?? false) ? String(localized: "Remove from Favorites") : String(localized: "Add to Favorites"))
             }
         }
         .background(Color(UIColor.systemBackground).ignoresSafeArea())

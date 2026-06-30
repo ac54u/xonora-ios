@@ -208,6 +208,7 @@ struct LibraryView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+                    .accessibilityLabel(String(localized: "Change Column Count"))
                 }
             }
         case .playlists:
@@ -229,6 +230,7 @@ struct LibraryView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+                    .accessibilityLabel(String(localized: "Change Column Count"))
                 }
             }
         default:
@@ -243,6 +245,7 @@ struct LibraryView: View {
                 .foregroundColor(.accentColor)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(isGrid ? String(localized: "List View") : String(localized: "Grid View"))
     }
 
     @ViewBuilder
@@ -580,6 +583,7 @@ struct LibraryView: View {
                                 .font(.title2)
                                 .foregroundColor(.accentColor)
                         }
+                        .accessibilityLabel(String(localized: "Play"))
                     }
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)

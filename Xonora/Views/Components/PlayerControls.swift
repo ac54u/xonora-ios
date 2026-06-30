@@ -44,6 +44,7 @@ struct PlayerControls: View {
                     .font(.title3)
                     .foregroundColor(.secondary)
             }
+            .accessibilityLabel(String(localized: "Previous Track"))
 
             Button {
                 playerManager.togglePlayPause()
@@ -52,6 +53,7 @@ struct PlayerControls: View {
                     .font(.title2)
                     .foregroundColor(.primary)
             }
+            .accessibilityLabel(playerManager.isPlaying ? String(localized: "Pause") : String(localized: "Play"))
 
             Button {
                 playerManager.next()
@@ -60,6 +62,7 @@ struct PlayerControls: View {
                     .font(.title3)
                     .foregroundColor(.secondary)
             }
+            .accessibilityLabel(String(localized: "Next Track"))
         }
     }
 
@@ -92,13 +95,14 @@ struct PlayerControls: View {
 
             // Main controls
             HStack(spacing: 40) {
-                Button {
-                    playerManager.toggleShuffle()
-                } label: {
-                    Image(systemName: "shuffle")
-                        .font(.title3)
-                        .foregroundColor(playerManager.shuffleEnabled ? .accentColor : .secondary)
-                }
+            Button {
+                playerManager.toggleShuffle()
+            } label: {
+                Image(systemName: "shuffle")
+                    .font(.title3)
+                    .foregroundColor(playerManager.shuffleEnabled ? .accentColor : .secondary)
+            }
+            .accessibilityLabel(playerManager.shuffleEnabled ? String(localized: "Shuffle On") : String(localized: "Shuffle Off"))
 
                 Button {
                     playerManager.previous()
@@ -107,6 +111,7 @@ struct PlayerControls: View {
                         .font(.title)
                         .foregroundColor(.secondary)
                 }
+                .accessibilityLabel(String(localized: "Previous Track"))
 
                 Button {
                     playerManager.togglePlayPause()
@@ -115,6 +120,7 @@ struct PlayerControls: View {
                         .font(.system(size: 64))
                         .foregroundColor(.primary)
                 }
+                .accessibilityLabel(playerManager.isPlaying ? String(localized: "Pause") : String(localized: "Play"))
 
                 Button {
                     playerManager.next()
@@ -123,6 +129,7 @@ struct PlayerControls: View {
                         .font(.title)
                         .foregroundColor(.secondary)
                 }
+                .accessibilityLabel(String(localized: "Next Track"))
 
                 Button {
                     playerManager.cycleRepeatMode()
@@ -131,6 +138,11 @@ struct PlayerControls: View {
                         .font(.title3)
                         .foregroundColor(playerManager.repeatMode != .off ? .accentColor : .secondary)
                 }
+                .accessibilityLabel(
+                    playerManager.repeatMode == .off ? String(localized: "Repeat Off") :
+                    playerManager.repeatMode == .one ? String(localized: "Repeat One") :
+                    String(localized: "Repeat All")
+                )
             }
 
             // Volume slider and destination
@@ -150,6 +162,7 @@ struct PlayerControls: View {
                                 .frame(minWidth: 44, minHeight: 44)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel((xonoraClient.currentPlayer?.volumeMuted ?? false) ? String(localized: "Unmute") : String(localized: "Mute"))
                     }
 
                     if isLocalPlayer {

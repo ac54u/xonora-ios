@@ -55,6 +55,7 @@ struct ProviderManagementView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel(String(localized: "Add Provider"))
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
@@ -67,6 +68,7 @@ struct ProviderManagementView: View {
                     }
                 }
                 .disabled(viewModel.isLoading)
+                .accessibilityLabel(String(localized: "Refresh"))
             }
         }
         .sheet(isPresented: $showingAddProvider) {
@@ -160,5 +162,6 @@ struct ProviderManagementView: View {
             .padding(.vertical, 3)
             .background(color.opacity(0.12))
             .clipShape(Capsule())
+            .accessibilityLabel(String(localized: "Status: \(key)"))
     }
 }

@@ -106,6 +106,7 @@ struct NowPlayingView: View {
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
+                .accessibilityLabel(String(localized: "Dismiss"))
             } else {
                 Spacer().frame(width: 44)
             }
@@ -143,6 +144,7 @@ struct NowPlayingView: View {
                         .foregroundColor(playerManager.sleepTimerActive ? .orange : .primary)
                         .frame(width: 44, height: 44)
                 }
+                .accessibilityLabel(playerManager.sleepTimerActive ? String(localized: "Sleep Timer Active") : String(localized: "Sleep Timer"))
 
                 Button {
                     showLyrics = true
@@ -152,6 +154,7 @@ struct NowPlayingView: View {
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
+                .accessibilityLabel(String(localized: "Lyrics"))
 
                 Button {
                     showQueue = true
@@ -161,6 +164,7 @@ struct NowPlayingView: View {
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
+                .accessibilityLabel(String(localized: "Queue"))
             }
         }
         .padding(.horizontal)
@@ -233,6 +237,7 @@ struct QueueView: View {
                     Button("Done") {
                         dismiss()
                     }
+                    .accessibilityLabel(String(localized: "Close"))
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -240,6 +245,7 @@ struct QueueView: View {
                         Button("Clear") {
                             playerManager.clearQueue()
                         }
+                        .accessibilityLabel(String(localized: "Clear Queue"))
                     }
                 }
             }

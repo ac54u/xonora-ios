@@ -139,12 +139,14 @@ struct ProviderConfigView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .accessibilityLabel(String(localized: "Cancel"))
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         Task { await save() }
                     }
                     .disabled(viewModel.isSaving)
+                    .accessibilityLabel(String(localized: "Save"))
                 }
             }
             .onDisappear {
