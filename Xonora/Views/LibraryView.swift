@@ -108,11 +108,11 @@ struct LibraryView: View {
                     } label: {
                         VStack(spacing: 4) {
                             Image(systemName: category.icon)
-                                .font(.system(size: 20))
+                                .font(.title3)
                                 .symbolVariant(selectedCategory == category ? .fill : .none)
 
                             Text(category.localizedName)
-                                .font(.system(size: 10))
+                                .font(.caption2)
                                 .fontWeight(.medium)
                         }
                         .frame(maxWidth: .infinity)

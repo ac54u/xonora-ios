@@ -263,7 +263,7 @@ struct QueueView: View {
         } else {
             VStack(spacing: 16) {
                 Image(systemName: "music.note.list")
-                    .font(.system(size: 60))
+                    .font(.largeTitle)
                     .foregroundColor(.secondary)
                 Text("Queue is Empty")
                     .font(.title2)

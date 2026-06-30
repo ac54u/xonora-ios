@@ -244,12 +244,12 @@ struct ServerSetupView: View {
     private var headerView: some View {
         VStack(spacing: 20) {
             Image(systemName: "hifispeaker.2.fill")
-                .font(.system(size: 70, weight: .medium))
+                .font(.largeTitle.weight(.medium))
                 .foregroundStyle(Color.xonoraGradient)
 
             VStack(spacing: 8) {
                 Text("Xonora")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .font(.largeTitle.weight(.bold))
                     .foregroundColor(.white)
 
                 Text("Connect to Music Assistant")
@@ -1039,7 +1039,7 @@ struct LogView: View {
                 Text(minLevel.rawValue.capitalized)
                     .font(.caption.weight(.medium))
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 8))
+                    .font(.caption2)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
@@ -1072,7 +1072,7 @@ struct LogView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(entry.level.rawValue)
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(.caption2.weight(.bold).monospaced())
                         .foregroundColor(levelColor(entry.level))
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
@@ -1081,14 +1081,14 @@ struct LogView: View {
 
                     if !entry.category.isEmpty {
                         Text(entry.category)
-                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .font(.caption2.weight(.medium).monospaced())
                             .foregroundColor(.secondary)
                     }
 
                     Spacer()
 
                     Text(Self.timeFormatter.string(from: entry.date))
-                        .font(.system(size: 9, design: .monospaced))
+                        .font(.caption2.monospaced())
                         .foregroundColor(.secondary.opacity(0.5))
                 }
 
@@ -1208,7 +1208,7 @@ struct MiniPlayerView: View {
                     showingQueue = true
                 } label: {
                     Image(systemName: "music.note.list")
-                        .font(.system(size: 16))
+                        .font(.callout)
                         .foregroundColor(.secondary)
                         .frame(minWidth: 44, minHeight: 44)
                 }
@@ -1266,7 +1266,7 @@ struct MiniPlayerView: View {
                 playerManager.togglePlayPause()
             } label: {
                 Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundColor(.primary)
                     .offset(x: playerManager.isPlaying ? 0 : 1)
             }

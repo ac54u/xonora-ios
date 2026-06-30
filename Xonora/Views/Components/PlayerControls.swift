@@ -117,7 +117,7 @@ struct PlayerControls: View {
                     playerManager.togglePlayPause()
                 } label: {
                     Image(systemName: playerManager.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 64))
+                        .font(.largeTitle)
                         .foregroundColor(.primary)
                 }
                 .accessibilityLabel(playerManager.isPlaying ? String(localized: "Pause") : String(localized: "Play"))

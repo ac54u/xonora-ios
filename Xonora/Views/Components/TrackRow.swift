@@ -151,7 +151,7 @@ struct TrackRow: View {
 
     private func qualityBadgeView(_ badge: Track.QualityBadge) -> some View {
         Text(badge.label)
-            .font(.system(size: 9, weight: .semibold, design: .rounded))
+            .font(.caption2.weight(.semibold))
             .foregroundColor(badge.color)
             .padding(.horizontal, 4)
             .padding(.vertical, 1)
