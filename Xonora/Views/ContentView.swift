@@ -530,7 +530,6 @@ struct ServerSetupView: View {
 struct SearchView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
     @EnvironmentObject var playerViewModel: PlayerViewModel
-    @ObservedObject private var playerManager = PlayerManager.shared
 
     var body: some View {
         NavigationStack {
@@ -586,12 +585,12 @@ struct SearchView: View {
                                 Label("Add to Library", systemImage: "plus")
                             }
                             Button {
-                                playerManager.playNext(track)
+                                playerViewModel.playerManager.playNext(track)
                             } label: {
                                 Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
                             }
                             Button {
-                                playerManager.addToQueue(track)
+                                playerViewModel.playerManager.addToQueue(track)
                             } label: {
                                 Label("Add to Queue", systemImage: "music.note.list")
                             }

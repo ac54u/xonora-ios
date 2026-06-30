@@ -216,6 +216,7 @@ class XonoraClient: NSObject, ObservableObject {
     }
 
     private func receiveMessage() {
+        guard webSocketTask != nil else { return }
         webSocketTask?.receive { [weak self] result in
             guard let self = self else { return }
             switch result {
@@ -343,7 +344,9 @@ class XonoraClient: NSObject, ObservableObject {
             let data = try JSONSerialization.data(withJSONObject: authPayload)
             let text = String(data: data, encoding: .utf8) ?? ""
             webSocketTask?.send(.string(text)) { _ in }
-        } catch {}
+        } catch {
+            appLog("Failed to serialize auth payload: \(error.localizedDescription)", level: .error, category: "XonoraClient")
+        }
     }
 
     private func handleEvent(_ event: String, data: [String: Any]) {
@@ -440,7 +443,9 @@ class XonoraClient: NSObject, ObservableObject {
                     }
                 }
             }
-        } catch {}
+        } catch {
+            appLog("Failed to fetch players: \(error.localizedDescription)", level: .warning, category: "XonoraClient")
+        }
     }
 
     var visiblePlayers: [MAPlayer] {
@@ -555,10 +560,14 @@ class XonoraClient: NSObject, ObservableObject {
 
     func deleteQueueItem(at index: Int) async {
         guard let playerId = currentPlayer?.playerId else { return }
-        _ = try? await sendCommand("player_queues/delete_item", args: [
-            "queue_id": playerId,
-            "item_id_or_index": index
-        ])
+        do {
+            _ = try await sendCommand("player_queues/delete_item", args: [
+                "queue_id": playerId,
+                "item_id_or_index": index
+            ])
+        } catch {
+            appLog("Failed to delete queue item: \(error.localizedDescription)", level: .warning, category: "XonoraClient")
+        }
     }
 
     struct ActiveQueueSnapshot {

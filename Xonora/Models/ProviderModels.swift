@@ -45,12 +45,16 @@ enum ConfigValue: Codable, Hashable {
         let container = try decoder.singleValueContainer()
         if let str = try? container.decode(String.self) {
             self = .string(str)
-        } else if let int = try? container.decode(Int.self) {
-            self = .int(int)
         } else if let bool = try? container.decode(Bool.self) {
             self = .bool(bool)
         } else if let dbl = try? container.decode(Double.self) {
-            self = .double(dbl)
+            if floor(dbl) == dbl, let int = Int(exactly: dbl) {
+                self = .int(int)
+            } else {
+                self = .double(dbl)
+            }
+        } else if let int = try? container.decode(Int.self) {
+            self = .int(int)
         } else if let arr = try? container.decode([String].self) {
             self = .stringArray(arr)
         } else {

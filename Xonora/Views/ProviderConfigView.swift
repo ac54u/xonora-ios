@@ -80,6 +80,8 @@ struct ProviderConfigView: View {
     var isNew: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var toastMessage: String?
+    @State private var authObserver: NSObjectProtocol?
+    @State private var actionTask: Task<Void, Never>?
 
     init(viewModel: ProviderManagementViewModel, config: ProviderConfig) {
         self.viewModel = viewModel
@@ -144,6 +146,14 @@ struct ProviderConfigView: View {
                     }
                     .disabled(viewModel.isSaving)
                 }
+            }
+            .onDisappear {
+                if let observer = authObserver {
+                    NotificationCenter.default.removeObserver(observer)
+                    authObserver = nil
+                }
+                actionTask?.cancel()
+                actionTask = nil
             }
             .task {
                 if isNew, let domain = manifest?.domain {
@@ -370,36 +380,44 @@ struct ProviderConfigView: View {
         appLog("handleAction: action=\(entry.action ?? "nil") domain=\(domain) session=\(sessionId)", level: .info, category: "Provider")
 
         viewModel.isSaving = true
-        var observer: NSObjectProtocol?
-        observer = NotificationCenter.default.addObserver(forName: .authSession, object: nil, queue: .main) { n in
-            guard let sid = n.userInfo?["session_id"] as? String, sid == sessionId,
-                  let urlString = n.userInfo?["auth_url"] as? String,
-                  let url = URL(string: urlString) else {
-                appLog("authSession notification parse failed or wrong session", level: .warning, category: "Provider")
-                return
-            }
-            appLog("Opening auth URL: \(urlString)", level: .info, category: "Provider")
-            UIApplication.shared.open(url)
+        if let prev = authObserver {
+            NotificationCenter.default.removeObserver(prev)
         }
+        actionTask?.cancel()
 
-        defer {
-            if let o = observer { NotificationCenter.default.removeObserver(o) }
-            viewModel.isSaving = false
-        }
-
-        let entries = try? await XonoraClient.shared.getProviderConfigEntries(
-            domain: domain,
-            instanceId: instanceId,
-            action: entry.action,
-            values: values,
-            timeout: 90
-        )
-        if let entries = entries {
-            await MainActor.run {
-                viewModel.editingEntries = entries
-                for e in entries {
-                    if let v = e.value { viewModel.editingValues[e.key] = v.rawValueForSave }
+        actionTask = Task { [weak viewModel = viewModel] in
+            guard !Task.isCancelled else { return }
+            let obs = NotificationCenter.default.addObserver(forName: .authSession, object: nil, queue: .main) { n in
+                guard let sid = n.userInfo?["session_id"] as? String, sid == sessionId,
+                      let urlString = n.userInfo?["auth_url"] as? String,
+                      let url = URL(string: urlString) else {
+                    appLog("authSession notification parse failed or wrong session", level: .warning, category: "Provider")
+                    return
                 }
+                appLog("Opening auth URL: \(urlString)", level: .info, category: "Provider")
+                UIApplication.shared.open(url)
+            }
+            await MainActor.run { self.authObserver = obs }
+
+            let entries = try? await XonoraClient.shared.getProviderConfigEntries(
+                domain: domain,
+                instanceId: instanceId,
+                action: entry.action,
+                values: values,
+                timeout: 90
+            )
+            guard !Task.isCancelled else { return }
+            if let entries = entries {
+                await MainActor.run {
+                    viewModel?.editingEntries = entries
+                    for e in entries {
+                        if let v = e.value { viewModel?.editingValues[e.key] = v.rawValueForSave }
+                    }
+                }
+            }
+            await MainActor.run {
+                self.authObserver = nil
+                viewModel?.isSaving = false
             }
         }
     }

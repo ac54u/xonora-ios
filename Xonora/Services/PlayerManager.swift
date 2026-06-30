@@ -96,12 +96,10 @@ class PlayerManager: ObservableObject {
                     let elapsedSinceServer = Date().timeIntervalSince(self.serverTimeReceivedAt)
                     let correctedTime = self.serverTime + elapsedSinceServer + self.localTimeOffset
 
-                    // Only apply if the correction is reasonable (avoid jumps > 2s)
                     let diff = abs(correctedTime - self.currentTime)
-                    if diff > 2.0 {
-                        self.currentTime = correctedTime
-                    } else if diff > 0.1 {
-                        self.currentTime += (correctedTime - self.currentTime) * 0.3
+                    if diff > 0.1 {
+                        let alpha: Double = diff > 2.0 ? 1.0 : 0.3
+                        self.currentTime += (correctedTime - self.currentTime) * alpha
                     }
 
                     if self.duration > 0 && self.currentTime >= self.duration {
@@ -332,10 +330,16 @@ class PlayerManager: ObservableObject {
         appLog("Track ended", level: .debug, category: "PlayerManager")
 
         if sleepTimerActive && sleepTimerEndDate == nil {
-            sleepTimerActive = false
             Task {
-                try? await XonoraClient.shared.pause()
-                await MainActor.run { self.postPlaybackStateChange() }
+                do {
+                    try await XonoraClient.shared.pause()
+                } catch {
+                    appLog("Sleep timer pause failed: \(error)", level: .warning, category: "PlayerManager")
+                }
+                await MainActor.run {
+                    self.sleepTimerActive = false
+                    self.postPlaybackStateChange()
+                }
             }
             return
         }
