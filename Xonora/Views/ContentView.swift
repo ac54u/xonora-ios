@@ -550,9 +550,9 @@ struct SearchView: View {
                     searchResultsList
                 }
             }
-            .navigationTitle("")
+            .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $libraryViewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Albums, Artists, Songs")
+            .searchable(text: $libraryViewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: Text("Albums, Artists, Songs"))
         }
         .ignoresSafeArea(.container, edges: .bottom)
     }
@@ -560,7 +560,7 @@ struct SearchView: View {
     private var searchResultsList: some View {
         List {
             if !libraryViewModel.searchResults.tracks.isEmpty {
-                Section("Songs") {
+                    Section(String(localized: "Songs")) {
                     ForEach(libraryViewModel.searchResults.tracks) { track in
                         TrackRow(
                             track: track,
@@ -600,7 +600,7 @@ struct SearchView: View {
             }
 
             if !libraryViewModel.searchResults.albums.isEmpty {
-                Section("Albums") {
+                Section(String(localized: "Albums")) {
                     ForEach(libraryViewModel.searchResults.albums) { album in
                         NavigationLink(destination: AlbumDetailView(album: album)) {
                             HStack(spacing: 12) {
@@ -633,7 +633,7 @@ struct SearchView: View {
             }
 
             if !libraryViewModel.searchResults.artists.isEmpty {
-                Section("Artists") {
+                Section(String(localized: "Artists")) {
                     ForEach(libraryViewModel.searchResults.artists) { artist in
                         NavigationLink(destination: ArtistDetailView(artist: artist)) {
                             HStack(spacing: 12) {
@@ -659,7 +659,7 @@ struct SearchView: View {
                 }
             }
         }
-        .scrollDismissesKeyboard(.immediately)
+        .scrollDismissesKeyboard(.interactively)
         .background(Color(UIColor.systemBackground).ignoresSafeArea())
         .safeAreaInset(edge: .bottom) {
             Color.clear.frame(height: playerViewModel.hasTrack ? 130 : 50)

@@ -133,12 +133,12 @@ struct AlbumDetailView: View {
                     }
 
                     if !tracks.isEmpty {
-                        Text("•")
+                        Text(verbatim: "\u{00B7}")
                         Text(String.localizedStringWithFormat(NSLocalizedString("%lld songs", comment: "Track count"), tracks.count))
                     }
 
                     if let totalDuration = totalDuration {
-                        Text("•")
+                        Text(verbatim: "\u{00B7}")
                         Text(totalDuration)
                     }
                 }

@@ -129,7 +129,7 @@ struct PlaylistDetailView: View {
                     }
 
                     if let totalDuration = totalDuration {
-                        Text("•")
+                        Text(verbatim: "\u{00B7}")
                         Text(totalDuration)
                     }
                 }

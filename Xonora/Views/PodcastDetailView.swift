@@ -112,7 +112,7 @@ struct PodcastDetailView: View {
                                     .foregroundColor(.secondary)
 
                                 if let description = episode.description {
-                                    Text("•")
+                                    Text(verbatim: "\u{00B7}")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                     Text(description)
