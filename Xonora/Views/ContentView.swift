@@ -635,16 +635,18 @@ struct SearchView: View {
             if !libraryViewModel.searchResults.artists.isEmpty {
                 Section("Artists") {
                     ForEach(libraryViewModel.searchResults.artists) { artist in
-                        HStack(spacing: 12) {
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 50, height: 50)
-                                .overlay {
-                                    Image(systemName: "person.fill")
-                                        .foregroundColor(.gray)
-                                }
+                        NavigationLink(destination: ArtistDetailView(artist: artist)) {
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 50, height: 50)
+                                    .overlay {
+                                        Image(systemName: "person.fill")
+                                            .foregroundColor(.gray)
+                                    }
 
-                            Text(artist.name)
+                                Text(artist.name)
+                            }
                         }
                         .contextMenu {
                             Button {
@@ -1201,7 +1203,7 @@ struct MiniPlayerView: View {
                     Image(systemName: "music.note.list")
                         .font(.system(size: 16))
                         .foregroundColor(.secondary)
-                        .frame(width: 28, height: 28)
+                        .frame(minWidth: 44, minHeight: 44)
                 }
                 .buttonStyle(.plain)
             }
@@ -1238,12 +1240,12 @@ struct MiniPlayerView: View {
         return ZStack {
             Circle()
                 .stroke(Color.gray.opacity(0.25), lineWidth: 2.5)
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
 
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                .frame(width: 32, height: 32)
+                .frame(width: 44, height: 44)
                 .rotationEffect(.degrees(-90))
 
             Button {

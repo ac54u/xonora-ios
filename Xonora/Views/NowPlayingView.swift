@@ -139,7 +139,7 @@ struct NowPlayingView: View {
                 Button {
                     showSleepTimer = true
                 } label: {
-                    Image(systemName: playerManager.sleepTimerActive ? "timer" : "timer")
+                    Image(systemName: playerManager.sleepTimerActive ? "timer.circle.fill" : "timer")
                         .font(.title2)
                         .foregroundColor(playerManager.sleepTimerActive ? .orange : .white)
                         .frame(width: 44, height: 44)

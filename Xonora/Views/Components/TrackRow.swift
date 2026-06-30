@@ -69,9 +69,9 @@ struct TrackRow: View {
                 }
             } label: {
                 Image(systemName: (track.favorite ?? false) ? "heart.fill" : "heart")
-                    .foregroundColor((track.favorite ?? false) ? .pink : .secondary)
+                     .foregroundColor((track.favorite ?? false) ? .accentColor : .secondary)
                     .font(.body)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -123,7 +123,7 @@ struct TrackRow: View {
                 Image(systemName: "ellipsis")
                     .font(.body)
                     .foregroundColor(.secondary)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

@@ -81,7 +81,7 @@ struct LibraryView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
             .background(Color(UIColor.systemGroupedBackground))
         }
         .task {

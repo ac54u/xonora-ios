@@ -147,6 +147,7 @@ struct PlayerControls: View {
                             Image(systemName: (xonoraClient.currentPlayer?.volumeMuted ?? false) ? "speaker.slash.fill" : "speaker.fill")
                                 .font(.caption)
                                 .foregroundColor((xonoraClient.currentPlayer?.volumeMuted ?? false) ? .accentColor : .secondary)
+                                .frame(minWidth: 44, minHeight: 44)
                         }
                         .buttonStyle(.plain)
                     }
@@ -177,23 +178,18 @@ struct PlayerControls: View {
                 
                 // Playback Destination
                 if let playerName = xonoraClient.currentPlayer?.name {
-                    Button {
-                        // TODO: Show player picker?
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: isLocalPlayer ? "iphone" : "speaker.wave.2.fill")
-                                .font(.caption)
-                            Text(playerName)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(.accentColor)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.15))
-                        .clipShape(Capsule())
+                    HStack(spacing: 6) {
+                        Image(systemName: isLocalPlayer ? "iphone" : "speaker.wave.2.fill")
+                            .font(.caption)
+                        Text(playerName)
+                            .font(.caption)
+                            .fontWeight(.medium)
                     }
-                    .buttonStyle(.plain)
+                    .foregroundColor(.accentColor)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor.opacity(0.15))
+                    .clipShape(Capsule())
                 }
             }
         }
