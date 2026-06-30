@@ -42,7 +42,7 @@ struct PlayerControls: View {
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.title3)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(.secondary)
             }
 
             Button {
@@ -50,7 +50,7 @@ struct PlayerControls: View {
             } label: {
                 Image(systemName: playerManager.isPlaying ? "pause.fill" : "play.fill")
                     .font(.title2)
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
             }
 
             Button {
@@ -58,7 +58,7 @@ struct PlayerControls: View {
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.title3)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -105,7 +105,7 @@ struct PlayerControls: View {
                 } label: {
                     Image(systemName: "backward.fill")
                         .font(.title)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(.secondary)
                 }
 
                 Button {
@@ -113,7 +113,7 @@ struct PlayerControls: View {
                 } label: {
                     Image(systemName: playerManager.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                         .font(.system(size: 64))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                 }
 
                 Button {
@@ -121,7 +121,7 @@ struct PlayerControls: View {
                 } label: {
                     Image(systemName: "forward.fill")
                         .font(.title)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(.secondary)
                 }
 
                 Button {

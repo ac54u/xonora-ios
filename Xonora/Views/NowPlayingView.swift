@@ -39,7 +39,6 @@ struct NowPlayingView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
         }
-        .colorScheme(.dark)
         .background(
             albumArtView.ignoresSafeArea()
         )
@@ -104,7 +103,7 @@ struct NowPlayingView: View {
                 } label: {
                     Image(systemName: "chevron.down")
                         .font(.title2)
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
             } else {
@@ -123,13 +122,13 @@ struct NowPlayingView: View {
                     Text("PLAYING FROM")
                         .font(.caption2)
                         .fontWeight(.semibold)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(.secondary)
                 }
 
                 Text(playerManager.currentSource ?? playerManager.currentTrack?.album?.name ?? NSLocalizedString("Library", comment: ""))
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                     .lineLimit(1)
             }
 
@@ -141,7 +140,7 @@ struct NowPlayingView: View {
                 } label: {
                     Image(systemName: playerManager.sleepTimerActive ? "timer.circle.fill" : "timer")
                         .font(.title2)
-                        .foregroundColor(playerManager.sleepTimerActive ? .orange : .white)
+                        .foregroundColor(playerManager.sleepTimerActive ? .orange : .primary)
                         .frame(width: 44, height: 44)
                 }
 
@@ -150,7 +149,7 @@ struct NowPlayingView: View {
                 } label: {
                     Image(systemName: "text.alignleft")
                         .font(.title2)
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
 
@@ -159,7 +158,7 @@ struct NowPlayingView: View {
                 } label: {
                     Image(systemName: "list.bullet")
                         .font(.title2)
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
                 }
             }
@@ -191,12 +190,12 @@ struct NowPlayingView: View {
             Text(playerManager.currentTrack?.name ?? NSLocalizedString("Not Playing", comment: ""))
                 .font(.title2)
                 .fontWeight(.bold)
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
                 .lineLimit(1)
 
             Text(playerManager.currentTrack?.artistNames ?? "")
                 .font(.title3)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(.secondary)
                 .lineLimit(1)
         }
     }
