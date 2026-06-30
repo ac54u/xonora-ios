@@ -44,7 +44,7 @@ struct PodcastDetailView: View {
                     episodeList
                 }
             }
-            .padding(.bottom, playerViewModel.hasTrack ? 160 : 100)
+            .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

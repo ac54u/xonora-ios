@@ -289,7 +289,7 @@ struct LibraryView: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+            .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
         }
     }
 
@@ -349,7 +349,7 @@ struct LibraryView: View {
                     }
             }
         }
-        .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+        .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
     }
 
     // MARK: - Songs
@@ -379,7 +379,7 @@ struct LibraryView: View {
                 }
             }
         }
-        .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+        .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
     }
 
     // MARK: - Playlists
@@ -415,7 +415,7 @@ struct LibraryView: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+            .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
         }
     }
 
@@ -469,7 +469,7 @@ struct LibraryView: View {
                     }
             }
         }
-        .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+        .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
     }
 
     // MARK: - Artists
@@ -510,7 +510,7 @@ struct LibraryView: View {
                 }
             }
         }
-        .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+        .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
     }
 
     // MARK: - Podcasts
@@ -536,7 +536,7 @@ struct LibraryView: View {
                     }
                 }
                 .padding(.horizontal)
-                .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+                .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
             }
         }
     }
@@ -594,7 +594,7 @@ struct LibraryView: View {
                         .task { await libraryViewModel.loadMoreRadio() }
                 }
             }
-            .padding(.bottom, playerViewModel.hasTrack ? 120 : 20)
+            .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
         }
     }
 

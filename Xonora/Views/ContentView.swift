@@ -1000,7 +1000,7 @@ struct LogView: View {
                         .foregroundColor(.secondary)
                         .font(.caption)
                     TextField("Search logs...", text: $searchText)
-                        .font(.caption)
+                        .font(.subheadline)
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
@@ -1131,14 +1131,14 @@ struct ContentView_Previews: PreviewProvider {
 struct MiniPlayerView: View {
     @ObservedObject private var playerManager = PlayerManager.shared
     var expandAction: () -> Void
-    @State private var rotation: Double = 0
-    @State private var rotationTimer: Timer?
+    @State private var rotationAngle: Double = 0
+    @State private var marqueeAnimating = false
     @State private var marqueeOffset: CGFloat = 0
-    @State private var marqueeTimer: Timer?
     @State private var textWidth: CGFloat = 0
     @State private var containerWidth: CGFloat = 0
     @State private var showingQueue = false
     private let marqueeSpeed: CGFloat = 25
+    private let rotationDuration: Double = 8.0
 
     var body: some View {
         HStack(spacing: 10) {
@@ -1155,7 +1155,10 @@ struct MiniPlayerView: View {
                             Color.clear.onAppear {
                                 textWidth = t1.size.width
                                 containerWidth = container.size.width
-                                scheduleMarquee()
+                                guard textWidth > containerWidth, textWidth > 0 else { return }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    marqueeAnimating = true
+                                }
                             }
                         })
 
@@ -1166,6 +1169,10 @@ struct MiniPlayerView: View {
                         .fixedSize()
                 }
                 .offset(x: marqueeOffset)
+                .animation(
+                    marqueeAnimating ? .linear(duration: Double(textWidth + 20) / Double(marqueeSpeed)).repeatForever(autoreverses: false) : .default,
+                    value: marqueeOffset
+                )
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: containerWidth > 0 && textWidth <= containerWidth ? .center : .leading)
             }
             .mask(
@@ -1217,17 +1224,23 @@ struct MiniPlayerView: View {
         .padding(.horizontal, 16)
         .onTapGesture { expandAction() }
         .onAppear {
-            if playerManager.isPlaying { startRotation() }
+            if playerManager.isPlaying { rotationAngle = 360 }
         }
         .onDisappear {
-            stopMarqueeTimer()
+            marqueeAnimating = false
         }
         .onChange(of: playerManager.isPlaying) { playing in
-            if playing { startRotation() } else { stopRotation() }
+            rotationAngle = playing ? 360 : 0
         }
         .onChange(of: displayText) { _, _ in
-            stopMarqueeTimer()
+            marqueeAnimating = false
             marqueeOffset = 0
+        }
+        .onChange(of: marqueeAnimating) { _, animating in
+            if animating {
+                let wrapDistance = textWidth + 20
+                marqueeOffset = -wrapDistance
+            }
         }
         .sheet(isPresented: $showingQueue) {
             queueSheet
@@ -1314,22 +1327,7 @@ struct MiniPlayerView: View {
         return "\(track.name) - \(track.artistNames)"
     }
 
-    // MARK: - Rotating Artwork
-
-    private func startRotation() {
-        rotationTimer?.invalidate()
-        rotationTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { _ in
-            Task { @MainActor in
-                rotation += 0.75
-                if rotation >= 360 { rotation -= 360 }
-            }
-        }
-    }
-
-    private func stopRotation() {
-        rotationTimer?.invalidate()
-        rotationTimer = nil
-    }
+    // MARK: - Rotating Artwork (SwiftUI animation, GPU-accelerated)
 
     private var artworkView: some View {
         let url = XonoraClient.shared.getImageURL(
@@ -1344,7 +1342,11 @@ struct MiniPlayerView: View {
             .aspectRatio(contentMode: .fill)
             .frame(width: 38, height: 38)
             .clipShape(Circle())
-            .rotationEffect(.degrees(rotation))
+            .rotationEffect(.degrees(rotationAngle))
+            .animation(
+                playerManager.isPlaying ? .linear(duration: rotationDuration).repeatForever(autoreverses: false) : .default,
+                value: rotationAngle
+            )
         }
         .frame(width: 38, height: 38)
         .overlay(
@@ -1354,34 +1356,5 @@ struct MiniPlayerView: View {
         )
     }
 
-    // MARK: - Marquee
-
-    private func startMarqueeTimer() {
-        guard textWidth > containerWidth else { return }
-        stopMarqueeTimer()
-        marqueeTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in
-            Task { @MainActor in
-                marqueeOffset -= marqueeSpeed / 60
-                let wrapDistance = textWidth + 20
-                if marqueeOffset <= -wrapDistance {
-                    marqueeOffset += wrapDistance
-                }
-            }
-        }
-    }
-
-    private func stopMarqueeTimer() {
-        marqueeTimer?.invalidate()
-        marqueeTimer = nil
-    }
-
-    private func scheduleMarquee() {
-        stopMarqueeTimer()
-        marqueeOffset = 0
-        guard textWidth > containerWidth, textWidth > 0 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.startMarqueeTimer()
-        }
-    }
 }
 

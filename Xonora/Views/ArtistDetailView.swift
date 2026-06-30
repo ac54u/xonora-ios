@@ -35,7 +35,7 @@ struct ArtistDetailView: View {
                     }
                 }
             }
-            .padding(.bottom, 100)
+            .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
         }
         .navigationTitle(artist.name)
         .navigationBarTitleDisplayMode(.inline)

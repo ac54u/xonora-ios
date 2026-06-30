@@ -84,7 +84,7 @@ struct PlaylistDetailView: View {
                     trackList
                 }
             }
-            .padding(.bottom, playerViewModel.hasTrack ? 100 : 20)
+            .padding(.bottom, playerViewModel.hasTrack ? 120 : 50)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
